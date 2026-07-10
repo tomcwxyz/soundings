@@ -18,6 +18,7 @@ the way DfE rotates dataset UUIDs.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -82,12 +83,16 @@ class PoliceUkAdapter(PassthroughAdapter):
             lat, lng = centroid
             end_month = period or await self._police.get_last_updated()
             months = _walk_back_months(end_month, WINDOW_MONTHS)
-            total_count = 0
-            for month in months:
-                crimes = await self._police.get_crimes(
-                    category=category, lat=lat, lng=lng, date=month
+            # Fire all 12 monthly API calls concurrently — the client's
+            # AsyncLimiter (10 req/s) naturally throttles, so 12 requests
+            # take ~1.2s instead of 12 × response-time sequentially.
+            crime_lists = await asyncio.gather(
+                *(
+                    self._police.get_crimes(category=category, lat=lat, lng=lng, date=month)
+                    for month in months
                 )
-                total_count += len(crimes)
+            )
+            total_count = sum(len(crimes) for crimes in crime_lists)
             await self._cache.put(
                 self.source_id,
                 cache_key,
