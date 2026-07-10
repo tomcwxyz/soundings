@@ -80,15 +80,6 @@ mappings:
   # tenure / ethnicgroup codelists. value_scale=0.01 turns measures=20301
   # (percent, 0–100) into a fraction in [0,1] to match indicator contracts.
 
-  - indicator_key: population.ethnicity.non_white_british_share
-    source_id: ons.census2021
-    dataset_id: NM_2041_1         # TS021 - Ethnic group (unverified)
-    measures: "20301"
-    geography_type_codes:
-      ltla24: TYPE424
-    period: "2021"
-    value_scale: 0.01
-
   - indicator_key: population.households.total
     source_id: ons.census2021
     dataset_id: NM_2023_1         # TS003 - Household composition (total)
@@ -112,39 +103,47 @@ mappings:
 
   - indicator_key: health.long_term_conditions_share
     source_id: ons.census2021
-    dataset_id: NM_2055_1         # TS038 - Disability (unverified)
+    dataset_id: NM_2056_1         # TS038 - Disability (verified Jul 2026)
     measures: "20301"
     geography_type_codes:
       ltla24: TYPE424
+    extra_params:
+      c2021_disability_5: "1001"  # Disabled under the Equality Act
     period: "2021"
     value_scale: 0.01
 
   - indicator_key: education.no_qualifications_share
     source_id: ons.census2021
-    dataset_id: NM_2062_1         # TS067 - Highest level of qualification (unverified)
+    dataset_id: NM_2084_1         # TS067 - Highest level of qualification (verified Jul 2026)
     measures: "20301"
     geography_type_codes:
       ltla24: TYPE424
+    extra_params:
+      c2021_hiqual_8: "1"         # No qualifications
     period: "2021"
     value_scale: 0.01
 
   - indicator_key: housing.social_rented_share
     source_id: ons.census2021
-    dataset_id: NM_2072_1         # TS054 - Tenure (unverified)
+    dataset_id: NM_2072_1         # TS054 - Tenure (verified Jul 2026)
     measures: "20301"
     geography_type_codes:
       ltla24: TYPE424
+    extra_params:
+      c2021_tenure_9: "1003"      # Social rented
     period: "2021"
     value_scale: 0.01
 
   - indicator_key: housing.overcrowding_share
     source_id: ons.census2021
-    dataset_id: NM_2075_1         # TS052 - Occupancy rating for bedrooms (unverified)
+    dataset_id: NM_2070_1         # TS052 - Occupancy rating for bedrooms (verified Jul 2026)
     measures: "20301"
     geography_type_codes:
       ltla24: TYPE424
     period: "2021"
     value_scale: 0.01
+    computation: sum_codes         # sum of -1 and -2-or-less occupancy ratings
+    sum_codes: ["4", "5"]          # code 4 = rating -1, code 5 = rating -2 or less
 
   # --- ONS Annual Population Survey (Phase 3 Block F) ----------------------
   # APS is delivered via Nomis; `OnsApsAdapter` is a passthrough that pulls

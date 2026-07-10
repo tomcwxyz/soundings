@@ -124,3 +124,108 @@ async def test_census_loader_skips_scottish_geographies() -> None:
             )
         ).all()
     assert all(any("England and Wales only" in c for c in (row.caveats or [])) for row in rows)
+
+
+async def test_census_loader_sum_codes_computation() -> None:
+    """The `sum_codes` computation mode sums obs_values for specified
+    dimension codes. Used for overcrowding: sum rating -1 and -2-or-less."""
+    engine = get_engine()
+    await _seed_environment()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        # Return all 6 occupancy rating categories
+        obs = []
+        for code, val, desc in [
+            ("0", 100.0, "Total"),
+            ("1", 42.9, "+2 or more"),
+            ("2", 35.5, "+1"),
+            ("3", 19.6, "0"),
+            ("4", 1.7, "-1"),
+            ("5", 0.3, "-2 or less"),
+        ]:
+            obs.append(
+                {
+                    "obs_value": {"value": val},
+                    "geography": {"geogcode": "E06000004"},
+                    "time": {"description": "2021"},
+                    "c2021_occrat_bedrooms_6": {"value": int(code), "description": desc},
+                }
+            )
+        return httpx.Response(200, json={"obs": obs})
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as http:
+        nomis = NomisClient(http_client=http)
+        loader = OnsCensus2021Loader(
+            engine,
+            nomis_client=nomis,
+            indicator_keys=["housing.overcrowding_share"],
+        )
+        result = await loader.load()
+
+    assert result.rows_written >= 1
+
+    async with engine.connect() as conn:
+        row = (
+            await conn.execute(
+                text(
+                    "SELECT value FROM data.indicator_value "
+                    "WHERE indicator_key = 'housing.overcrowding_share' "
+                    "AND place_id = 'ltla24:E06000004'"
+                )
+            )
+        ).first()
+    assert row is not None
+    # (1.7 + 0.3) * 0.01 = 0.02
+    assert float(row.value) == pytest.approx(0.02)
+
+
+async def test_census_loader_single_cell_with_extra_params() -> None:
+    """Standard single-cell indicators with extra_params filters should
+    write one row per place. Verifies the disability mapping works."""
+    engine = get_engine()
+    await _seed_environment()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "obs": [
+                    {
+                        "obs_value": {"value": 19.9},
+                        "geography": {"geogcode": "E06000004"},
+                        "time": {"description": "2021"},
+                        "c2021_disability_5": {
+                            "value": 1001,
+                            "description": "Disabled under the Equality Act",
+                        },
+                    }
+                ]
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as http:
+        nomis = NomisClient(http_client=http)
+        loader = OnsCensus2021Loader(
+            engine,
+            nomis_client=nomis,
+            indicator_keys=["health.long_term_conditions_share"],
+        )
+        result = await loader.load()
+
+    assert result.rows_written >= 1
+
+    async with engine.connect() as conn:
+        row = (
+            await conn.execute(
+                text(
+                    "SELECT value FROM data.indicator_value "
+                    "WHERE indicator_key = 'health.long_term_conditions_share' "
+                    "AND place_id = 'ltla24:E06000004'"
+                )
+            )
+        ).first()
+    assert row is not None
+    # 19.9 * 0.01 = 0.199
+    assert float(row.value) == pytest.approx(0.199)

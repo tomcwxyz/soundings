@@ -223,18 +223,6 @@ indicators:
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
     refresh_cadence: "annual"
 
-  - key: population.ethnicity.non_white_british_share
-    label: "Share of population not identifying as 'White: British'"
-    description: "Proportion of usual residents identifying as any ethnic group other than 'White: British' (Census 2021 high-level categories)."
-    unit: "proportion"
-    higher_is: null
-    source_id: "ons.census2021"
-    available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
-    refresh_cadence: "decennial"
-    caveats:
-      - "Ethnic group categories changed between censuses. Comparisons across decades require care."
-      - "England and Wales only. Scotland and NI use separate sources."
-
   - key: population.households.total
     label: "Total households"
     description: "Number of households."

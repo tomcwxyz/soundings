@@ -28,6 +28,15 @@ class NomisMapping(BaseModel):
     # (measures=20301, range 0–100) but the indicator contract is a fraction
     # (0–1); set value_scale: 0.01.
     value_scale: float | None = None
+    # Optional post-fetch computation. Supports:
+    #   "complement"  — value = 100 - obs_value (e.g. non-white-British =
+    #                   100 - white_british_pct). Requires extra_params to
+    #                   filter to the cell being complemented.
+    #   "sum_codes"   — sum obs_values for the dimension codes listed in
+    #                   sum_codes. No extra_params filter needed; the loader
+    #                   fetches all cells and picks the specified ones.
+    computation: str | None = None
+    sum_codes: list[str] | None = None
 
 
 def load_nomis_mapping(path: Path) -> list[NomisMapping]:

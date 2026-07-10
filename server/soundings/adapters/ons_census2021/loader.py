@@ -99,6 +99,23 @@ class OnsCensus2021Loader(LoaderAdapter):
     ) -> int:
         if not obs:
             return 0
+
+        # --- Computed indicators -------------------------------------------
+        # Some Census indicators derive a single value from one or more Nomis
+        # cells rather than reading a single filtered observation. Handle these
+        # before the standard single-cell path.
+        if mapping.computation == "complement":
+            return await self._upsert_computed(
+                mapping,
+                place_type,
+                obs,
+                fn=lambda v: 100.0 - v,
+            )
+        if mapping.computation == "sum_codes":
+            codes = set(mapping.sum_codes or [])
+            return await self._upsert_sum_codes(mapping, place_type, obs, codes)
+
+        # --- Standard single-cell path -------------------------------------
         rows = []
         retrieved = datetime.now(tz=UTC)
         for o in obs:
@@ -136,8 +153,156 @@ class OnsCensus2021Loader(LoaderAdapter):
         # signals an unverified mapping per HANDOFF — skip the whole batch
         # rather than write a misleading value.
         keys = [(r["place_id"], r["indicator_key"], r["period"]) for r in rows]
-        if len(set(keys)) < len(keys):
+        if len(set(keys)) < len(rows):
             return 0
+        async with self._engine.begin() as conn:
+            stmt = insert(IndicatorValue).values(rows)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[
+                    IndicatorValue.place_id,
+                    IndicatorValue.indicator_key,
+                    IndicatorValue.period,
+                ],
+                set_={
+                    "value": stmt.excluded.value,
+                    "retrieved_at": stmt.excluded.retrieved_at,
+                    "source_id": stmt.excluded.source_id,
+                },
+            )
+            await conn.execute(stmt)
+        return len(rows)
+
+    async def _upsert_computed(
+        self,
+        mapping: NomisMapping,
+        place_type: str,
+        obs: list[dict[str, Any]],
+        *,
+        fn: Any,
+    ) -> int:
+        """Apply a scalar transform (e.g. 100 - v) to each observation and
+        upsert. Used for complement indicators like non-white-British share."""
+        rows = []
+        retrieved = datetime.now(tz=UTC)
+        for o in obs:
+            geo_code = o.get("geography", {}).get("geogcode")
+            if not geo_code:
+                continue
+            raw = o.get("obs_value", {}).get("value")
+            if raw is None:
+                continue
+            try:
+                raw = float(raw)
+            except (TypeError, ValueError):
+                continue
+            value = fn(raw)
+            if mapping.value_scale is not None:
+                value = value * mapping.value_scale
+            period = o.get("time", {}).get("description") or mapping.period or "2021"
+            rows.append(
+                {
+                    "place_id": f"{place_type}:{geo_code}",
+                    "indicator_key": mapping.indicator_key,
+                    "period": str(period),
+                    "value": value,
+                    "source_id": self.source_id,
+                    "retrieved_at": retrieved,
+                    "loader_run_id": None,
+                    "caveats": ["Census 2021 covers England and Wales only."],
+                }
+            )
+        if not rows:
+            return 0
+        async with self._engine.begin() as conn:
+            stmt = insert(IndicatorValue).values(rows)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[
+                    IndicatorValue.place_id,
+                    IndicatorValue.indicator_key,
+                    IndicatorValue.period,
+                ],
+                set_={
+                    "value": stmt.excluded.value,
+                    "retrieved_at": stmt.excluded.retrieved_at,
+                    "source_id": stmt.excluded.source_id,
+                },
+            )
+            await conn.execute(stmt)
+        return len(rows)
+
+    async def _upsert_sum_codes(
+        self,
+        mapping: NomisMapping,
+        place_type: str,
+        obs: list[dict[str, Any]],
+        codes: set[str],
+    ) -> int:
+        """Sum obs_values for the specified dimension codes, grouped by place.
+        Used for multi-cell indicators like overcrowding (rating -1 + -2 or less)."""
+        # Group by geo_code, summing values for matching codes
+        place_sums: dict[str, float] = {}
+        periods: dict[str, str] = {}
+        for o in obs:
+            geo_code = o.get("geography", {}).get("geogcode")
+            if not geo_code:
+                continue
+            # Find the dimension value code — it's the field that isn't
+            # one of the standard metadata fields.
+            known = {
+                "dataset",
+                "measures",
+                "obs_value",
+                "geography",
+                "time",
+                "freq",
+                "time_format",
+                "unit",
+                "obs_status",
+                "obs_conf",
+                "urn",
+            }
+            dim_code = None
+            for key in o:
+                if key not in known:
+                    val = o[key]
+                    if isinstance(val, dict):
+                        dim_code = str(val.get("value", ""))
+                    else:
+                        dim_code = str(val)
+                    break
+            if dim_code is None or dim_code not in codes:
+                continue
+            raw = o.get("obs_value", {}).get("value")
+            if raw is None:
+                continue
+            try:
+                raw = float(raw)
+            except (TypeError, ValueError):
+                continue
+            place_sums[geo_code] = place_sums.get(geo_code, 0.0) + raw
+            period = o.get("time", {}).get("description") or mapping.period or "2021"
+            periods[geo_code] = str(period)
+
+        if not place_sums:
+            return 0
+        rows = []
+        retrieved = datetime.now(tz=UTC)
+        for geo_code, total in place_sums.items():
+            value = total
+            if mapping.value_scale is not None:
+                value = value * mapping.value_scale
+            rows.append(
+                {
+                    "place_id": f"{place_type}:{geo_code}",
+                    "indicator_key": mapping.indicator_key,
+                    "period": periods[geo_code],
+                    "value": value,
+                    "source_id": self.source_id,
+                    "retrieved_at": retrieved,
+                    "loader_run_id": None,
+                    "caveats": ["Census 2021 covers England and Wales only."],
+                }
+            )
         async with self._engine.begin() as conn:
             stmt = insert(IndicatorValue).values(rows)
             stmt = stmt.on_conflict_do_update(
