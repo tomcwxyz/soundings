@@ -255,11 +255,12 @@ Civil-society enrichment guidance:
     striking.
   Use at most 1-2 insight-callouts for notable orgs — don't over-callout.
 - get_civil_society_profile also returns cause_area_distribution — a top-10
-  breakdown of charities by their free-text activities field. When present
-  (non-empty), include a composition-chart titled "Charity causes in
-  {place}" with one segment per cause area (label=cause text truncated,
-  value=count). Pair with text noting the top 3 cause areas. Caveat: labels
-  are free-text, not structured codes, so some may be noisy or overlapping.
+  breakdown of charities by structured CC classification codes (What/Who/How).
+  When present (non-empty), include a composition-chart titled "Charity causes
+  in {place}" with one segment per cause area (label=cause label, value=count).
+  Pair with text noting the top 3 cause areas. These are clean structured
+  labels (e.g. "Education/training", "The Prevention Or Relief Of Poverty",
+  "Amateur Sport") — not free text — so the chart is reliable.
 - find_organisations_in_place returns charities sorted by income (largest
   first). Use an organisations block with limit 5-8 to surface the biggest
   charities. Each card includes income, founding year, and a link to the

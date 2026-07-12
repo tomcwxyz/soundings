@@ -751,7 +751,13 @@ class IndicatorOrchestrator:
                                o.raw->>'postcode' AS postcode,
                                array_agg(DISTINCT oi.place_id) FILTER (
                                    WHERE oi.place_id IS NOT NULL
-                               ) AS operates_in
+                               ) AS operates_in,
+                               (
+                                   SELECT string_agg(DISTINCT cl.classification_label, '|')
+                                   FROM data.organisation_classification cl
+                                   WHERE cl.organisation_id = o.id
+                                     AND cl.classification_type = 'What'
+                               ) AS cause_labels
                         FROM data.organisation o
                         LEFT JOIN data.organisation_operates_in oi
                             ON oi.organisation_id = o.id
@@ -787,11 +793,17 @@ class IndicatorOrchestrator:
                     f"charity-search-/charity-details/{reg_no}"
                 )
             income = float(row.latest_income) if row.latest_income is not None else None
+            # Prefer structured cause labels (clean, from CC classification file)
+            # over the free-text classification column (noisy charity_activities).
+            if row.cause_labels:
+                cause_tags = row.cause_labels.split("|")
+            else:
+                cause_tags = list(row.classification or [])
             orgs.append(
                 OrganisationRef(
                     id=row.id,
                     name=row.name,
-                    classification=list(row.classification or []),
+                    classification=cause_tags,
                     registered_address_place_id=row.registered_address_place_id,
                     operates_in_place_ids=list(row.operates_in or []),
                     recent_grants=[],
@@ -1126,19 +1138,42 @@ class IndicatorOrchestrator:
             ).first()
 
             # --- Task 5: cause-area distribution (top 10).
+            # Uses structured CC classification codes (What/Who/How) from
+            # data.organisation_classification for clean labels. Falls back
+            # to the old free-text classification column if the structured
+            # table is empty (e.g. before the classification loader runs).
             cause_rows = (
                 await conn.execute(
                     text(
-                        "SELECT unnest(o.classification) AS cause, COUNT(*) AS n "  # noqa: S608
+                        "SELECT cl.classification_label AS cause, COUNT(*) AS n "  # noqa: S608
                         "FROM data.organisation_operates_in oi "
                         "JOIN data.organisation o ON o.id = oi.organisation_id "
-                        "WHERE oi.place_id = :pid AND o.classification != '{}'"
+                        "JOIN data.organisation_classification cl "
+                        "  ON cl.organisation_id = oi.organisation_id "
+                        "WHERE oi.place_id = :pid "
+                        "  AND cl.classification_type = 'What' "
                         f"{kw_sql} "
-                        "GROUP BY cause ORDER BY n DESC LIMIT 10"
+                        "GROUP BY cl.classification_label "
+                        "ORDER BY n DESC LIMIT 10"
                     ),
                     {"pid": place_id, **kw_params},
                 )
             ).all()
+            if not cause_rows:
+                # Fallback: free-text classification column (pre-migration).
+                cause_rows = (
+                    await conn.execute(
+                        text(
+                            "SELECT unnest(o.classification) AS cause, COUNT(*) AS n "  # noqa: S608
+                            "FROM data.organisation_operates_in oi "
+                            "JOIN data.organisation o ON o.id = oi.organisation_id "
+                            "WHERE oi.place_id = :pid AND o.classification != '{}'"
+                            f"{kw_sql} "
+                            "GROUP BY cause ORDER BY n DESC LIMIT 10"
+                        ),
+                        {"pid": place_id, **kw_params},
+                    )
+                ).all()
             cause_area_distribution = [
                 CauseAreaCount(
                     label=str(r.cause)[:120],

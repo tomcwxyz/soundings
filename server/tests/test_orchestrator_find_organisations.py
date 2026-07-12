@@ -58,6 +58,11 @@ class _FakeRow:
         registered_address_place_id: str | None = None,
         source_id: str = "charity_commission",
         retrieved_at: datetime | None = None,
+        latest_income: float | None = None,
+        date_of_registration: str | None = None,
+        postcode: str | None = None,
+        operates_in: list[str] | None = None,
+        cause_labels: str | None = None,
     ) -> None:
         self.id = id
         self.name = name
@@ -65,6 +70,24 @@ class _FakeRow:
         self.registered_address_place_id = registered_address_place_id
         self.source_id = source_id
         self.retrieved_at = retrieved_at or datetime(2026, 5, 18, tzinfo=UTC)
+        self.latest_income = latest_income
+        self.date_of_registration = date_of_registration
+        self.postcode = postcode
+        self.operates_in = operates_in or []
+        self.cause_labels = cause_labels
+
+
+class _FakeResult:
+    """Mimics SQLAlchemy Result — `.all()` returns the rows list."""
+
+    def __init__(self, rows):
+        self._rows = rows
+
+    def all(self):
+        return self._rows
+
+    def first(self):
+        return self._rows[0] if self._rows else None
 
 
 def _engine_returning(rows: list[_FakeRow]) -> Any:
@@ -72,7 +95,7 @@ def _engine_returning(rows: list[_FakeRow]) -> Any:
     the given rows from `execute()`."""
     engine = MagicMock()
     conn = MagicMock()
-    conn.execute = AsyncMock(return_value=iter(rows))
+    conn.execute = AsyncMock(return_value=_FakeResult(rows))
     cm = MagicMock()
     cm.__aenter__ = AsyncMock(return_value=conn)
     cm.__aexit__ = AsyncMock(return_value=None)

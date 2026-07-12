@@ -529,10 +529,15 @@
               card.appendChild(foundedP);
             }
             if (org.classification.length > 0) {
-              const cls = document.createElement("p");
-              cls.className = "text-muted text-small";
-              cls.textContent = org.classification.join(", ");
-              card.appendChild(cls);
+              const tags = document.createElement("div");
+              tags.className = "org-tags";
+              for (const tag of org.classification.slice(0, 5)) {
+                const chip = document.createElement("span");
+                chip.className = "org-tag";
+                chip.textContent = tag;
+                tags.appendChild(chip);
+              }
+              card.appendChild(tags);
             }
             if (org.recent_grants.length > 0) {
               const grants = document.createElement("ul");

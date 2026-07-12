@@ -66,6 +66,18 @@ class OrganisationOperatesIn(Base):
     place_id: Mapped[str] = mapped_column(ForeignKey("geography.place.id"), primary_key=True)
 
 
+class OrganisationClassification(Base):
+    __tablename__ = "organisation_classification"
+    __table_args__ = ({"schema": "data"},)
+
+    organisation_id: Mapped[str] = mapped_column(
+        ForeignKey("data.organisation.id", ondelete="CASCADE"), primary_key=True
+    )
+    classification_type: Mapped[str] = mapped_column(String(16), primary_key=True)
+    classification_code: Mapped[str] = mapped_column(String(8), primary_key=True)
+    classification_label: Mapped[str] = mapped_column(String(128))
+
+
 class GrantRecord(Base):
     __tablename__ = "grant_record"
     __table_args__ = ({"schema": "data"},)

@@ -25,7 +25,11 @@ from soundings.adapters.charity_commission.area_mapping import build_area_name_t
 from soundings.adapters.charity_commission.client import CharityCommissionBulkClient
 from soundings.adapters.charity_commission.mapping import resolve_postcodes_to_ltlas
 from soundings.adapters.postcodes_io.adapter import PostcodesIoAdapter
-from soundings.db.models.data import Organisation, OrganisationOperatesIn
+from soundings.db.models.data import (
+    Organisation,
+    OrganisationClassification,
+    OrganisationOperatesIn,
+)
 
 SOURCE_ID = "charity_commission"
 ORG_INSERT_CHUNK = 1000
@@ -87,6 +91,12 @@ class CharityCommissionLoader(LoaderAdapter):
 
         await self._replace_operates_in(operates_in_rows, retrieved_at)
 
+        # Pass 5: structured classification codes (What/Who/How) from the
+        # CC classification bulk file.  This replaces the noisy free-text
+        # `charity_activities` field in the `classification` column with
+        # proper structured codes for clean GROUP BY aggregation.
+        classification_count = await self._load_classifications()
+
         # Phase 4 Task 7: end-of-load aggregates into data.indicator_value.
         # Period = YYYY-MM (CC publishes monthly); UPSERT so re-runs in the
         # same calendar month overwrite the latest count.
@@ -102,6 +112,8 @@ class CharityCommissionLoader(LoaderAdapter):
             )
         if aggregate_notes:
             note_pieces.append(aggregate_notes)
+        if classification_count:
+            note_pieces.append(f"{classification_count} classification rows loaded")
         notes = "; ".join(note_pieces) if note_pieces else None
         return LoaderResult(rows_written=len(org_rows), notes=notes)
 
@@ -353,6 +365,78 @@ class CharityCommissionLoader(LoaderAdapter):
                     },
                 )
                 await conn.execute(stmt)
+
+    async def _load_classifications(self) -> int:
+        """Download the CC classification bulk file and upsert structured
+        cause codes into ``data.organisation_classification``.
+
+        Only rows whose ``organisation_id`` already exists in
+        ``data.organisation`` are kept — the classification file includes
+        linked subsidiaries and removed charities we don't store.
+
+        Uses DELETE + INSERT (replace strategy) so stale classifications
+        are cleared on each load, matching the operates_in approach.
+
+        Returns the number of classification rows inserted.
+        """
+        # Collect existing org IDs once (same pattern as area-of-operation).
+        existing_org_ids: set[str] = set()
+        async with self._engine.connect() as conn:
+            result = await conn.execute(
+                text("SELECT id FROM data.organisation WHERE source_id = :sid"),
+                {"sid": SOURCE_ID},
+            )
+            for row in result.fetchall():
+                existing_org_ids.add(row.id)
+
+        rows: list[dict[str, str]] = []
+        async for entry in self._bulk_client.iter_classifications():
+            org_id = f"charity_commission:{entry['registration_number']}"
+            if org_id not in existing_org_ids:
+                continue
+            if not entry["classification_type"] or not entry["classification_code"]:
+                continue
+            rows.append(
+                {
+                    "organisation_id": org_id,
+                    "classification_type": entry["classification_type"],
+                    "classification_code": entry["classification_code"],
+                    "classification_label": entry["classification_label"],
+                }
+            )
+
+        if not rows:
+            # Still clear stale rows.
+            async with self._engine.begin() as conn:
+                await conn.execute(
+                    text(
+                        "DELETE FROM data.organisation_classification oc "
+                        "USING data.organisation o "
+                        "WHERE oc.organisation_id = o.id "
+                        "  AND o.source_id = :sid"
+                    ),
+                    {"sid": SOURCE_ID},
+                )
+            return 0
+
+        async with self._engine.begin() as conn:
+            # Clear existing CC classification rows
+            await conn.execute(
+                text(
+                    "DELETE FROM data.organisation_classification oc "
+                    "USING data.organisation o "
+                    "WHERE oc.organisation_id = o.id "
+                    "  AND o.source_id = :sid"
+                ),
+                {"sid": SOURCE_ID},
+            )
+            # Insert fresh rows in chunks
+            for chunk in _chunked(rows, ORG_INSERT_CHUNK):
+                stmt = insert(OrganisationClassification).values(chunk)
+                stmt = stmt.on_conflict_do_nothing()
+                await conn.execute(stmt)
+
+        return len(rows)
 
 
 def _chunked(seq: list[Any], n: int) -> list[list[Any]]:

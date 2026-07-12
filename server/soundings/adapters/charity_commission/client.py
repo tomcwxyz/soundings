@@ -60,6 +60,14 @@ CC_AREA_OF_OPERATION_URL = (
 )
 AREA_OF_OPERATION_TXT = "publicextract.charity_area_of_operation.txt"
 
+# Classification bulk extract — structured cause codes (What/Who/How)
+# per charity.  1.7M rows, ~7MB compressed.
+CC_CLASSIFICATION_URL = (
+    "https://ccewuksprdoneregsadata1.blob.core.windows.net/data/txt"
+    "/publicextract.charity_classification.zip"
+)
+CLASSIFICATION_TXT = "publicextract.charity_classification.txt"
+
 
 class CharityCommissionBulkClient:
     def __init__(
@@ -138,6 +146,41 @@ class CharityCommissionBulkClient:
                     yield {
                         "registration_number": reg,
                         "area_description": row.get("geographic_area_description", "").strip(),
+                    }
+        finally:
+            if self._owns_client:
+                await client.aclose()
+
+    async def iter_classifications(self) -> AsyncIterator[dict[str, str]]:
+        """Yield one dict per classification row (main entries only).
+
+        Each dict has: ``registration_number``, ``classification_type``
+        ("What" / "Who" / "How"), ``classification_code``, and
+        ``classification_label``.
+
+        Only main-entry rows (``linked_charity_number == '0'``) are
+        yielded — linked subsidiaries are filtered out to match the
+        ``data.organisation`` table which only stores main entries.
+        """
+        client = self._client or httpx.AsyncClient(timeout=120.0)
+        try:
+            response = await client.get(CC_CLASSIFICATION_URL, follow_redirects=True)
+            response.raise_for_status()
+            archive = zipfile.ZipFile(io.BytesIO(response.content))
+            with archive.open(CLASSIFICATION_TXT) as fh:
+                text = io.TextIOWrapper(fh, encoding="utf-8", newline="")
+                reader = csv.DictReader(text, delimiter="\t")
+                for row in reader:
+                    if row.get("linked_charity_number", "").strip() != "0":
+                        continue
+                    reg = row.get("registered_charity_number", "").strip()
+                    if not reg:
+                        continue
+                    yield {
+                        "registration_number": reg,
+                        "classification_type": row.get("classification_type", "").strip(),
+                        "classification_code": row.get("classification_code", "").strip(),
+                        "classification_label": row.get("classification_description", "").strip(),
                     }
         finally:
             if self._owns_client:
