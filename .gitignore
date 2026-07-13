@@ -21,3 +21,4 @@ node_modules/
 
 # Superpowers brainstorming mockups (local-only)
 .superpowers/
+*.png

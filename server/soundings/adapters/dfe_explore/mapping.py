@@ -21,6 +21,7 @@ class DfeMapping(BaseModel):
     indicator_key: str
     data_set_id: str
     indicator_id: str
+    filter_selection: dict[str, str] = Field(default_factory=dict)
     filters: dict[str, Any] = Field(default_factory=dict)
     location_level: str  # DfE-native level code: LA, NAT, REG, etc.
     time_period_code: str = "AY"  # academic year by default

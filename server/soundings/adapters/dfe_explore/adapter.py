@@ -152,16 +152,25 @@ def _strip_type_prefix(place_id: str) -> str:
 def _materialise_points(payload: dict[str, Any], mapping: DfeMapping) -> list[dict[str, Any]]:
     """Flatten DfE result rows into {period, value} dicts.
 
+    The DfE POST query API's `criteria.filters` doesn't narrow results
+    (returns 0 rows when filter conditions are specified). Instead we
+    query with location only and post-filter the result rows to match
+    `mapping.filter_selection` (a dict of filter_id → option_id).
+
     EES values arrive as strings — coerce to float. Multiple rows for
-    one (place, period) shouldn't happen given our single-indicator,
-    single-location query, but if it does we take the last one seen
-    (preserves DfE's own ordering).
+    one (place, period) shouldn't happen after filter_selection, but
+    if it does we take the last one seen (preserves DfE's ordering).
     """
     results = payload.get("results") or []
     out: list[dict[str, Any]] = []
     for row in results:
         if not isinstance(row, dict):
             continue
+        # Post-filter: only keep rows matching all filter_selection criteria
+        filters = row.get("filters") or {}
+        if mapping.filter_selection:
+            if not all(filters.get(k) == v for k, v in mapping.filter_selection.items()):
+                continue
         period_obj = row.get("timePeriod") or {}
         period = period_obj.get("period") if isinstance(period_obj, dict) else None
         if not period:

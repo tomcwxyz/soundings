@@ -1,28 +1,30 @@
 # catalogue/dfe-mapping.yaml — bind soundings indicator keys to DfE
 # Explore Education Statistics datasets.
 #
-# Each entry pins a dataset UUID + indicator UUID + optional filter
-# selection. DfE republishes datasets annually under fresh UUIDs, so
-# these IDs rot — the live test (Task 20) asserts a plausible value
-# so an expired dataset_id fails nightly rather than silently
-# returning no-data.
-#
-# Discovery: browse data-catalogue/data-set/<uuid> on the public site
-# to see filter/indicator IDs; or query GET /data-sets/{id}/meta.
-# Filter + indicator IDs are not URL-visible, only meta-visible —
-# entries below carry placeholders to be filled by Task 20's live
-# iteration. The mapping schema is correct; the IDs themselves are
-# unverified pending that live run.
+# Each entry pins a dataset UUID + indicator ID + a `filter_selection`
+# dict that specifies which filter option to pick from the API's
+# unfiltered results (the POST criteria.filters endpoint doesn't work
+# for narrowing, so we query with location only and post-filter).
 #
 # `location_level` is the DfE-native level code (e.g. "LA" for local
 # authorities, "NAT" for national, "REG" for region). The adapter
 # translates soundings place_id → DfE location code via place mapping.
+#
+# Discovery: query GET /v1/publications to find relevant publications,
+# then GET /v1/publications/{id}/data-sets to list datasets, then
+# GET /v1/data-sets/{id}/meta to find indicator IDs and filter options.
+#
+# Verified Jul 2026 against the live API.
 
 mappings:
 
   - indicator_key: education.fsm_eligibility_share
-    data_set_id: "b79e17fb-82b1-4bcc-a295-a7ceea23e34a"
-    indicator_id: "PLACEHOLDER_FSM_INDICATOR_ID"
+    data_set_id: "019e7404-df19-71ce-90a8-f2e3db7dd7fa"
+    indicator_id: "empgu"
+    filter_selection:
+      uKCo4: "gvmMO"    # Pupil eligibility → FSM eligible
+      kQYhs: "f0yKY"    # Breakdown → All pupils
+      X41fK: "UZb0R"    # School type → Total
     filters: {}
     location_level: "LA"
     time_period_code: "AY"
@@ -32,8 +34,24 @@ mappings:
       - "FSM eligibility based on school census; uses 6-year-extended definition where available."
 
   - indicator_key: education.ks4_attainment_8
-    data_set_id: "PLACEHOLDER_KS4_DATASET_ID"
-    indicator_id: "PLACEHOLDER_ATTAINMENT_8_INDICATOR_ID"
+    data_set_id: "b3e19901-5d2b-b676-bb4c-e60937d74725"
+    indicator_id: "S9YVx"
+    filter_selection:
+      uRBo4: "bVOtT"    # Disadvantaged status → Total
+      lxdcB: "pcsSo"    # Ethnicity → Total
+      w7Ibx: "bBiet"    # Ethnicity major → Total
+      ULFRF: "Cm2Id"    # First language → Total
+      okYmX: "aqzLP"    # FSM status → Total
+      rtaNj: "mrV9K"    # KS2 scaled score → Total
+      G7Kgr: "V8F5X"    # Mobility → Total
+      3Km8u: "uiPo4"    # Prior attainment → Total
+      SPIVx: "rvQNj"    # Admissions policy → Total
+      ycTaB: "4Q8UZ"    # Religious character → Total
+      RWdka: "WGD2b"    # Sex → Total
+      bGMtT: "iFV6X"    # SEN primary need → Total
+      DqsQe: "qTajG"    # SEN provision → Total
+      0yZT5: "W1UF2"    # SEN status → Total
+      eUpuS: "BUx7J"    # Young carer → Total
     filters: {}
     location_level: "LA"
     time_period_code: "AY"
@@ -41,8 +59,11 @@ mappings:
     unit: "score"
 
   - indicator_key: education.persistent_absence_share
-    data_set_id: "PLACEHOLDER_ABSENCE_DATASET_ID"
-    indicator_id: "PLACEHOLDER_ABSENCE_INDICATOR_ID"
+    data_set_id: "019d209c-08dc-74b6-9edb-52d521406fcf"
+    indicator_id: "TuAuP"
+    filter_selection:
+      daL0Z: "qYfzj"    # Absence type → Persistent absence
+      OS5CL: "X5Vmf"    # School type → Total
     filters: {}
     location_level: "LA"
     time_period_code: "AY"
