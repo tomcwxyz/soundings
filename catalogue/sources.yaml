@@ -234,3 +234,14 @@ sources:
     # and per-LTLA counts so user reads stay warm.
     refresh_cadence: "0 4 * * *"
     rate_limit: { rps: 1 }
+
+  - id: sport_england
+    label: Sport England — Active Lives Adult Survey
+    publisher: Sport England
+    publisher_url: https://www.sportengland.org/research-and-data/data/active-lives
+    dataset_url: https://www.sportengland.org/research-and-data/data/active-lives/active-lives-data-tables
+    licence: OGL-UK-3.0
+    mode: loader
+    # Active Lives is published annually (typically Apr/May for the Nov
+    # survey year). Cron on the 15th of May at 04:00 UTC.
+    refresh_cadence: "0 4 15 5 *"

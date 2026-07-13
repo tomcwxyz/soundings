@@ -24,6 +24,7 @@ from soundings.adapters.openweather.adapter import OpenWeatherAdapter
 from soundings.adapters.osm_overpass.adapter import OsmOverpassAdapter
 from soundings.adapters.police_uk.adapter import PoliceUkAdapter
 from soundings.adapters.postcodes_io.adapter import PostcodesIoAdapter
+from soundings.adapters.sport_england import SportEnglandActiveLivesAdapter
 from soundings.adapters.threesixtygiving import ThreeSixtyGivingAdapter
 from soundings.alerts import send_alert
 from soundings.cache.answer_cache import AnswerCacheStore
@@ -80,6 +81,7 @@ def build_adapter_registry(engine: object) -> AdapterRegistry:
     registry.register("foe.green_space", FoeGreenSpaceAdapter)
     registry.register("threesixtygiving", ThreeSixtyGivingAdapter)
     registry.register("find_that_charity", FindThatCharityAdapter)
+    registry.register("sport_england", SportEnglandActiveLivesAdapter)
     return registry
 
 

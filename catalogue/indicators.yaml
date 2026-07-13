@@ -169,6 +169,15 @@ sources:
     refresh_cadence: "monthly"
     notes: "Amenity counts from OSM tag queries via Overpass API. Britain & Ireland regional instance. ODbL licence requires attribution."
 
+  sport_england:
+    label: "Sport England Active Lives Adult Survey"
+    publisher: "Sport England"
+    publisher_url: "https://www.sportengland.org/research-and-data/data/active-lives"
+    dataset_url: "https://www.sportengland.org/research-and-data/data/active-lives/active-lives-data-tables"
+    licence: "OGL-UK-3.0"
+    refresh_cadence: "annual"
+    notes: "Adult sport and physical activity levels by local authority. Active Lives Survey Nov 2024-25. England only."
+
 # -----------------------------------------------------------------------------
 # Indicators
 # -----------------------------------------------------------------------------
@@ -868,3 +877,45 @@ indicators:
     refresh_cadence: "daily"
     caveats:
       - "Food bank locations from Give Food, updated daily. Counts distribution locations whose coordinates fall within the place boundary."
+
+  # ---------------------------------------------------------------------------
+  # Sport and physical activity (Sport England Active Lives Survey)
+  # ---------------------------------------------------------------------------
+
+  - key: sport.active_share
+    label: "Adults who are active (150+ minutes/week)"
+    description: "Proportion of adults aged 16+ who are active — doing at least 150 minutes of moderate intensity physical activity per week."
+    unit: "proportion"
+    higher_is: "better"
+    source_id: "sport_england"
+    available_at: ["ltla24"]
+    refresh_cadence: "annual"
+    confidence: "official"
+    caveats:
+      - "Survey-based estimate. Sample sizes vary by LA; small LAs have wider confidence intervals."
+      - "England only. Active Lives Survey Nov 2024-25."
+
+  - key: sport.fairly_active_share
+    label: "Adults who are fairly active (30–149 minutes/week)"
+    description: "Proportion of adults aged 16+ who are fairly active — doing 30–149 minutes of moderate intensity physical activity per week."
+    unit: "proportion"
+    higher_is: "neutral"
+    source_id: "sport_england"
+    available_at: ["ltla24"]
+    refresh_cadence: "annual"
+    confidence: "official"
+    caveats:
+      - "Survey-based estimate. England only. Active Lives Survey Nov 2024-25."
+
+  - key: sport.inactive_share
+    label: "Adults who are inactive (<30 minutes/week)"
+    description: "Proportion of adults aged 16+ who are inactive — doing less than 30 minutes of moderate intensity physical activity per week."
+    unit: "proportion"
+    higher_is: "worse"
+    source_id: "sport_england"
+    available_at: ["ltla24"]
+    refresh_cadence: "annual"
+    confidence: "official"
+    caveats:
+      - "Survey-based estimate. Sample sizes vary by LA; small LAs have wider confidence intervals."
+      - "England only. Active Lives Survey Nov 2024-25."
