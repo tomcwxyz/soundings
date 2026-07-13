@@ -154,6 +154,7 @@ export interface OrganisationRef {
   classification: string[];
   registered_address_place_id: string | null;
   operates_in_place_ids: string[];
+  operates_in_place_names: string[];
   recent_grants: GrantRef[];
   latest_income: number | null;
   register_url: string | null;

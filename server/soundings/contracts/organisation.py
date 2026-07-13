@@ -27,6 +27,10 @@ class OrganisationRef(BaseModel):
     classification: list[str] = Field(default_factory=list)
     registered_address_place_id: str | None = None
     operates_in_place_ids: list[str] = Field(default_factory=list)
+    operates_in_place_names: list[str] = Field(
+        default_factory=list,
+        description="Place names corresponding to operates_in_place_ids, for display.",
+    )
     recent_grants: list[GrantRef] = Field(default_factory=list)
     latest_income: float | None = Field(
         default=None,

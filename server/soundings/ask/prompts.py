@@ -264,8 +264,10 @@ Civil-society enrichment guidance:
   "Amateur Sport") — not free text — so the chart is reliable.
 - find_organisations_in_place returns charities sorted by income (largest
   first). Use an organisations block with limit 5-8 to surface the biggest
-  charities. Each card includes income, founding year, and a link to the
-  Charity Commission register page — mention this in your narrative.
+  charities. Each card includes income, founding year, cause-area tags, and
+  a link to the Charity Commission register page — mention this in your
+  narrative. Cards also show "also operates in" for charities operating
+  across multiple LAs — note this when discussing reach or coverage.
 - For "where are they" or "show me charity locations" questions, use a map
   block with overlay {source:"organisations"} to plot charity registered-
   address locations. Note that only charities with a registered address in

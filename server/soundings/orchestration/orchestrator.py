@@ -822,6 +822,24 @@ class IndicatorOrchestrator:
                 )
             )
 
+        # Batch-resolve operates_in place IDs to names for display.
+        all_place_ids = set()
+        for org in orgs:
+            all_place_ids.update(org.operates_in_place_ids)
+        if all_place_ids:
+            async with self._engine.connect() as conn:
+                name_rows = (
+                    await conn.execute(
+                        text("SELECT id, name FROM geography.place WHERE id = ANY(:ids)"),
+                        {"ids": list(all_place_ids)},
+                    )
+                ).all()
+            place_names = {r.id: r.name for r in name_rows}
+            for org in orgs:
+                org.operates_in_place_names = [
+                    place_names[pid] for pid in org.operates_in_place_ids if pid in place_names
+                ]
+
         # Build source refs from the source_ids we collected
         sources = [
             SourceRef(

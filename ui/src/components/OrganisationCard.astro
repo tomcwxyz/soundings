@@ -69,6 +69,12 @@ const foundedYear = organisation.date_of_registration
     </div>
   )}
 
+  {organisation.operates_in_place_names.length > 1 && (
+    <p class="also-operates text-muted text-small">
+      Also operates in {organisation.operates_in_place_names.slice(1, 6).join(", ")}{organisation.operates_in_place_names.length > 6 ? ` +${organisation.operates_in_place_names.length - 6}` : ""}
+    </p>
+  )}
+
   {topGrants.length > 0 && (
     <div class="grants">
       <h5>Recent grants</h5>
@@ -136,6 +142,10 @@ const foundedYear = organisation.date_of_registration
     flex-wrap: wrap;
     gap: var(--space-xs);
     margin-top: var(--space-md);
+  }
+  .also-operates {
+    margin-top: var(--space-xs);
+    font-size: var(--font-size-xs);
   }
   .tag {
     font-size: var(--font-size-xs);

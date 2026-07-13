@@ -539,6 +539,19 @@
               }
               card.appendChild(tags);
             }
+            // Show "also operates in" when the charity operates in
+            // places beyond the one being queried.
+            if (org.operates_in_place_names && org.operates_in_place_names.length > 1) {
+              const otherNames = org.operates_in_place_names.filter(
+                (n: string) => n !== "",
+              );
+              if (otherNames.length > 1) {
+                const operates = document.createElement("p");
+                operates.className = "text-muted text-small org-also-in";
+                operates.textContent = `Also operates in ${otherNames.slice(1, 6).join(", ")}${otherNames.length > 6 ? " +" + (otherNames.length - 6) : ""}`;
+                card.appendChild(operates);
+              }
+            }
             if (org.recent_grants.length > 0) {
               const grants = document.createElement("ul");
               grants.className = "org-grants";
