@@ -31,6 +31,79 @@ def test_sse_watchdog_exceeds_orchestrator_request_timeout() -> None:
     assert SSE_WATCHDOG_SECONDS > REQUEST_TIMEOUT_SECONDS
 
 
+def test_extract_place_id_from_find_place_result() -> None:
+    """_extract_place_id should find a place_id from a find_place tool_result."""
+    import json
+
+    from soundings.http.ask import _extract_place_id
+
+    messages = [
+        {"role": "user", "content": "Where are the food banks in Leeds?"},
+        {
+            "role": "assistant",
+            "content": [
+                {"type": "tool_use", "id": "t1", "name": "find_place", "input": {"query": "Leeds"}}
+            ],
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": "t1",
+                    "content": json.dumps([{"id": "ltla24:E08000035", "name": "Leeds"}]),
+                }
+            ],
+        },
+    ]
+    assert _extract_place_id(messages) == "ltla24:E08000035"
+
+
+def test_extract_place_id_from_single_place_result() -> None:
+    """_extract_place_id should handle a single dict (not a list)."""
+    import json
+
+    from soundings.http.ask import _extract_place_id
+
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": "t1",
+                    "content": json.dumps({"id": "ltla24:E06000047", "name": "County Durham"}),
+                }
+            ],
+        },
+    ]
+    assert _extract_place_id(messages) == "ltla24:E06000047"
+
+
+def test_extract_place_id_returns_none_when_not_found() -> None:
+    """_extract_place_id should return None when no place_id is found."""
+    from soundings.http.ask import _extract_place_id
+
+    messages = [
+        {"role": "user", "content": "hello"},
+        {"role": "assistant", "content": [{"type": "text", "text": "hi"}]},
+    ]
+    assert _extract_place_id(messages) is None
+
+
+def test_extract_place_id_handles_non_json_tool_result() -> None:
+    """_extract_place_id should handle non-JSON tool_result content gracefully."""
+    from soundings.http.ask import _extract_place_id
+
+    messages = [
+        {
+            "role": "user",
+            "content": [{"type": "tool_result", "tool_use_id": "t1", "content": "not json"}],
+        },
+    ]
+    assert _extract_place_id(messages) is None
+
+
 async def test_ask_returns_503_without_api_key() -> None:
     from soundings.app import app
     from soundings.core.config import get_settings

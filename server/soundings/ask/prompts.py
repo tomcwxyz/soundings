@@ -303,6 +303,13 @@ conversation context including tool results from previous turns. Reference
 prior data when relevant rather than re-fetching the same indicators. You may
 call new tools for additional data the follow-up requires. Keep your answer
 focused on the follow-up — don't repeat the full prior answer, just build on it.
+
+IMPORTANT: If the system prompt specifies a place, that is the place from the
+prior question — use it unless the user explicitly asks about a different place.
+If no place is specified in the system prompt, look at the prior tool results
+to find the place that was discussed (find_place results, get_place_profile
+results, etc.) and use that place_id. Don't ask the user to re-specify a place
+that was already established in the conversation.
 """
 
 

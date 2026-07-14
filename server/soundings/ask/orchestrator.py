@@ -16,6 +16,7 @@ which receives events via the callback.
 """
 
 import asyncio
+import json
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -80,12 +81,17 @@ class AskOrchestrator:
         callback: SSECallback,
         *,
         prior_messages: list[dict[str, Any]] | None = None,
+        skip_cache: bool = False,
     ) -> list[dict[str, Any]] | None:
         """Run the tool-use loop, streaming events via callback.
 
         If ``prior_messages`` is provided (multi-turn follow-up), the loop
         continues from the existing message history. Otherwise a fresh
         conversation starts with just the user query.
+
+        If ``skip_cache`` is True, the answer cache is bypassed — used when
+        a conversation store is active so the full message history (needed
+        for follow-ups) is always captured.
 
         If an answer cache is configured and a fresh entry exists for
         this query, replay the cached events without calling Claude.
@@ -94,8 +100,9 @@ class AskOrchestrator:
         Returns the full messages list on success (for conversation
         storage), or None on error/timeout.
         """
-        # ── Cache check (first questions only — follow-ups are contextual) ──
-        if self._answer_cache is not None and prior_messages is None:
+        # ── Cache check (first questions only — follow-ups are contextual).
+        # Skip when explicitly requested (conversation store is active).
+        if self._answer_cache is not None and prior_messages is None and not skip_cache:
             place_id = self._prompt_builder.place_id
             cached = await self._answer_cache.get(query, place_id)
             if cached is not None:
@@ -345,7 +352,7 @@ class AskOrchestrator:
                     {
                         "type": "tool_result",
                         "tool_use_id": tb["id"],
-                        "content": str(result),
+                        "content": json.dumps(result),
                     }
                 )
 

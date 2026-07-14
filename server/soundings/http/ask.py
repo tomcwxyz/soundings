@@ -43,39 +43,46 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=503, detail="Anthropic API key not configured")
 
-    # Build place context if a place_id is provided
-    place_name: str | None = None
-    if input.place_id:
-        from sqlalchemy import text
-
-        async with request.app.state.engine.connect() as conn:
-            row = (
-                await conn.execute(
-                    text("SELECT name FROM geography.place WHERE id = :id"),
-                    {"id": input.place_id},
-                )
-            ).first()
-        if row:
-            place_name = row.name
-
     # ── Conversation handling ──────────────────────────────────────
     conversation_store = getattr(request.app.state, "conversation_store", None)
     prior_messages: list[dict[str, Any]] | None = None
     conversation_id: str | None = None
+    stored_place_id: str | None = None
 
     if input.conversation_id and conversation_store:
         conv = conversation_store.get(input.conversation_id)
         if conv is not None:
             conversation_id = input.conversation_id
             prior_messages = conv.messages
+            stored_place_id = conv.place_id
 
     # New conversation (or conversation not found — start fresh)
     if conversation_id is None and conversation_store:
         conversation_id = conversation_store.create(place_id=input.place_id)
 
+    # For follow-ups, use the stored place_id if the client didn't send one.
+    # The first question may have resolved a place via find_place (no place_id
+    # in the request), and we need to maintain that context.
+    effective_place_id = input.place_id or stored_place_id
+
+    # Build place context if we have a place_id (from request or conversation)
+    place_name: str | None = None
+    if effective_place_id:
+        from sqlalchemy import text
+
+        async with request.app.state.engine.connect() as conn:
+            row = (
+                await conn.execute(
+                    text("SELECT name FROM geography.place WHERE id = :id"),
+                    {"id": effective_place_id},
+                )
+            ).first()
+        if row:
+            place_name = row.name
+
     prompt_builder = SystemPromptBuilder(
         place_name=place_name,
-        place_id=input.place_id,
+        place_id=effective_place_id,
         is_follow_up=prior_messages is not None,
     )
 
@@ -110,8 +117,16 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
             )
 
         # Run the orchestrator in the background
+        # Skip answer cache when conversations are active — we need the full
+        # message history (tool results) stored for follow-up questions.
+        skip_cache = conversation_store is not None
         task = asyncio.create_task(
-            orchestrator.run(input.query, callback, prior_messages=prior_messages)
+            orchestrator.run(
+                input.query,
+                callback,
+                prior_messages=prior_messages,
+                skip_cache=skip_cache,
+            )
         )
 
         # Stream events as SSE. The per-event wait is a backstop set just above
@@ -133,9 +148,54 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
         result_messages = await task
         if conversation_id and conversation_store and result_messages:
             conversation_store.append_messages(conversation_id, result_messages)
+            # If the conversation doesn't have a place_id yet, try to extract
+            # one from the tool results (e.g. find_place resolved the place).
+            if not conversation_store.get(conversation_id).place_id:
+                extracted = _extract_place_id(result_messages)
+                if extracted:
+                    conversation_store.update_place_id(conversation_id, extracted)
 
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+def _extract_place_id(messages: list[dict[str, Any]]) -> str | None:
+    """Try to find a place_id from tool results in the message history.
+
+    Looks for find_place tool results first (most reliable), then falls back
+    to any tool result that contains a place_id field. Returns the first
+    match found — the first question's place is the most relevant.
+    """
+    import json
+
+    for msg in messages:
+        if msg.get("role") != "user":
+            continue
+        content = msg.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_result":
+                continue
+            raw = block.get("content", "")
+            if not isinstance(raw, str):
+                continue
+            try:
+                parsed = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            # find_place returns a list of place objects or a single place
+            if isinstance(parsed, dict):
+                pid = parsed.get("id") or parsed.get("place_id")
+                if pid and isinstance(pid, str) and ":" in pid:
+                    return pid
+            elif isinstance(parsed, list):
+                for item in parsed:
+                    if isinstance(item, dict):
+                        pid = item.get("id") or item.get("place_id")
+                        if pid and isinstance(pid, str) and ":" in pid:
+                            return pid
+    return None

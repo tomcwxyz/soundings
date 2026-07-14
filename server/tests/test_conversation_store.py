@@ -86,3 +86,17 @@ def test_each_create_gets_unique_id() -> None:
     cid1 = store.create()
     cid2 = store.create()
     assert cid1 != cid2
+
+
+def test_update_place_id() -> None:
+    store = ConversationStore()
+    cid = store.create()
+    assert store.get(cid).place_id is None
+    store.update_place_id(cid, "ltla24:E08000035")
+    assert store.get(cid).place_id == "ltla24:E08000035"
+
+
+def test_update_place_id_unknown_is_noop() -> None:
+    store = ConversationStore()
+    store.update_place_id("nonexistent", "ltla24:E08000035")
+    # Should not raise

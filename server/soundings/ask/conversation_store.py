@@ -58,6 +58,15 @@ class ConversationStore:
         conv.messages.extend(messages)
         conv.last_active = datetime.now(tz=UTC)
 
+    def update_place_id(self, conversation_id: str, place_id: str) -> None:
+        """Update the place_id for a conversation (e.g. when the first
+        question resolved a place via find_place rather than a request param)."""
+        conv = self._store.get(conversation_id)
+        if conv is None:
+            return
+        conv.place_id = place_id
+        conv.last_active = datetime.now(tz=UTC)
+
     def _cleanup_expired(self) -> None:
         """Remove conversations whose TTL has expired."""
         now = datetime.now(tz=UTC)
