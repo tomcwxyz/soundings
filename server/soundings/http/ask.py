@@ -31,6 +31,7 @@ SSE_WATCHDOG_SECONDS = REQUEST_TIMEOUT_SECONDS + 10.0
 class AskInput(BaseModel):
     query: str
     place_id: str | None = None
+    conversation_id: str | None = None
 
 
 @router.post("/ask")
@@ -57,9 +58,25 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
         if row:
             place_name = row.name
 
+    # ── Conversation handling ──────────────────────────────────────
+    conversation_store = getattr(request.app.state, "conversation_store", None)
+    prior_messages: list[dict[str, Any]] | None = None
+    conversation_id: str | None = None
+
+    if input.conversation_id and conversation_store:
+        conv = conversation_store.get(input.conversation_id)
+        if conv is not None:
+            conversation_id = input.conversation_id
+            prior_messages = conv.messages
+
+    # New conversation (or conversation not found — start fresh)
+    if conversation_id is None and conversation_store:
+        conversation_id = conversation_store.create(place_id=input.place_id)
+
     prompt_builder = SystemPromptBuilder(
         place_name=place_name,
         place_id=input.place_id,
+        is_follow_up=prior_messages is not None,
     )
 
     dispatcher = ToolDispatcher(request.app.state)
@@ -80,8 +97,22 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
         async def callback(event: dict[str, Any]) -> None:
             await queue.put(json.dumps(event))
 
+        # Emit conversation_id as the first event so the client can
+        # reference it in follow-up requests.
+        if conversation_id:
+            await queue.put(
+                json.dumps(
+                    {
+                        "type": "conversation",
+                        "conversation_id": conversation_id,
+                    }
+                )
+            )
+
         # Run the orchestrator in the background
-        task = asyncio.create_task(orchestrator.run(input.query, callback))
+        task = asyncio.create_task(
+            orchestrator.run(input.query, callback, prior_messages=prior_messages)
+        )
 
         # Stream events as SSE. The per-event wait is a backstop set just above
         # the orchestrator's own REQUEST_TIMEOUT_SECONDS budget, so the
@@ -98,8 +129,10 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Stream timeout'})}\n\n"
                 break
 
-        # Ensure the task completes
-        await task
+        # Ensure the task completes and store messages for follow-ups
+        result_messages = await task
+        if conversation_id and conversation_store and result_messages:
+            conversation_store.append_messages(conversation_id, result_messages)
 
     return StreamingResponse(
         event_stream(),

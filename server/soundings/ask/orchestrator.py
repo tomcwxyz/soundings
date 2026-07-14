@@ -78,29 +78,43 @@ class AskOrchestrator:
         self,
         query: str,
         callback: SSECallback,
-    ) -> None:
+        *,
+        prior_messages: list[dict[str, Any]] | None = None,
+    ) -> list[dict[str, Any]] | None:
         """Run the tool-use loop, streaming events via callback.
+
+        If ``prior_messages`` is provided (multi-turn follow-up), the loop
+        continues from the existing message history. Otherwise a fresh
+        conversation starts with just the user query.
 
         If an answer cache is configured and a fresh entry exists for
         this query, replay the cached events without calling Claude.
         Otherwise, run the loop, collect events, and store them.
+
+        Returns the full messages list on success (for conversation
+        storage), or None on error/timeout.
         """
-        # ── Cache check ──────────────────────────────────────────────
-        if self._answer_cache is not None:
+        # ── Cache check (first questions only — follow-ups are contextual) ──
+        if self._answer_cache is not None and prior_messages is None:
             place_id = self._prompt_builder.place_id
             cached = await self._answer_cache.get(query, place_id)
             if cached is not None:
                 logger.info("Answer cache HIT for query: %s", query[:80])
                 for event in cached:
                     await _emit(callback, event)
-                return
+                return None
 
         # ── Cache miss — run the Claude loop ─────────────────────────
         client = get_anthropic_client(self._api_key)
         system_prompt = self._prompt_builder.build()
         tool_specs = self._dispatcher.tool_specs()
 
-        messages: list[dict[str, Any]] = [{"role": "user", "content": query}]
+        # Start from prior messages (follow-up) or a fresh user turn.
+        if prior_messages:
+            messages: list[dict[str, Any]] = list(prior_messages)
+            messages.append({"role": "user", "content": query})
+        else:
+            messages = [{"role": "user", "content": query}]
 
         # Collect events for caching if the run succeeds
         collected_events: list[dict[str, Any]] | None = [] if self._answer_cache else None
@@ -127,8 +141,12 @@ class AskOrchestrator:
                 )
             # Run succeeded — store the collected events in the answer cache.
             # Only cache if we got a "done" event (not an error/timeout).
-            if collected_events is not None and any(
-                e.get("type") == "done" for e in collected_events
+            # Skip caching for follow-ups (contextual — same query in different
+            # conversations yields different answers).
+            if (
+                collected_events is not None
+                and prior_messages is None
+                and any(e.get("type") == "done" for e in collected_events)
             ):
                 try:
                     await self._answer_cache.put(
@@ -140,11 +158,14 @@ class AskOrchestrator:
                 except Exception:
                     # Cache write failure shouldn't fail the response
                     logger.warning("Answer cache store failed", exc_info=True)
+            return messages
         except TimeoutError:
             await _emit(callback, {"type": "error", "message": "Request timed out"})
+            return None
         except Exception as e:
             logger.exception("Ask orchestrator error")
             await _emit(callback, {"type": "error", "message": str(e)})
+            return None
 
     async def _loop(
         self,

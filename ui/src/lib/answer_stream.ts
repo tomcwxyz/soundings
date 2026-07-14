@@ -28,6 +28,7 @@ export interface SourceRef {
 }
 
 export type AskEvent =
+  | { type: "conversation"; conversation_id: string }
   | { type: "status"; message: string }
   | { type: "block"; block: AnswerBlock }
   | { type: "sources"; sources: SourceRef[] }
@@ -61,7 +62,15 @@ export function parseSSEStream(raw: string): AskEvent[] {
     if (typeof parsed !== "object" || parsed === null) continue;
     const evt = parsed as Record<string, unknown>;
     const t = typeof evt.type === "string" ? evt.type : "";
-    if (t === "status" && typeof evt.message === "string") {
+    if (
+      t === "conversation" &&
+      typeof evt.conversation_id === "string"
+    ) {
+      events.push({
+        type: "conversation",
+        conversation_id: evt.conversation_id,
+      });
+    } else if (t === "status" && typeof evt.message === "string") {
       events.push({ type: "status", message: evt.message });
     } else if (t === "block" && typeof evt.block === "object" && evt.block !== null) {
       events.push({ type: "block", block: evt.block as AnswerBlock });

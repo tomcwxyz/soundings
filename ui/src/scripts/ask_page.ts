@@ -1197,7 +1197,10 @@
           host.appendChild(container);
         }
 
-        function renderBlock(block: { type: string; [k: string]: unknown }) {
+        function renderBlockInto(
+          target: HTMLElement,
+          block: { type: string; [k: string]: unknown },
+        ) {
           const host = document.createElement("div");
           host.className = "answer-block block-" + block.type;
           switch (block.type) {
@@ -1281,7 +1284,11 @@
               host.appendChild(ph);
             }
           }
-          surface.appendChild(host);
+          target.appendChild(host);
+        }
+
+        function renderBlock(block: { type: string; [k: string]: unknown }) {
+          renderBlockInto(surface, block);
         }
 
         function renderSources(sources: { source_id?: string; source_label?: string; publisher?: string; dataset_url?: string }[]) {
@@ -1336,6 +1343,10 @@
         const body: Record<string, unknown> = { query };
         if (placeId) body.place_id = placeId;
 
+        // ── Multi-turn conversation state ──────────────────────────
+        let conversationId: string | null = null;
+        let isStreaming = false;
+
         // Clear the "Thinking…" status placeholder once first event arrives.
         let firstEvent = true;
 
@@ -1346,8 +1357,127 @@
           firstEvent = false;
         }
 
+        // ── Follow-up input ─────────────────────────────────────────
+        let followUpForm: HTMLFormElement | null = null;
+
+        function removeFollowUpForm() {
+          if (followUpForm) {
+            followUpForm.remove();
+            followUpForm = null;
+          }
+        }
+
+        function renderFollowUpForm() {
+          removeFollowUpForm();
+          if (!conversationId) return;
+          followUpForm = document.createElement("form");
+          followUpForm.className = "follow-up-form";
+          const input = document.createElement("input");
+          input.type = "text";
+          input.className = "follow-up-input";
+          input.placeholder = "Ask a follow-up…";
+          input.autocomplete = "off";
+          input.required = true;
+          const btn = document.createElement("button");
+          btn.type = "submit";
+          btn.className = "follow-up-submit";
+          btn.textContent = "Ask";
+          followUpForm.append(input, btn);
+          followUpForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (isStreaming || !input.value.trim()) return;
+            startFollowUp(input.value.trim());
+          });
+          surface.appendChild(followUpForm);
+          input.focus();
+        }
+
+        function startFollowUp(q: string) {
+          if (!conversationId) return;
+          isStreaming = true;
+          removeFollowUpForm();
+
+          // Create a new turn container
+          const turn = document.createElement("div");
+          turn.className = "conversation-turn";
+          const qEl = document.createElement("blockquote");
+          qEl.className = "turn-question";
+          qEl.textContent = q;
+          turn.appendChild(qEl);
+          const aEl = document.createElement("div");
+          aEl.className = "turn-answer";
+          turn.appendChild(aEl);
+          surface.appendChild(turn);
+
+          // Reset step-tracking state for this turn
+          stepsEl = null;
+          firstEvent = true;
+
+          const fuBody: Record<string, unknown> = { query: q };
+          if (placeId) fuBody.place_id = placeId;
+          fuBody.conversation_id = conversationId;
+
+          // Temporarily redirect renderBlock to render into the turn's answer area
+          const origRenderBlock = renderBlock;
+          const origRenderError = renderError;
+          renderBlock = function (block: AnswerBlock) {
+            renderBlockInto(aEl, block);
+          };
+          renderError = function (message: string) {
+            const div = document.createElement("div");
+            div.className = "answer-error";
+            div.textContent = "Sorry — something went wrong: " + message;
+            aEl.appendChild(div);
+          };
+
+          streamAsk(apiBase + "/v1/ask", fuBody, (event) => {
+            switch (event.type) {
+              case "conversation":
+                // Update conversation ID if server sends a new one
+                conversationId = event.conversation_id;
+                break;
+              case "status":
+                clearThinking();
+                pushStep(friendlyStep(event.message));
+                break;
+              case "block":
+                clearThinking();
+                renderBlock(event.block);
+                break;
+              case "sources":
+                renderSources(event.sources);
+                break;
+              case "done":
+                clearThinking();
+                finishSteps();
+                isStreaming = false;
+                renderBlock = origRenderBlock;
+                renderError = origRenderError;
+                renderFollowUpForm();
+                break;
+              case "error":
+                renderError(event.message);
+                isStreaming = false;
+                renderBlock = origRenderBlock;
+                renderError = origRenderError;
+                renderFollowUpForm();
+                break;
+            }
+          }).catch((err) => {
+            renderError(err instanceof Error ? err.message : String(err));
+            isStreaming = false;
+            renderBlock = origRenderBlock;
+            renderError = origRenderError;
+            renderFollowUpForm();
+          });
+        }
+
+        // ── Initial (first) question stream ────────────────────────
         streamAsk(apiBase + "/v1/ask", body, (event) => {
           switch (event.type) {
+            case "conversation":
+              conversationId = event.conversation_id;
+              break;
             case "status":
               clearThinking();
               pushStep(friendlyStep(event.message));
@@ -1362,6 +1492,8 @@
             case "done":
               clearThinking();
               finishSteps();
+              isStreaming = false;
+              renderFollowUpForm();
               break;
             case "error":
               renderError(event.message);
@@ -1370,4 +1502,5 @@
         }).catch((err) => {
           renderError(err instanceof Error ? err.message : String(err));
         });
+        isStreaming = true;
       }

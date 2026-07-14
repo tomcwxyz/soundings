@@ -297,6 +297,15 @@ Civil-society enrichment guidance:
 """
 
 
+_FOLLOW_UP_GUIDANCE = """\
+This is a follow-up question in an ongoing conversation. You have the prior
+conversation context including tool results from previous turns. Reference
+prior data when relevant rather than re-fetching the same indicators. You may
+call new tools for additional data the follow-up requires. Keep your answer
+focused on the follow-up — don't repeat the full prior answer, just build on it.
+"""
+
+
 class SystemPromptBuilder:
     """Builds the system prompt with optional pinned-place context."""
 
@@ -304,9 +313,12 @@ class SystemPromptBuilder:
         self,
         place_name: str | None = None,
         place_id: str | None = None,
+        *,
+        is_follow_up: bool = False,
     ) -> None:
         self.place_name = place_name
         self.place_id = place_id
+        self.is_follow_up = is_follow_up
 
     def build(self) -> str:
         parts: list[str] = [
@@ -326,4 +338,6 @@ class SystemPromptBuilder:
                     " user asks about a different place.",
                 ]
             )
+        if self.is_follow_up:
+            parts.extend(["", _FOLLOW_UP_GUIDANCE])
         return "\n".join(parts)
