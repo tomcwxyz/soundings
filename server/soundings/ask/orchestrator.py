@@ -313,6 +313,21 @@ class AskOrchestrator:
                             },
                         )
 
+                    # Append a synthetic tool_result for compose_answer (and
+                    # any earlier non-terminal tools in this iteration) so the
+                    # message history is valid for follow-up questions.
+                    # Without this, messages ends with an assistant tool_use
+                    # block but no matching tool_result — the API rejects the
+                    # next call when the history is replayed.
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tb["id"],
+                            "content": "Answer composed and streamed to user.",
+                        }
+                    )
+                    messages.append({"role": "user", "content": tool_results})
+
                     sources = [s.model_dump(mode="json") for s in self._dispatcher.sources]
                     await _emit(callback, {"type": "sources", "sources": sources})
                     await _emit(callback, {"type": "done"})
@@ -337,7 +352,21 @@ class AskOrchestrator:
             messages.append({"role": "user", "content": tool_results})
             continue
 
-        # Max iterations exceeded
+        # Max iterations exceeded. Append tool_results for any pending
+        # tool_use blocks so the message history stays valid if the caller
+        # stores it anyway (the error path means this is unlikely to be
+        # useful, but defensive correctness is cheap here).
+        if tool_use_blocks:
+            for tb in tool_use_blocks:
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": tb["id"],
+                        "content": "Tool not completed (max iterations exceeded).",
+                    }
+                )
+            messages.append({"role": "user", "content": tool_results})
+
         await _emit(
             callback,
             {
