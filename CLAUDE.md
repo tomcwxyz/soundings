@@ -41,11 +41,17 @@ An open insight commons for understanding UK places. Single MCP server wrapping 
 
 ## State & Progress
 
-> Updated: 2026-05-24
-> Phase: **5 complete**, Phase 6 — new data sources (in planning)
-> Status: Design system shipped, new viz implemented, planning Phase 6 data expansion
+> Updated: 2026-08-24
+> Phase: **Phase 7 — Observations MVP** in progress on `feat/observations-mvp`
+> Status: Hybrid contribution layer (observation schema + submission + `get_observations` tool + UI panel/stream/contribute page) shipped.
 
 See PLAN.md for task tracking, STATE.md for system state.
+
+## Phase 7: Observations MVP (Hybrid Contribution Layer)
+
+A detailed plan exists at `docs/plans/2026-08-24-observations-mvp.md`.
+
+**Hybrid contribution layer:** organisations already in `data.organisation` (Charity Commission, FindThatCharity) self-identify via magic-link auth; organisations not in any register get a lightweight internal profile created on sign-up (`source_id = 'ctx.manual_signup'`). Both paths produce a `data.organisation.id` that observations reference — forward-compatible with future v2 self-hosted profiles. Observations are stored in a new `data.observation` table, surfaced via `get_observations` (HTTP + MCP + ask dispatcher), and displayed on place pages + a public `/observations` stream. Append-only, auto-accept, public attribution for the MVP.
 
 ## Phase 6: New Data Sources (Planning)
 
