@@ -19,6 +19,7 @@ import type {
   FindPlaceResponse,
   FindOrganisationsInPlaceResponse,
   GetIndicatorsResponse,
+  GetObservationsResponse,
   GetTrendResponse,
   PlaceProfile,
 } from "./types";
@@ -267,4 +268,28 @@ export async function getCorpusManifest(
     throw new Error(`/v1/corpus/manifest ${response.status} ${response.statusText}`);
   }
   return (await response.json()) as CorpusManifest;
+}
+
+// get_observations (Phase 7 / observations MVP) ------------------------------
+
+export async function getObservations(
+  params: {
+    place_id?: string;
+    theme?: string;
+    indicator_key?: string;
+    organisation_id?: string;
+    limit?: number;
+  } = {},
+  opts: { cookieHeader?: string } = {},
+): Promise<GetObservationsResponse> {
+  const body: Record<string, unknown> = {};
+  if (params.place_id !== undefined) body.place_id = params.place_id;
+  if (params.theme !== undefined) body.theme = params.theme;
+  if (params.indicator_key !== undefined) body.indicator_key = params.indicator_key;
+  if (params.organisation_id !== undefined)
+    body.organisation_id = params.organisation_id;
+  if (params.limit !== undefined) body.limit = params.limit;
+  return postJSON<GetObservationsResponse>("/v1/tools/get_observations", body, {
+    cookieHeader: opts.cookieHeader,
+  });
 }
