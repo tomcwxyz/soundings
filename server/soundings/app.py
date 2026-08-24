@@ -48,6 +48,7 @@ from soundings.http.contribute import router as contribute_router
 from soundings.http.corpus import router as corpus_router
 from soundings.http.errors import install_error_envelope
 from soundings.http.health import router as health_router
+from soundings.http.observations import router as observations_router
 from soundings.http.place_geometry import router as place_geometry_router
 from soundings.http.session import SessionMiddleware
 from soundings.http.sources import router as sources_router
@@ -164,4 +165,5 @@ app.include_router(capture_router)
 app.include_router(corpus_router)
 app.include_router(place_geometry_router)
 app.include_router(contribute_router)
+app.include_router(observations_router)
 install_error_envelope(app)
