@@ -37,12 +37,14 @@ from soundings.capture.sanitisation.build import build_default_pipeline
 from soundings.capture.sanitisation.config import load_sanitisation_config
 from soundings.capture.sanitiser_worker import SanitiserWorker
 from soundings.catalogue.loader import load_catalogue_into_db
+from soundings.contribute.auth import MagicLinkService, StubEmailSender
 from soundings.core.config import get_settings
 from soundings.db.engine import get_engine
 from soundings.geography.service import GeographyService
 from soundings.http.ask import router as ask_router
 from soundings.http.capture import router as capture_router
 from soundings.http.catalogue import router as catalogue_router
+from soundings.http.contribute import router as contribute_router
 from soundings.http.corpus import router as corpus_router
 from soundings.http.errors import install_error_envelope
 from soundings.http.health import router as health_router
@@ -112,6 +114,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine,
         threshold=sanitisation_config.asker_purpose.rate_limit.full_consent_per_session_per_hour,
     )
+    app.state.magic_link_service = MagicLinkService(engine, StubEmailSender())
 
     # Full six-rule pipeline assembled by build_default_pipeline. Loads
     # LSOA/MSOA names from geography.place and spaCy en_core_web_sm.
@@ -160,4 +163,5 @@ app.include_router(catalogue_router)
 app.include_router(capture_router)
 app.include_router(corpus_router)
 app.include_router(place_geometry_router)
+app.include_router(contribute_router)
 install_error_envelope(app)
