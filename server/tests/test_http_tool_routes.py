@@ -105,6 +105,7 @@ async def test_get_v1_tools_lists_specs() -> None:
     assert names == {
         "find_place",
         "get_indicators",
+        "get_observations",
         "get_place_profile",
         "compare_places",
         "get_trend",

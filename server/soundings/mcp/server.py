@@ -22,6 +22,10 @@ from soundings.tools.get_civil_society_profile import (
     get_civil_society_profile,
 )
 from soundings.tools.get_indicators import GetIndicatorsInput, get_indicators
+from soundings.tools.get_observations import (
+    GetObservationsInput,
+    get_observations,
+)
 from soundings.tools.get_place_profile import GetPlaceProfileInput, get_place_profile
 from soundings.tools.get_trend import GetTrendInput, get_trend
 
@@ -69,6 +73,28 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
                 format=format,
             ),
             state.orchestrator,
+        )
+        return result.model_dump(mode="json")
+
+    @mcp.tool(name="get_observations")
+    async def _get_observations(
+        place_id: str | None = None,
+        theme: str | None = None,
+        indicator_key: str | None = None,
+        organisation_id: str | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        if state is None:
+            raise RuntimeError("MCP get_observations invoked without app state")
+        result = await get_observations(
+            GetObservationsInput(
+                place_id=place_id,
+                theme=theme,
+                indicator_key=indicator_key,
+                organisation_id=organisation_id,
+                limit=limit,
+            ),
+            state.engine,
         )
         return result.model_dump(mode="json")
 
