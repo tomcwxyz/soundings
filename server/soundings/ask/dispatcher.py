@@ -58,6 +58,13 @@ from soundings.tools.get_indicators import (
 from soundings.tools.get_indicators import (
     tool_spec as get_indicators_spec,
 )
+from soundings.tools.get_observations import (
+    GetObservationsInput,
+    get_observations,
+)
+from soundings.tools.get_observations import (
+    tool_spec as get_observations_spec,
+)
 from soundings.tools.get_peer_distribution import (
     GetPeerDistributionInput,
     get_peer_distribution,
@@ -145,6 +152,7 @@ class ToolDispatcher:
             detect_insights_spec(),
             get_peer_dist_spec(),
             get_sub_areas_spec(),
+            get_observations_spec(),
             {
                 "name": TERMINAL_TOOL,
                 "description": COMPOSE_ANSWER_DESCRIPTION,
@@ -250,6 +258,7 @@ class ToolDispatcher:
             "detect_insights": self._handle_detect_insights,
             "get_peer_distribution": self._handle_get_peer_distribution,
             "get_sub_areas": self._handle_get_sub_areas,
+            "get_observations": self._handle_get_observations,
         }
 
     # --- Non-terminal handlers -------------------------------------------
@@ -302,6 +311,11 @@ class ToolDispatcher:
     async def _handle_get_sub_areas(self, args: dict[str, Any]) -> dict[str, Any]:
         model = GetSubAreasInput.model_validate(args)
         result = await get_sub_areas(model, self._state.orchestrator, self._state.engine)
+        return result.model_dump(mode="json")
+
+    async def _handle_get_observations(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetObservationsInput.model_validate(args)
+        result = await get_observations(model, self._state.engine)
         return result.model_dump(mode="json")
 
     @property
