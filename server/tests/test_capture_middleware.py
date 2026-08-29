@@ -120,10 +120,7 @@ async def test_middleware_captures_ask_query_and_sse_sources() -> None:
         assert body["query"] == "How is Stockton doing?"
 
         async def events() -> Any:
-            yield (
-                'data: {"type":"sources","sources":'
-                '[{"source_id":"ons.aps"}]}\n\n'
-            )
+            yield ('data: {"type":"sources","sources":[{"source_id":"ons.aps"}]}\n\n')
             yield 'data: {"type":"done"}\n\n'
 
         return StreamingResponse(events(), media_type="text/event-stream")
