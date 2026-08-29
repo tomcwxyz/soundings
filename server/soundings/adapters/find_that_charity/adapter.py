@@ -62,10 +62,10 @@ class FindThatCharityAdapter(PassthroughAdapter):
         del filters, limit
         country = self._country_from_place_id(place_id)
         if country in {"Scotland", "Northern Ireland"}:
-            # FTC v1 has direct lookup but no country/place discovery endpoint.
-            # Returning no organisations is safer than presenting a national
-            # slice as if it were specific to the requested local authority.
-            return []
+            raise NotImplementedError(
+                "Find That Charity v1 does not provide place discovery for "
+                f"{country}; local organisation coverage is unavailable"
+            )
         return []
 
     def _country_from_place_id(self, place_id: str) -> str | None:
