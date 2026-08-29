@@ -64,6 +64,26 @@ async def test_client_omits_date_when_not_supplied() -> None:
     assert "lat=54.0" in str(captured["url"])
 
 
+async def test_client_retries_429_then_returns_results() -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        del request
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(429, headers={"Retry-After": "0.001"})
+        return httpx.Response(200, json=[{"category": "all-crime"}])
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as http:
+        client = PoliceUkClient(http_client=http)
+        crimes = await client.get_crimes(category="all-crime", lat=54.0, lng=-1.0)
+
+    assert attempts == 2
+    assert crimes == [{"category": "all-crime"}]
+
+
 async def test_client_returns_empty_list_on_404() -> None:
     """Police.uk returns 404 for points outside any force boundary —
     treat as 'no crimes here' rather than a fatal error."""
