@@ -1,18 +1,19 @@
 """Find That Charity adapter — passthrough mode for cross-jurisdiction lookup.
 
-This adapter provides organisation lookup for Scotland and Northern Ireland.
-England/Wales uses the Charity Commission loader (data.organisation table).
+This adapter previously provided organisation lookup for Scotland and Northern
+Ireland. Find That Charity v1 removed the filtered country search endpoint that
+implementation depended on, so place discovery is currently disabled rather
+than returning misleading country-level results as if they were local.
+England/Wales continues to use the Charity Commission loader.
 
 Per Phase 4 Block C:
 - source_id: "find_that_charity"
 - mode: "passthrough"
 - ttl: 168 hours (weekly)
 
-Does NOT publish indicators (FTC count is unreliable — it aggregates
-multiple regulators). Only implements `fetch_organisations`:
-- Scotland → search with country=Scotland
-- Northern Ireland → country=Northern Ireland
-- England/Wales → returns [] (E&W goes via CC loader)
+Does NOT publish indicators. Direct FTC charity lookup remains available in
+the client for enrichment/testing, but `fetch_organisations` returns [] until
+Soundings has a genuine area-discovery source for Scotland and Northern Ireland.
 """
 
 from collections.abc import Callable
@@ -58,43 +59,14 @@ class FindThatCharityAdapter(PassthroughAdapter):
         - NI -> country=Northern Ireland
         - England/Wales -> returns [] (E&W goes via CC loader)
         """
-        # Resolve place country from place_id prefix (no DB round-trip needed)
+        del filters, limit
         country = self._country_from_place_id(place_id)
-
-        if country == "Scotland":
-            ftc_country = "Scotland"
-        elif country == "Northern Ireland":
-            ftc_country = "Northern Ireland"
-        else:
-            # England/Wales -> E&W goes via CC loader, not FTC
+        if country in {"Scotland", "Northern Ireland"}:
+            # FTC v1 has direct lookup but no country/place discovery endpoint.
+            # Returning no organisations is safer than presenting a national
+            # slice as if it were specific to the requested local authority.
             return []
-
-        try:
-            results = await self._ftc.search(
-                country=ftc_country,
-                limit=limit,
-            )
-        except Exception:
-            # FTC lookup failed — return empty with caveat in orchestrator
-            return []
-
-        source_ref = await self._build_source_ref(
-            retrieved_at=self._now(),
-            cache_status="live",
-        )
-
-        return [
-            OrganisationRef(
-                id=r.id,
-                name=r.name,
-                classification=[],
-                registered_address_place_id=None,  # FTC doesn't give us this
-                operates_in_place_ids=[],
-                recent_grants=[],
-                source=source_ref,
-            )
-            for r in results
-        ]
+        return []
 
     def _country_from_place_id(self, place_id: str) -> str | None:
         """Derive country from place_id prefix — no DB query needed."""
