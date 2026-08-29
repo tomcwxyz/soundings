@@ -317,8 +317,7 @@ async def test_orchestrator_cache_read_failure_falls_back_to_claude(fake_cache):
 
     assert len(fake_client.messages.calls) == 1
     assert any(
-        e.get("type") == "block"
-        and e.get("block", {}).get("markdown") == "Fresh answer"
+        e.get("type") == "block" and e.get("block", {}).get("markdown") == "Fresh answer"
         for e in events
     )
 
