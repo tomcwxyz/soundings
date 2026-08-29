@@ -872,6 +872,13 @@ class IndicatorOrchestrator:
                 caveats=[],
                 partial=False,
             )
+        except NotImplementedError as e:
+            return FindOrganisationsResult(
+                organisations=[],
+                sources=[],
+                caveats=[f"Organisation place discovery unavailable: {e}"],
+                partial=True,
+            )
         except Exception as e:
             return FindOrganisationsResult(
                 organisations=[],
