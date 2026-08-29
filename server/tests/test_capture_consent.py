@@ -51,6 +51,22 @@ async def test_post_consent_full_with_sector_includes_sector_cookie(
     assert "soundings_sector=charity" in cookie_blob
 
 
+async def test_level_only_consent_clears_stale_sector_cookie(
+    client: httpx.AsyncClient,
+) -> None:
+    async with client:
+        response = await client.post(
+            "/v1/capture/consent",
+            json={"consent_level": "minimal"},
+            cookies={"soundings_sector": "charity"},
+        )
+
+    assert response.status_code == 200
+    cookie_blob = "\n".join(response.headers.get_list("set-cookie"))
+    assert "soundings_sector=" in cookie_blob
+    assert "Max-Age=0" in cookie_blob
+
+
 async def test_post_consent_none_still_issues_session_cookie(
     client: httpx.AsyncClient,
 ) -> None:

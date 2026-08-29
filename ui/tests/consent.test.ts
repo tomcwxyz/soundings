@@ -7,11 +7,13 @@ import {
 } from "../src/lib/consent";
 
 describe("readConsentFromCookieString", () => {
-  it("returns the default when no cookies are set", () => {
+  it("defaults to no capture until the visitor chooses", () => {
     expect(readConsentFromCookieString(null)).toEqual({
       consentLevel: DEFAULT_CONSENT_LEVEL,
       askerSector: null,
+      hasConsentChoice: false,
     });
+    expect(DEFAULT_CONSENT_LEVEL).toBe("none");
   });
 
   it("reads a valid consent + sector pair", () => {
@@ -20,11 +22,19 @@ describe("readConsentFromCookieString", () => {
     );
     expect(state.consentLevel).toBe("full");
     expect(state.askerSector).toBe("charity");
+    expect(state.hasConsentChoice).toBe(true);
   });
 
-  it("falls back to default for unknown consent values", () => {
+  it("distinguishes an explicit no-consent choice from no choice", () => {
+    const state = readConsentFromCookieString("soundings_consent=none");
+    expect(state.consentLevel).toBe("none");
+    expect(state.hasConsentChoice).toBe(true);
+  });
+
+  it("falls back to no capture for unknown consent values", () => {
     const state = readConsentFromCookieString("soundings_consent=partial");
     expect(state.consentLevel).toBe(DEFAULT_CONSENT_LEVEL);
+    expect(state.hasConsentChoice).toBe(false);
   });
 
   it("clears unknown sector values to null", () => {

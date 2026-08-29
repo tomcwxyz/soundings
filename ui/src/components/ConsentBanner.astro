@@ -2,22 +2,69 @@
 import { readConsentFromCookieString } from "../lib/consent";
 
 const cookieHeader = Astro.request.headers.get("cookie");
-const { consentLevel } = readConsentFromCookieString(cookieHeader);
+const { consentLevel, hasConsentChoice } =
+  readConsentFromCookieString(cookieHeader);
+
+const labels = {
+  full: "full question sharing",
+  minimal: "minimal metadata only",
+  none: "off",
+} as const;
 ---
 
-{consentLevel !== "full" && (
-  <aside class="consent-banner">
-    <p>
-      Soundings logs every question to a public, open corpus.
-      <a href="/about">Learn how capture works</a> or
-      <a href="/corpus">browse the corpus</a>.
-    </p>
-  </aside>
-)}
+<aside
+  class:list={["consent-banner", { "needs-choice": !hasConsentChoice }]}
+  data-consent-banner
+>
+  <div class="consent-summary">
+    <div>
+      <strong>
+        {hasConsentChoice
+          ? `Corpus sharing: ${labels[consentLevel]}`
+          : "Choose what to share with the public corpus"}
+      </strong>
+      <p>
+        {hasConsentChoice
+          ? "You can change this at any time."
+          : "Nothing is captured until you choose. Questions are sanitised before publication."}
+        <a href="/about">How this works</a>
+        ·
+        <a href="/corpus">Browse the corpus</a>
+      </p>
+    </div>
+
+    {hasConsentChoice && (
+      <button type="button" class="change-button" data-consent-toggle>
+        Change
+      </button>
+    )}
+  </div>
+
+  <div class="consent-options" data-consent-options hidden={hasConsentChoice}>
+    <button type="button" data-consent-level="full">
+      <strong>Full</strong>
+      <span>Share the sanitised question text and structured metadata.</span>
+    </button>
+    <button type="button" data-consent-level="minimal">
+      <strong>Minimal</strong>
+      <span>Share only tool, place, indicator and source metadata.</span>
+    </button>
+    <button type="button" data-consent-level="none">
+      <strong>None</strong>
+      <span>Do not add this session to the corpus.</span>
+    </button>
+  </div>
+
+  <p class="consent-error" data-consent-error hidden></p>
+</aside>
+
+<script>
+  import "../scripts/consent_banner";
+</script>
 
 <style>
   .consent-banner {
-    padding: var(--space-sm) var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
     margin-bottom: var(--space-lg);
     background: rgba(74, 124, 89, 0.08);
     border-left: 3px solid var(--color-accent);
@@ -25,7 +72,87 @@ const { consentLevel } = readConsentFromCookieString(cookieHeader);
     font-size: var(--font-size-sm);
     color: var(--color-text-light);
   }
+
+  .consent-banner.needs-choice {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-accent);
+  }
+
+  .consent-summary {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .consent-summary strong {
+    color: var(--color-text);
+  }
+
+  .consent-summary p {
+    margin: var(--space-xs) 0 0;
+  }
+
   .consent-banner a {
     font-weight: var(--font-weight-medium);
+  }
+
+  .change-button {
+    flex: 0 0 auto;
+    padding: var(--space-xs) var(--space-md);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-primary);
+  }
+
+  .consent-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+  }
+
+  .consent-options[hidden] {
+    display: none;
+  }
+
+  .consent-options button {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    text-align: left;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text);
+  }
+
+  .consent-options button:hover {
+    border-color: var(--color-accent);
+  }
+
+  .consent-options button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .consent-options span {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-light);
+    line-height: var(--line-height-normal);
+  }
+
+  .consent-error {
+    margin: var(--space-sm) 0 0;
+    color: #991b1b;
+  }
+
+  @media (max-width: 640px) {
+    .consent-options {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

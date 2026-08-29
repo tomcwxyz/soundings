@@ -11,7 +11,8 @@ the repo root if it exists, so the UI can show publication provenance.
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 from sqlalchemy import text
 
 router = APIRouter(prefix="/v1/corpus", tags=["corpus"])
@@ -81,6 +82,37 @@ def _geography_summary(ref: object) -> list[dict[str, str]]:
     if isinstance(ref, dict) and ref.get("type"):
         return [{"type": str(ref.get("type", "")), "name": str(ref.get("name", ""))}]
     return []
+
+
+@router.get("/files/{filename}")
+async def get_corpus_file(filename: str) -> FileResponse:
+    """Serve a published corpus artefact listed in the current manifest."""
+    manifest_path = _CORPUS_DIR / "manifest.json"
+    if not manifest_path.exists():
+        raise HTTPException(status_code=404, detail="corpus manifest unavailable")
+
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(status_code=404, detail="corpus manifest unavailable") from exc
+
+    allowed = {
+        str(item.get("name"))
+        for item in manifest.get("files", [])
+        if isinstance(item, dict) and item.get("name")
+    }
+    if filename not in allowed:
+        raise HTTPException(status_code=404, detail="corpus file not published")
+
+    path = _CORPUS_DIR / filename
+    if not path.is_file() or path.parent != _CORPUS_DIR:
+        raise HTTPException(status_code=404, detail="corpus file unavailable")
+
+    return FileResponse(
+        path,
+        media_type="application/gzip",
+        filename=filename,
+    )
 
 
 @router.get("/manifest")

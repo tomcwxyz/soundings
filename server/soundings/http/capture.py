@@ -72,6 +72,10 @@ def _set_consent_cookies(
             samesite="lax",
             path="/",
         )
+    else:
+        # A level-only choice must not silently retain a sector from an
+        # earlier session/consent choice.
+        response.delete_cookie("soundings_sector", path="/", samesite="lax")
 
 
 @router.post("/consent", response_model=ConsentResponse)

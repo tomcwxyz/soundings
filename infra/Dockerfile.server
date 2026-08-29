@@ -17,6 +17,7 @@ RUN cd /app/server && uv sync --frozen --no-dev --no-install-project
 
 COPY server/ /app/server/
 COPY catalogue/ /app/catalogue/
+COPY corpus/ /app/corpus/
 RUN cd /app/server && uv sync --frozen --no-dev
 
 ENV PATH="/opt/venv/bin:$PATH"

@@ -18,20 +18,26 @@ export const ASKER_SECTORS: readonly AskerSector[] = [
   "other",
 ] as const;
 
-export const DEFAULT_CONSENT_LEVEL: ConsentLevel = "minimal";
+// Match the server: until the visitor explicitly chooses, nothing is captured.
+export const DEFAULT_CONSENT_LEVEL: ConsentLevel = "none";
 
 export interface ConsentState {
   consentLevel: ConsentLevel;
   askerSector: AskerSector | null;
+  hasConsentChoice: boolean;
 }
 
 export function readConsentFromCookieString(
   cookieString: string | null | undefined,
 ): ConsentState {
   const cookies = parseCookieString(cookieString ?? "");
+  const rawConsent = cookies.get("soundings_consent");
   return {
-    consentLevel: parseLevel(cookies.get("soundings_consent")),
+    consentLevel: parseLevel(rawConsent),
     askerSector: parseSector(cookies.get("soundings_sector")),
+    hasConsentChoice:
+      rawConsent !== undefined &&
+      (CONSENT_LEVELS as readonly string[]).includes(rawConsent),
   };
 }
 
