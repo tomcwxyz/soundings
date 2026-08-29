@@ -26,7 +26,8 @@ The 29 August work is a **consolidation pass**, not a feature phase.
   - Ask live smoke receives `ANTHROPIC_API_KEY` when configured and skips cleanly when it is not.
 - A subsequent live run passed, and Stat-Xplore was then enabled with a real Actions secret. Its authenticated schema showed that the old UC geography/date IDs were stale. The UC mapping was updated to the current `COA_CODE` / `V_C_MASTERGEOG21_LA_TO_REGION` geography and `F_UC_DATE:DATE_NAME` date field.
 - Stat-Xplore latest-value requests now resolve the newest month from schema and query only that month + local authority; requested trend windows are narrowed upstream too.
-- The latest live run passed **13 passed, 1 skipped, 652 deselected**. The remaining skip is the Ask/Anthropic smoke because `ANTHROPIC_API_KEY` is not configured in Actions.
+- The live suite passes with **13 passed and 1 deliberate skip**; the Ask/Anthropic smoke is intentionally being left skipped for now.
+- A follow-up authenticated schema probe checked the two remaining speculative Stat-Xplore mappings. The old database IDs were stale; current DWP products are `ACC` (Alternative Claimant Count) and `CILIF_AHC` (AHC Relative Low Income), and both expose count measures. Because Soundings advertised those entries as proportions/rates, the two active catalogue/mapping entries were removed rather than returning a count under the wrong unit. Treat them as potential derived measures for the question-led backlog.
 
 ## What Soundings currently is
 
@@ -51,7 +52,7 @@ Likely candidates:
 - improve corpus/public-learning presentation;
 - expose/use the MCP/API layer more explicitly outside the Soundings website.
 
-The nightly infrastructure and currently configured live integrations have now been exercised successfully, including Stat-Xplore. Before a new feature burst, decide whether to add the missing Anthropic GitHub secret and whether Scottish/NI organisation place discovery is important enough to source properly.
+The nightly infrastructure and currently configured live integrations have now been exercised successfully, including Stat-Xplore. The Anthropic smoke is deliberately skipped for now. The next feature work should start from a question/evaluation set; Scottish/NI organisation place discovery remains the clearest known coverage gap.
 
 ## Operations
 
