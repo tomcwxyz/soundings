@@ -16,9 +16,10 @@ The 29 August consolidation established a clean baseline:
   - Python lint + formatting + strict mypy;
   - server unit/integration test job;
   - Astro/TypeScript typecheck + UI tests.
-- The corrected nightly workflow was exercised manually on **29 August 2026**. The first real run exposed upstream drift; after fixes, a fresh live run passed with **12 passed, 2 skipped, 648 deselected**.
-- The two skips are credential-gated checks: Stat-Xplore and the live Ask/Anthropic smoke. They skip cleanly when their GitHub secrets are unavailable.
-- Live validation also updated three source assumptions: DfE pagination now follows the current POST-body contract; Police.uk backs off and retries rate limiting; Find That Charity uses its current v1 direct-lookup API.
+- The corrected nightly workflow was exercised manually on **29 August 2026**. The first real run exposed upstream drift; after fixes, a fresh live run passed.
+- Stat-Xplore was then enabled with a real Actions secret and its current authenticated schema was verified. The Universal Credit mapping now uses the live `UC_Monthly` local-authority/date IDs and narrows latest-value queries to one month, avoiding the old 60-second full-series timeout.
+- The latest live validation passed with **13 passed, 1 skipped, 652 deselected**. The remaining skip is the live Ask/Anthropic smoke because `ANTHROPIC_API_KEY` is not configured in Actions.
+- Live validation also updated source assumptions for DfE pagination, Police.uk rate limiting, Find That Charity v1, and Stat-Xplore's current geography/date schema.
 
 ## Product state
 
@@ -93,7 +94,7 @@ The private `soundings-ops` repository is for the operated instance only: encryp
 
 These are the repo-level follow-ups that remain after consolidation:
 
-1. **Add/refresh live-source credentials** if the Stat-Xplore and Anthropic nightly smokes should run rather than skip.
+1. **Add the Anthropic Actions secret** if the live Ask smoke should run rather than skip. Stat-Xplore is now configured and live-verified.
 2. **Replace Scottish/NI organisation place discovery** with a source that genuinely supports area-level lookup; FTC direct lookup alone is not sufficient.
 3. **Continue Phase 6b selectively** rather than adding sources simply for breadth; prioritise data that improves real place questions.
 4. **Keep TypeScript/Pydantic mirrors together** whenever organisation or answer-block contracts change.

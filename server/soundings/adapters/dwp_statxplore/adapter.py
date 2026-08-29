@@ -1,27 +1,13 @@
 """DwpStatXploreAdapter — passthrough over the Stat-Xplore cube API.
 
-For each indicator, the adapter queries the cube once per (place_id,
-database+measure) — fetching all available periods — and caches the
-result. `fetch_indicator` picks the latest period; `fetch_trend`
-slices to the requested window.
+Single-value indicator requests are deliberately narrow: the adapter resolves
+the latest available period from Stat-Xplore's authenticated schema, then asks
+the table endpoint for just that local authority + month. This avoids making
+ordinary Ask requests wait for the entire UC time series.
 
-Stat-Xplore response shape (one cube, one place, N dates):
-
-    {
-      "cubes": {
-        "<measure-id>": {"values": [[123, 145, 167]]}
-      },
-      "fields": [
-        {"items": [{"labels": ["E06000004", "Stockton-on-Tees"]}]},
-        {"items": [
-          {"labels": ["202401"]}, {"labels": ["202402"]}, ...
-        ]}
-      ]
-    }
-
-The geography dimension is queried with a single recoded value
-(the requested place), so `fields[0]` has one entry. `fields[1]` is
-the date axis aligned with the inner values array.
+Trend requests still fetch a series, but requested windows are recoded to only
+the periods needed. Results and schema-derived date IDs are cached for 24h by
+default.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -68,16 +54,22 @@ class DwpStatXploreAdapter(PassthroughAdapter):
         mapping = self._mapping.get(indicator_key)
         if mapping is None:
             return None
-        points = await self._fetch_points(mapping, place_id)
+
+        date_values = await self._date_value_ids(mapping)
+        target_period = period or (max(date_values) if date_values else None)
+        if target_period is None or target_period not in date_values:
+            return None
+
+        points = await self._fetch_points(
+            mapping,
+            place_id,
+            periods=[target_period],
+            date_values=date_values,
+        )
         if not points:
             return None
-        if period is not None:
-            matched = [p for p in points if p["period"] == period]
-            if not matched:
-                return None
-            chosen = matched[0]
-        else:
-            chosen = max(points, key=lambda p: p["period"])
+        chosen = points[0]
+
         source_ref = await self._build_source_ref(
             retrieved_at=datetime.now(tz=UTC), cache_status="cached"
         )
@@ -102,7 +94,21 @@ class DwpStatXploreAdapter(PassthroughAdapter):
         mapping = self._mapping.get(indicator_key)
         if mapping is None:
             return None
-        points = await self._fetch_points(mapping, place_id)
+
+        periods: list[str] | None = None
+        date_values: dict[str, str] | None = None
+        if period_from is not None or period_to is not None:
+            date_values = await self._date_value_ids(mapping)
+            periods = [p for p in sorted(date_values) if _within_window(p, period_from, period_to)]
+            if not periods:
+                return None
+
+        points = await self._fetch_points(
+            mapping,
+            place_id,
+            periods=periods,
+            date_values=date_values,
+        )
         in_window = [
             TrendPoint(period=p["period"], value=p["value"])
             for p in sorted(points, key=lambda r: r["period"])
@@ -110,6 +116,7 @@ class DwpStatXploreAdapter(PassthroughAdapter):
         ]
         if not in_window:
             return None
+
         source_ref = await self._build_source_ref(
             retrieved_at=datetime.now(tz=UTC), cache_status="cached"
         )
@@ -121,21 +128,74 @@ class DwpStatXploreAdapter(PassthroughAdapter):
             source=source_ref,
         )
 
+    async def _date_value_ids(self, mapping: StatXploreMapping) -> dict[str, str]:
+        cache_key = f"statxplore:schema-dates:{mapping.database}:{mapping.date_dim}"
+        cached = await self._cache.get(self.source_id, cache_key)
+        if isinstance(cached, dict) and all(
+            isinstance(k, str) and isinstance(v, str) for k, v in cached.items()
+        ):
+            return cached
+
+        field = await self._statxplore.get_schema(mapping.date_dim)
+        valueset_id: str | None = None
+        for child in field.get("children", []):
+            if not isinstance(child, dict):
+                continue
+            child_id = child.get("id")
+            if child.get("type") == "VALUESET" and isinstance(child_id, str):
+                valueset_id = child_id
+                break
+        if valueset_id is None:
+            return {}
+
+        valueset = await self._statxplore.get_schema(valueset_id)
+        out: dict[str, str] = {}
+        for child in valueset.get("children", []):
+            if not isinstance(child, dict):
+                continue
+            value_id = child.get("id")
+            if not isinstance(value_id, str):
+                continue
+            period = value_id.rsplit(":", 1)[-1]
+            if period:
+                out[period] = value_id
+
+        if out:
+            await self._cache.put(self.source_id, cache_key, out, ttl=self._ttl)
+        return out
+
     async def _fetch_points(
-        self, mapping: StatXploreMapping, place_id: str
+        self,
+        mapping: StatXploreMapping,
+        place_id: str,
+        *,
+        periods: list[str] | None = None,
+        date_values: dict[str, str] | None = None,
     ) -> list[dict[str, Any]]:
         place_code = _strip_type_prefix(place_id)
-        cache_key = f"statxplore:{mapping.database}:{mapping.measures[0]}:{place_code}"
+        period_key = ",".join(periods) if periods else "all"
+        cache_key = f"statxplore:{mapping.database}:{mapping.measures[0]}:{place_code}:{period_key}"
         cached = await self._cache.get(self.source_id, cache_key)
         if cached is not None and isinstance(cached, list):
             return cached
 
-        recodes = {
+        recodes: dict[str, Any] = {
             mapping.geography_dim: {
                 "map": [[mapping.geography_value_template.format(place_code=place_code)]],
                 "total": False,
             }
         }
+
+        if periods:
+            date_values = date_values or await self._date_value_ids(mapping)
+            selected = [date_values[p] for p in periods if p in date_values]
+            if not selected:
+                return []
+            recodes[mapping.date_dim] = {
+                "map": [[value_id] for value_id in selected],
+                "total": False,
+            }
+
         payload = await self._statxplore.get_table(
             database=mapping.database,
             measures=mapping.measures,
@@ -161,12 +221,6 @@ def _strip_type_prefix(place_id: str) -> str:
 def _materialise_points(
     payload: dict[str, Any], mapping: StatXploreMapping
 ) -> list[dict[str, Any]]:
-    """Walk the (geography × date × measure) cube response.
-
-    We expect exactly one geography (the recoded place), so the values
-    array is shape [[v1, v2, ...]] where index i in the inner array
-    aligns with fields[1] (date axis).
-    """
     measure_id = mapping.measures[0]
     cube = (payload.get("cubes") or {}).get(measure_id) or {}
     values = cube.get("values") or []
@@ -177,6 +231,7 @@ def _materialise_points(
     if len(fields) < 2:
         return []
     date_items = (fields[1].get("items") or []) if isinstance(fields[1], dict) else []
+
     out: list[dict[str, Any]] = []
     for idx, item in enumerate(date_items):
         if idx >= len(inner):
