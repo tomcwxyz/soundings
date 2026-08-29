@@ -21,10 +21,10 @@ mappings:
     database: "str:database:UC_Monthly"
     measures:
       - "str:count:UC_Monthly:V_F_UC_CASELOAD_FULL"
-    geography_dim: "str:field:UC_Monthly:V_F_UC_CASELOAD_FULL:GEOGRAPHY"
+    geography_dim: "str:field:UC_Monthly:V_F_UC_CASELOAD_FULL:COA_CODE"
     geography_value_template:
-      "str:value:UC_Monthly:V_F_UC_CASELOAD_FULL:GEOGRAPHY:V_C_MASTERGEOG11_UTLA_TO_NATIONAL:{place_code}"
-    date_dim: "str:field:UC_Monthly:V_F_UC_CASELOAD_FULL:DATE_NAME"
+      "str:value:UC_Monthly:V_F_UC_CASELOAD_FULL:COA_CODE:V_C_MASTERGEOG21_LA_TO_REGION:{place_code}"
+    date_dim: "str:field:UC_Monthly:F_UC_DATE:DATE_NAME"
     place_type: ltla24
     unit: "people"
 
