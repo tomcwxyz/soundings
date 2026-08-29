@@ -16,7 +16,9 @@ The 29 August consolidation established a clean baseline:
   - Python lint + formatting + strict mypy;
   - server unit/integration test job;
   - Astro/TypeScript typecheck + UI tests.
-- The next scheduled nightly run is the first one that can validate the corrected nightly workflow against current upstream APIs. Nightly failures after that point should be treated as real source/authentication issues rather than the previous database-safety misconfiguration.
+- The corrected nightly workflow was exercised manually on **29 August 2026**. The first real run exposed upstream drift; after fixes, a fresh live run passed with **12 passed, 2 skipped, 648 deselected**.
+- The two skips are credential-gated checks: Stat-Xplore and the live Ask/Anthropic smoke. They skip cleanly when their GitHub secrets are unavailable.
+- Live validation also updated three source assumptions: DfE pagination now follows the current POST-body contract; Police.uk backs off and retries rate limiting; Find That Charity uses its current v1 direct-lookup API.
 
 ## Product state
 
@@ -60,6 +62,8 @@ Implemented sources include, alongside the earlier ONS/IMD/OHID/DfE/Police/Chari
 
 Additional housing, environment, transport, digital and service-quality sources remain candidates rather than assumed commitments.
 
+**Find That Charity capability note:** the current v1 API supports direct charity lookup, but no longer exposes the filtered country/place search Soundings originally used for Scottish and Northern Irish local-authority discovery. That place-discovery path now fails closed with an empty organisation list **and `partial: true` plus an explicit coverage caveat**, rather than presenting national results as local or making missing coverage look like a genuine zero. A replacement area-discovery source is needed before that capability can be restored.
+
 ## Architecture
 
 ```mermaid
@@ -87,8 +91,8 @@ The private `soundings-ops` repository is for the operated instance only: encryp
 
 These are the repo-level follow-ups that remain after consolidation:
 
-1. **Validate the corrected nightly job** on its next scheduled run and deal with any genuine upstream/auth failures it exposes.
-2. **Keep live-source credentials current**, especially auth-gated Stat-Xplore/Anthropic checks.
+1. **Add/refresh live-source credentials** if the Stat-Xplore and Anthropic nightly smokes should run rather than skip.
+2. **Replace Scottish/NI organisation place discovery** with a source that genuinely supports area-level lookup; FTC direct lookup alone is not sufficient.
 3. **Continue Phase 6b selectively** rather than adding sources simply for breadth; prioritise data that improves real place questions.
 4. **Keep TypeScript/Pydantic mirrors together** whenever organisation or answer-block contracts change.
 5. **Retire stale branches deliberately.** Several branches have no commits ahead of `main`; squash-merged branches can appear technically divergent even where their content is already present. Compare before deleting rather than reviving old branches.

@@ -18,6 +18,13 @@ The 29 August work is a **consolidation pass**, not a feature phase.
   - organisation response typing updated for `operates_in_place_names`.
 - PR #33 passed the server test job, strict Python lint/mypy and the full UI typecheck/tests before merge.
 - The timeout/choropleth protections from old PR #29 are already present in current code, so that PR should be closed rather than merged.
+- The corrected nightly was exercised immediately on 29 August. Its first real run exposed five live-integration failures rather than infrastructure failure. The fixes are collected in **PR #36**:
+  - DfE query pagination moved into the current POST JSON contract;
+  - Police.uk throttling/retry added for 429 responses;
+  - Find That Charity moved to its current `/api/v1/charities` direct-lookup endpoint;
+  - unsupported FTC Scottish/NI place discovery now fails closed instead of returning misleading results;
+  - Ask live smoke receives `ANTHROPIC_API_KEY` when configured and skips cleanly when it is not.
+- A subsequent live run passed: **12 passed, 2 skipped, 648 deselected**. The skips were Stat-Xplore and Ask, both credential-gated in the current Actions environment.
 
 ## What Soundings currently is
 
@@ -42,7 +49,7 @@ Likely candidates:
 - improve corpus/public-learning presentation;
 - expose/use the MCP/API layer more explicitly outside the Soundings website.
 
-Before a new feature burst, check the next scheduled nightly run. The structural nightly failure is fixed; any new failure should now identify an actual upstream, credential or live-test problem.
+The nightly infrastructure and currently configured live integrations have now been exercised successfully. Before a new feature burst, decide whether to add the missing Stat-Xplore/Anthropic GitHub secrets and whether Scottish/NI organisation place discovery is important enough to source properly.
 
 ## Operations
 

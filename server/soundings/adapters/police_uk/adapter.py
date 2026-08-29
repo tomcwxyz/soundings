@@ -83,9 +83,9 @@ class PoliceUkAdapter(PassthroughAdapter):
             lat, lng = centroid
             end_month = period or await self._police.get_last_updated()
             months = _walk_back_months(end_month, WINDOW_MONTHS)
-            # Fire all 12 monthly API calls concurrently — the client's
-            # AsyncLimiter (10 req/s) naturally throttles, so 12 requests
-            # take ~1.2s instead of 12 × response-time sequentially.
+            # Fire all 12 monthly API calls concurrently. The client applies
+            # a conservative rate limit and retries 429 responses, so this
+            # remains responsive without overwhelming the public API.
             crime_lists = await asyncio.gather(
                 *(
                     self._police.get_crimes(category=category, lat=lat, lng=lng, date=month)

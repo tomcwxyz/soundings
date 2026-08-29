@@ -44,6 +44,7 @@ jobs:
           # tests skip cleanly without a key; CC doesn't need one (bulk
           # download is anonymous) but the key is plumbed for future
           # per-charity detail enrichment work.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           STATXPLORE_API_KEY: ${{ secrets.STATXPLORE_API_KEY }}
           NOMIS_API_KEY: ${{ secrets.NOMIS_API_KEY }}
           CHARITY_COMMISSION_API_KEY: ${{ secrets.CHARITY_COMMISSION_API_KEY }}

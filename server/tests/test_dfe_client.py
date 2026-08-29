@@ -71,11 +71,12 @@ async def test_client_omits_criteria_when_not_supplied() -> None:
     assert body_obj["indicators"] == ["i1"]
 
 
-async def test_client_passes_pagination_in_query_string() -> None:
+async def test_client_passes_pagination_in_post_body() -> None:
     captured: dict[str, str] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         captured["url"] = str(request.url)
+        captured["body"] = request.read().decode("utf-8")
         return httpx.Response(200, json={"paging": {}, "results": []})
 
     transport = httpx.MockTransport(handler)
@@ -83,5 +84,10 @@ async def test_client_passes_pagination_in_query_string() -> None:
         client = DfeExploreClient(http_client=http)
         await client.query_dataset(data_set_id="ds-x", indicators=["i1"], page=3, page_size=50)
 
-    assert "page=3" in captured["url"]
-    assert "pageSize=50" in captured["url"]
+    import json as _json
+
+    body_obj = _json.loads(captured["body"])
+    assert body_obj["page"] == 3
+    assert body_obj["pageSize"] == 50
+    assert "page=" not in captured["url"]
+    assert "pageSize=" not in captured["url"]

@@ -55,7 +55,11 @@ class DfeExploreClient:
         timePeriods/geographicLevels). When omitted, the API returns an
         unfiltered paginated slice.
         """
-        body: dict[str, Any] = {"indicators": indicators}
+        body: dict[str, Any] = {
+            "indicators": indicators,
+            "page": page,
+            "pageSize": page_size,
+        }
         if criteria:
             body["criteria"] = criteria
 
@@ -65,7 +69,6 @@ class DfeExploreClient:
                 response = await client.post(
                     f"{DFE_EXPLORE_BASE}/data-sets/{data_set_id}/query",
                     json=body,
-                    params={"page": page, "pageSize": page_size},
                     headers={
                         "Accept": "application/json",
                         "Content-Type": "application/json",
