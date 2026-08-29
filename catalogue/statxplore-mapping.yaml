@@ -3,10 +3,10 @@
 #
 # Cube identifiers (`database`, `measures`, `dimensions`, `recodes`) are
 # long strings that must match Stat-Xplore's internal schema exactly.
-# Discovery requires the API key (the `/schema` endpoint returns 503
-# without auth). Entries are pinned plausible-but-unverified until
-# the live test (Task 16) confirms — likely needs adjustment per
-# entry against the real cube once `STATXPLORE_API_KEY` is set.
+# Discovery requires the API key. The Universal Credit mapping below was
+# live-verified against the authenticated schema on 29 August 2026.
+# Other mappings should still be treated as unverified until each has its
+# own live smoke test.
 #
 # `geography_dim` is the dimension we filter on by place_id; the
 # adapter recodes it per request. `date_dim` is the time axis used
