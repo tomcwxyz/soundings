@@ -30,6 +30,8 @@ services:
       - .env
     environment:
       DATABASE_URL: "postgresql+asyncpg://soundings:${POSTGRES_PASSWORD}@postgres:5432/soundings"
+    volumes:
+      - corpus_data:/app/corpus
     ports:
       - "127.0.0.1:8001:8000"
     healthcheck:
@@ -50,6 +52,8 @@ services:
       - .env
     environment:
       DATABASE_URL: "postgresql+asyncpg://soundings:${POSTGRES_PASSWORD}@postgres:5432/soundings"
+    volumes:
+      - corpus_data:/app/corpus
     command: ["python", "-m", "soundings.loader.run"]
     restart: unless-stopped
 
@@ -99,3 +103,4 @@ services:
 volumes:
   pgdata:
   caddy_data:
+  corpus_data:
