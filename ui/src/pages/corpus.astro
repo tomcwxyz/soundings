@@ -41,10 +41,11 @@ function geographyLabel(geo: any[]): string {
   <header class="corpus-header">
     <h1>The public corpus</h1>
     <p class="lead">
-      Every question asked through Soundings is logged — with consent — to a
-      public, open corpus. Questions are sanitised before publication:
-      postcodes truncated to sector, personal names redacted, small charity
-      names stripped. Published monthly under CC BY 4.0.
+      Questions can be contributed to a public, open corpus after an explicit
+      sharing choice. Full-consent question text is sanitised before
+      publication; minimal consent stores only structured metadata. Choosing
+      none stores nothing. Cleared recent records appear here from the live
+      database, with periodic snapshots published under CC BY 4.0.
     </p>
   </header>
 
@@ -69,7 +70,9 @@ function geographyLabel(geo: any[]): string {
       <div class="manifest-grid">
         {manifest.files.map((f: any) => (
           <div class="manifest-file">
-            <span class="file-name">{f.name}</span>
+            <a class="file-name" href={`/v1/corpus/files/${encodeURIComponent(f.name)}`}>
+              {f.name}
+            </a>
             <span class="file-size">{(f.size_bytes / 1024).toFixed(1)} KB</span>
             <code class="file-hash">{f.sha256.slice(0, 12)}…</code>
           </div>
@@ -133,12 +136,13 @@ function geographyLabel(geo: any[]): string {
   <section class="corpus-footer">
     <h2>Download the corpus</h2>
     <p>
-      Monthly snapshots are published as gzipped CSV and JSON Lines. Each
-      release includes a manifest with SHA-256 hashes, catalogue version, and
-      the git commit that produced it — so you can audit exactly what went in.
+      Snapshot releases are gzipped CSV and JSON Lines. Each release includes
+      a manifest with SHA-256 hashes, catalogue version, and the git commit
+      that produced it — so you can audit exactly what went in. Publication is
+      currently an operator-run process rather than an automated monthly job.
     </p>
     <p>
-      <a href="https://github.com/dataforaction-tom/soundings/blob/main/docs/adr/0004-corpus-publication.md">
+      <a href="https://github.com/tomcwxyz/soundings/blob/main/docs/adr/0004-corpus-publication.md">
         Read ADR-0004: corpus publication →
       </a>
     </p>
