@@ -1,6 +1,8 @@
 name: nightly
 
 on:
+  push:
+    branches: [fix/statxplore-live-mapping]
   schedule:
     - cron: "0 4 * * *"   # 04:00 UTC daily
   workflow_dispatch:
@@ -37,6 +39,10 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://soundings:changeme-locally@localhost:5432/soundings_test
         run: cd server && uv run alembic upgrade head
+      - name: Inspect Stat-Xplore schema
+        env:
+          STATXPLORE_API_KEY: ${{ secrets.STATXPLORE_API_KEY }}
+        run: cd server && uv run python scripts/inspect_statxplore_schema.py
       - name: Live API tests
         env:
           DATABASE_URL: postgresql+asyncpg://soundings:changeme-locally@localhost:5432/soundings_test
