@@ -103,7 +103,9 @@ async def _post(client: AsyncClient, place_id: str) -> dict:
 
 
 @pytest.mark.asyncio
-async def test_find_organisations_serves_england_and_fails_closed_for_scotland() -> None:
+async def test_find_organisations_serves_england_and_fails_closed_for_scotland() -> (
+    None
+):
     """England remains backed by CC; Scotland returns no invented local results."""
     await _seed()
 
@@ -123,9 +125,13 @@ async def test_find_organisations_serves_england_and_fails_closed_for_scotland()
         "Stockton Community Trust",
         "Tees Valley Music Centre",
     }
-    assert all(o["source"]["source_id"] == "charity_commission" for o in england_orgs)
+    assert all(
+        o["source"]["source_id"] == "charity_commission" for o in england_orgs
+    )
     assert all(o["source"]["cache_status"] == "cached" for o in england_orgs)
-    assert all(o["registered_address_place_id"] == STOCKTON for o in england_orgs)
+    assert all(
+        o["registered_address_place_id"] == STOCKTON for o in england_orgs
+    )
 
     # Scotland: current FTC v1 has direct lookup but no place discovery.
     # Soundings must return no organisations rather than national data
