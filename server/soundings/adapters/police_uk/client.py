@@ -15,6 +15,7 @@ outside any force boundary; we treat that as an empty result, not a
 fatal error.
 """
 
+import asyncio
 from typing import Any
 
 import httpx
@@ -28,7 +29,7 @@ class PoliceUkClient:
         self,
         http_client: httpx.AsyncClient | None = None,
         *,
-        rate_per_second: float = 10.0,
+        rate_per_second: float = 3.0,
     ) -> None:
         self._client = http_client
         self._owns_client = http_client is None
@@ -47,24 +48,36 @@ class PoliceUkClient:
         if date is not None:
             params["date"] = date
 
-        async with self._limiter:
-            client = self._client or httpx.AsyncClient(timeout=60.0)
-            try:
-                response = await client.get(
-                    f"{POLICE_UK_BASE}/crimes-street/{category}",
-                    params=params,
-                )
+        client = self._client or httpx.AsyncClient(timeout=60.0)
+        try:
+            response: httpx.Response | None = None
+            for attempt in range(4):
+                async with self._limiter:
+                    response = await client.get(
+                        f"{POLICE_UK_BASE}/crimes-street/{category}",
+                        params=params,
+                    )
                 if response.status_code == 404:
                     return []
+                if response.status_code == 429 and attempt < 3:
+                    retry_after = response.headers.get("Retry-After")
+                    try:
+                        delay = float(retry_after) if retry_after is not None else 0.0
+                    except ValueError:
+                        delay = 0.0
+                    if delay <= 0:
+                        delay = float(2**attempt)
+                    await asyncio.sleep(min(delay, 8.0))
+                    continue
                 response.raise_for_status()
                 payload = response.json()
-            finally:
-                if self._owns_client:
-                    await client.aclose()
-
-        if not isinstance(payload, list):
+                if not isinstance(payload, list):
+                    return []
+                return payload
             return []
-        return payload
+        finally:
+            if self._owns_client:
+                await client.aclose()
 
     async def get_last_updated(self) -> str:
         """Return the latest YYYY-MM with published crime data.
