@@ -1,11 +1,10 @@
-"""Live test for the Find That Charity API.
+"""Live test for the current Find That Charity v1 API.
 
-Marker `live` — runs nightly, not in PR CI. No API key required;
-api.findthatcharity.uk is public.
+Marker `live` — runs nightly, not in PR CI. No API key required.
 
-Scope: verify the search endpoint is alive and returns expected
-response shape. Using SC005336 (Volunteer Scotland) as a known-stable
-test subject.
+The v1 service still supports direct charity lookup but no longer exposes
+the legacy filtered country search Soundings previously used. SC005336
+(Volunteer Scotland) is the stable direct-lookup smoke subject.
 """
 
 import pytest
