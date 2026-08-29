@@ -12,7 +12,7 @@ jobs:
       postgres:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_DB: soundings
+          POSTGRES_DB: soundings_test
           POSTGRES_USER: soundings
           POSTGRES_PASSWORD: changeme-locally
         ports: ["5432:5432"]
@@ -31,15 +31,15 @@ jobs:
         env:
           PGPASSWORD: changeme-locally
         run: |
-          psql -h localhost -U soundings -d soundings -f infra/initdb/00-extensions.sql
-          psql -h localhost -U soundings -d soundings -f infra/initdb/01-schemas.sql
+          psql -h localhost -U soundings -d soundings_test -f infra/initdb/00-extensions.sql
+          psql -h localhost -U soundings -d soundings_test -f infra/initdb/01-schemas.sql
       - name: Run migrations
         env:
-          DATABASE_URL: postgresql+asyncpg://soundings:changeme-locally@localhost:5432/soundings
+          DATABASE_URL: postgresql+asyncpg://soundings:changeme-locally@localhost:5432/soundings_test
         run: cd server && uv run alembic upgrade head
       - name: Live API tests
         env:
-          DATABASE_URL: postgresql+asyncpg://soundings:changeme-locally@localhost:5432/soundings
+          DATABASE_URL: postgresql+asyncpg://soundings:changeme-locally@localhost:5432/soundings_test
           # API keys for sources that gate on auth. The Stat-Xplore + APS
           # tests skip cleanly without a key; CC doesn't need one (bulk
           # download is anonymous) but the key is plumbed for future
