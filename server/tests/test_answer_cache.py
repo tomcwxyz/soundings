@@ -7,7 +7,7 @@ The hash/normalisation tests are pure functions and need no fixture.
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -281,6 +281,46 @@ async def test_orchestrator_replays_cached_answer_without_claude(fake_cache):
     assert len(fake_cache.get_calls) == 1
     # But NOT re-stored (no put on a hit)
     assert len(fake_cache.put_calls) == 0
+
+
+async def test_orchestrator_cache_read_failure_falls_back_to_claude(fake_cache):
+    """A broken cache must not make the Ask endpoint unavailable."""
+    fake_cache.get = AsyncMock(side_effect=RuntimeError("cache unavailable"))
+
+    events, cb = _collect_events()
+    state = _make_fake_state()
+    dispatcher = ToolDispatcher(state)
+    prompt_builder = SystemPromptBuilder()
+    fake_client = _FakeAnthropic(
+        [
+            _FakeResponse(
+                [
+                    _FakeToolUseBlock(
+                        "tool_1",
+                        "compose_answer",
+                        {"blocks": [{"type": "text", "markdown": "Fresh answer"}]},
+                    )
+                ]
+            )
+        ]
+    )
+
+    with patch("soundings.ask.orchestrator.get_anthropic_client", return_value=fake_client):
+        orch = AskOrchestrator(
+            dispatcher=dispatcher,
+            prompt_builder=prompt_builder,
+            api_key="fake-key",
+            model="claude-sonnet-5",
+            answer_cache=fake_cache,
+        )
+        await orch.run("Summarise Stockton", cb)
+
+    assert len(fake_client.messages.calls) == 1
+    assert any(
+        e.get("type") == "block"
+        and e.get("block", {}).get("markdown") == "Fresh answer"
+        for e in events
+    )
 
 
 async def test_orchestrator_ignores_legacy_cache_without_messages(fake_cache):
