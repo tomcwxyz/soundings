@@ -29,9 +29,9 @@ import Base from "../layouts/Base.astro";
           small-charity names stripped).
         </li>
         <li>
-          <strong>Minimal consent (default)</strong> — only the structured
-          fields are captured: which tool was called, the place, the indicators
-          returned. Your question text is never stored.
+          <strong>Minimal consent</strong> — only the structured fields are
+          captured: which tool was called, the place, the indicators returned.
+          Your question text is never stored.
         </li>
         <li>
           <strong>No consent</strong> — nothing is captured. You can still use
@@ -39,24 +39,24 @@ import Base from "../layouts/Base.astro";
         </li>
       </ul>
       <p>
-        Change your choice any time from the
-        <a href="/about">About</a> page. The chosen level applies to the rest of
-        your session.
+        Nothing is captured until you make a choice. The sharing control shown
+        across the site lets you change that choice at any time; changing it
+        starts a fresh corpus session.
       </p>
     </section>
 
     <section>
       <h3>The corpus</h3>
       <p>
-        Every month a sanitised snapshot of the question corpus is published
-        as gzipped CSV and JSON Lines. The manifest records SHA-256 hashes,
+        Sanitised snapshots of the question corpus can be published as gzipped
+        CSV and JSON Lines. The manifest records SHA-256 hashes,
         the catalogue version, the sanitisation rules version, and the git
         commit that produced it — so you can audit exactly what went in.
       </p>
       <p>
-        The Phase 2 plan defers pushing the corpus to a hosted bucket; v1
-        writes local artefacts only. See
-        <a href="https://github.com/dataforaction-tom/soundings/blob/main/docs/adr/0004-corpus-publication.md">
+        Snapshot publication is currently operator-run: v1 writes local
+        artefacts and does not automatically push them to a hosted bucket. See
+        <a href="https://github.com/tomcwxyz/soundings/blob/main/docs/adr/0004-corpus-publication.md">
           ADR-0004
         </a>. You can browse recent cleared questions at
         <a href="/corpus">/corpus</a>.
@@ -90,10 +90,10 @@ import Base from "../layouts/Base.astro";
       <h3>Civil society</h3>
       <p>
         Place pages also show the registered charities operating in that area
-        and the grants they've received in the last twelve months. The
-        organisations come from the Charity Commission's monthly register
-        (England &amp; Wales) and Find That Charity (Scotland &amp; Northern
-        Ireland); the grants come from
+        and the grants they've received in the last twelve months. Local
+        organisation discovery currently uses the Charity Commission's monthly
+        register for England &amp; Wales; Scottish and Northern Irish
+        place-level discovery is a known coverage gap. Grant records come from
         <a href="https://www.threesixtygiving.org/">360Giving</a>.
       </p>
     </section>
@@ -102,11 +102,11 @@ import Base from "../layouts/Base.astro";
       <h3>Links</h3>
       <ul class="link-list">
         <li>
-          <a href="https://github.com/dataforaction-tom/soundings">GitHub</a>
+          <a href="https://github.com/tomcwxyz/soundings">GitHub</a>
           — source and spec
         </li>
         <li>
-          <a href="https://github.com/dataforaction-tom/soundings/blob/main/docs/v1-orchestration-and-capture.md">
+          <a href="https://github.com/tomcwxyz/soundings/blob/main/docs/v1-orchestration-and-capture.md">
             v1 orchestration &amp; capture spec
           </a>
         </li>
