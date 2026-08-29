@@ -44,13 +44,9 @@ def upgrade() -> None:
     )
 
     bind = op.get_bind()
+    bind.execute(sa.delete(trend_point).where(trend_point.c.indicator_key.in_(RETIRED_KEYS)))
     bind.execute(
-        sa.delete(trend_point).where(trend_point.c.indicator_key.in_(RETIRED_KEYS))
-    )
-    bind.execute(
-        sa.delete(indicator_value).where(
-            indicator_value.c.indicator_key.in_(RETIRED_KEYS)
-        )
+        sa.delete(indicator_value).where(indicator_value.c.indicator_key.in_(RETIRED_KEYS))
     )
     bind.execute(sa.delete(indicator).where(indicator.c.key.in_(RETIRED_KEYS)))
 
