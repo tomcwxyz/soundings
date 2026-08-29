@@ -116,16 +116,14 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
                 )
             )
 
-        # Run the orchestrator in the background
-        # Skip answer cache when conversations are active — we need the full
-        # message history (tool results) stored for follow-up questions.
-        skip_cache = conversation_store is not None
+        # Run the orchestrator in the background. First-turn cached answers
+        # include their full message/tool history, so they can be replayed
+        # instantly while still seeding a normal follow-up conversation.
         task = asyncio.create_task(
             orchestrator.run(
                 input.query,
                 callback,
                 prior_messages=prior_messages,
-                skip_cache=skip_cache,
             )
         )
 
@@ -147,7 +145,7 @@ async def ask(input: AskInput, request: Request) -> StreamingResponse:
         # Ensure the task completes and store messages for follow-ups
         result_messages = await task
         if conversation_id and conversation_store and result_messages:
-            conversation_store.append_messages(conversation_id, result_messages)
+            conversation_store.set_messages(conversation_id, result_messages)
             # If the conversation doesn't have a place_id yet, try to extract
             # one from the tool results (e.g. find_place resolved the place).
             if not conversation_store.get(conversation_id).place_id:

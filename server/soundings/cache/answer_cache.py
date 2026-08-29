@@ -10,6 +10,7 @@ normally and the caller stores the events via ``put``.
 
 import hashlib
 import re
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -19,10 +20,16 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.db.models.answer_cache import AnswerCache
 
-# Default TTL: 6 hours. Indicator data is refreshed daily-to-quarterly;
-# answers don't go stale within a session. The TTL is overridable per-put
-# so a future "refresh" endpoint could force a shorter window.
-DEFAULT_TTL = timedelta(hours=6)
+# Default TTL: 24 hours. Most underlying indicators update daily-to-quarterly,
+# so a completed answer should survive ordinary reload/back-navigation without
+# repeatedly invoking the model and tools. The TTL remains overridable per-put.
+DEFAULT_TTL = timedelta(hours=24)
+
+
+@dataclass(frozen=True)
+class CachedAnswer:
+    events: list[dict[str, Any]]
+    messages: list[dict[str, Any]] | None
 
 
 def _normalise(question: str) -> str:
@@ -41,8 +48,8 @@ class AnswerCacheStore:
     def __init__(self, engine: AsyncEngine) -> None:
         self._engine = engine
 
-    async def get(self, question: str, place_id: str | None = None) -> list[dict[str, Any]] | None:
-        """Return cached events if a fresh entry exists, else None.
+    async def get(self, question: str, place_id: str | None = None) -> CachedAnswer | None:
+        """Return a cached completed answer if a fresh entry exists, else None.
 
         Increments hit_count on a successful read so we can measure
         cache effectiveness.
@@ -51,7 +58,7 @@ class AnswerCacheStore:
         now = datetime.now(tz=UTC)
         async with self._engine.connect() as conn:
             result = await conn.execute(
-                select(AnswerCache.events, AnswerCache.expires_at).where(
+                select(AnswerCache.events, AnswerCache.messages, AnswerCache.expires_at).where(
                     AnswerCache.question_hash == qhash,
                 )
             )
@@ -68,13 +75,17 @@ class AnswerCacheStore:
                 .values(hit_count=AnswerCache.hit_count + 1)
             )
 
-        return list(row.events)
+        return CachedAnswer(
+            events=list(row.events),
+            messages=list(row.messages) if row.messages is not None else None,
+        )
 
     async def put(
         self,
         question: str,
         place_id: str | None,
         events: list[dict[str, Any]],
+        messages: list[dict[str, Any]] | None = None,
         *,
         ttl: timedelta = DEFAULT_TTL,
     ) -> None:
@@ -88,6 +99,7 @@ class AnswerCacheStore:
                 question_text=question,
                 place_id=place_id,
                 events=events,
+                messages=messages,
                 created_at=now,
                 expires_at=expires,
                 hit_count=0,
@@ -98,6 +110,7 @@ class AnswerCacheStore:
                     "question_text": stmt.excluded.question_text,
                     "place_id": stmt.excluded.place_id,
                     "events": stmt.excluded.events,
+                    "messages": stmt.excluded.messages,
                     "created_at": stmt.excluded.created_at,
                     "expires_at": stmt.excluded.expires_at,
                     "hit_count": 0,  # reset on refresh

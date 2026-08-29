@@ -43,6 +43,8 @@ Shipped.
 - `/v1/ask` tool-use orchestration and `/ask` UI.
 - Typed answer blocks for prose, indicator cards, charts, maps, organisations and neighbourhood tables.
 - Multi-turn follow-up questions with stored conversation/place context.
+- Completed first-turn answers are cached for 24 hours with their full tool/message history, so reload/back-navigation can replay instantly without losing follow-up capability.
+- The UI keeps a browser-local list of recently completed questions; any cross-user “previously asked” experience should be built from the consented corpus rather than the private answer cache.
 - LSOA/ward neighbourhood analysis through `get_sub_areas`.
 - Give Food point data for food-bank questions.
 - Richer civil-society profiles, cause classifications, notable organisations and operating-area context.

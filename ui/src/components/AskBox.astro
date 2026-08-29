@@ -48,6 +48,8 @@ const examples = hasPlace ? examplesWithPlace : examplesNoPlace;
       </button>
     ))}
   </div>
+
+  <div class="recent-questions" data-ask-history hidden></div>
 </form>
 
 <script>
@@ -94,5 +96,24 @@ const examples = hasPlace ? examplesWithPlace : examplesNoPlace;
   .example-chip:hover {
     background: var(--color-bg);
     border-color: var(--color-accent);
+  }
+  .recent-questions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    align-items: center;
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border-light);
+  }
+  .recent-questions :global(.recent-questions-label) {
+    color: var(--color-muted);
+    font-size: var(--font-size-sm);
+  }
+  .recent-questions :global(.recent-question) {
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 </style>
