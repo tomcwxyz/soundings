@@ -1,8 +1,6 @@
 name: nightly
 
 on:
-  push:
-    branches: [fix/nightly-live]
   schedule:
     - cron: "0 4 * * *"   # 04:00 UTC daily
   workflow_dispatch:
