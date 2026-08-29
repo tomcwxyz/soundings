@@ -62,7 +62,7 @@ Implemented sources include, alongside the earlier ONS/IMD/OHID/DfE/Police/Chari
 
 Additional housing, environment, transport, digital and service-quality sources remain candidates rather than assumed commitments.
 
-**Find That Charity capability note:** the current v1 API supports direct charity lookup, but no longer exposes the filtered country/place search Soundings originally used for Scottish and Northern Irish local-authority discovery. That place-discovery path now fails closed (returns no organisations) rather than presenting national results as local. A replacement area-discovery source is needed before that capability can be restored.
+**Find That Charity capability note:** the current v1 API supports direct charity lookup, but no longer exposes the filtered country/place search Soundings originally used for Scottish and Northern Irish local-authority discovery. That place-discovery path now fails closed with an empty organisation list **and `partial: true` plus an explicit coverage caveat**, rather than presenting national results as local or making missing coverage look like a genuine zero. A replacement area-discovery source is needed before that capability can be restored.
 
 ## Architecture
 
