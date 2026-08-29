@@ -1,0 +1,442 @@
+version: 1
+
+# Curated baseline for Phase 6.5. These are evaluation hypotheses, not claims
+# that the current product already answers every question well.
+questions:
+  - id: Q01
+    question: "Summarise Stockton-on-Tees."
+    places: ["Stockton-on-Tees"]
+    intent: summary
+    expected: supported
+    tags: [summary, cross-domain]
+    required_tools: [find_place, get_place_profile, detect_insights]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card, insight-callout]
+    success_criteria:
+      - "Uses several domains rather than a single headline statistic."
+      - "Names material caveats or coverage limits."
+      - "Keeps claims grounded in Soundings sources."
+
+  - id: Q02
+    question: "How does Sheffield compare with similar places?"
+    places: ["Sheffield"]
+    intent: compare
+    expected: supported
+    tags: [comparison, peers]
+    required_tools: [find_place, compare_places, get_peer_distribution]
+    required_indicators: [population.total, economy.employment_rate]
+    candidate_indicator_keys: []
+    expected_blocks: [text, compare-chart, distribution-chart]
+    success_criteria:
+      - "Uses an explicit peer comparison rather than a national comparison by default."
+      - "Explains whether differences are large or modest."
+
+  - id: Q03
+    question: "What are the most deprived neighbourhoods in Middlesbrough?"
+    places: ["Middlesbrough"]
+    intent: neighbourhood
+    expected: supported
+    tags: [deprivation, neighbourhood]
+    required_tools: [find_place, get_sub_areas]
+    required_indicators: [deprivation.imd.score, deprivation.imd.decile]
+    candidate_indicator_keys: []
+    expected_blocks: [text, sub-area-table, map]
+    success_criteria:
+      - "Uses LSOA-level data rather than treating the whole authority as one neighbourhood."
+      - "Does not imply that rank is a measure of absolute change."
+
+  - id: Q04
+    question: "Which neighbourhoods in Leeds have the highest income deprivation?"
+    places: ["Leeds"]
+    intent: neighbourhood
+    expected: supported
+    tags: [deprivation, income, neighbourhood]
+    required_tools: [find_place, get_sub_areas]
+    required_indicators: [deprivation.imd.income_score]
+    candidate_indicator_keys: []
+    expected_blocks: [sub-area-table, map]
+    success_criteria:
+      - "Ranks or highlights sub-areas using the income domain."
+      - "Keeps the geography level explicit."
+
+  - id: Q05
+    question: "Is Newcastle's population growing or shrinking?"
+    places: ["Newcastle upon Tyne"]
+    intent: trend
+    expected: supported
+    tags: [population, trend]
+    required_tools: [find_place, get_trend]
+    required_indicators: [population.total]
+    candidate_indicator_keys: []
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "Uses multiple periods rather than comparing one value with an unstated baseline."
+      - "States the period covered."
+
+  - id: Q06
+    question: "How has the number of people on Universal Credit changed in Stockton-on-Tees?"
+    places: ["Stockton-on-Tees"]
+    intent: trend
+    expected: supported
+    tags: [economy, welfare, trend]
+    required_tools: [find_place, get_trend]
+    required_indicators: [economy.universal_credit_claimants]
+    candidate_indicator_keys: []
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "Uses the live-verified Stat-Xplore series."
+      - "Reports counts as people, not as a claimant rate."
+
+  - id: Q07
+    question: "How does Sunderland's employment rate compare with peers?"
+    places: ["Sunderland"]
+    intent: compare
+    expected: supported
+    tags: [economy, employment, peers]
+    required_tools: [find_place, compare_places, get_peer_distribution]
+    required_indicators: [economy.employment_rate]
+    candidate_indicator_keys: []
+    expected_blocks: [text, distribution-chart]
+    success_criteria:
+      - "Uses the employment-rate indicator with its survey caveat."
+      - "Provides peer context."
+
+  - id: Q08
+    question: "How does life expectancy in Blackpool compare with similar places?"
+    places: ["Blackpool"]
+    intent: compare
+    expected: supported
+    tags: [health, inequality, peers]
+    required_tools: [find_place, compare_places]
+    required_indicators: [health.life_expectancy.female, health.life_expectancy.male]
+    candidate_indicator_keys: []
+    expected_blocks: [text, compare-chart]
+    success_criteria:
+      - "Separates male and female measures rather than combining unlike series."
+      - "Provides place context."
+
+  - id: Q09
+    question: "Is smoking prevalence unusually high in Hartlepool?"
+    places: ["Hartlepool"]
+    intent: compare
+    expected: supported
+    tags: [health, smoking, peers]
+    required_tools: [find_place, get_peer_distribution]
+    required_indicators: [health.smoking_prevalence]
+    candidate_indicator_keys: []
+    expected_blocks: [text, distribution-chart]
+    success_criteria:
+      - "Answers 'unusually high' using a comparison distribution."
+      - "Identifies the indicator period/source."
+
+  - id: Q10
+    question: "How high is free school meal eligibility in Bradford?"
+    places: ["Bradford"]
+    intent: indicator
+    expected: supported
+    tags: [education, families]
+    required_tools: [find_place, get_indicators]
+    required_indicators: [education.fsm_eligibility_share]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Reports a share/proportion with a clear period."
+      - "Does not equate FSM eligibility directly with poverty."
+
+  - id: Q11
+    question: "How does persistent absence in Sheffield compare with peers?"
+    places: ["Sheffield"]
+    intent: compare
+    expected: supported
+    tags: [education, attendance, peers]
+    required_tools: [find_place, compare_places]
+    required_indicators: [education.persistent_absence_share]
+    candidate_indicator_keys: []
+    expected_blocks: [text, compare-chart]
+    success_criteria:
+      - "Uses the education indicator rather than a general model claim."
+      - "States the comparison group."
+
+  - id: Q12
+    question: "Has recorded crime in Leeds risen or fallen recently?"
+    places: ["Leeds"]
+    intent: trend
+    expected: supported
+    tags: [crime, trend]
+    required_tools: [find_place, get_trend]
+    required_indicators: [crime.recorded_crime_rate]
+    candidate_indicator_keys: []
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "Uses a time series and names the period."
+      - "Avoids treating recorded crime as a complete measure of harm."
+
+  - id: Q13
+    question: "What does the local civil society landscape look like in Stockton-on-Tees?"
+    places: ["Stockton-on-Tees"]
+    intent: civil-society
+    expected: supported
+    tags: [civil-society, organisations]
+    required_tools: [find_place, find_organisations_in_place, get_civil_society_profile]
+    required_indicators: [civil_society.active_charities_count, civil_society.active_charities_per_10k]
+    candidate_indicator_keys: []
+    expected_blocks: [text, organisations, indicator-card]
+    success_criteria:
+      - "Combines counts with examples/context rather than listing organisations only."
+      - "Surfaces source coverage caveats."
+
+  - id: Q14
+    question: "What grant funding has been recorded for organisations in Middlesbrough?"
+    places: ["Middlesbrough"]
+    intent: civil-society
+    expected: supported
+    tags: [civil-society, grants]
+    required_tools: [find_place, get_civil_society_profile]
+    required_indicators:
+      - civil_society.grants_in_last_12m_total
+      - civil_society.grants_in_last_12m_count
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Makes clear that 360Giving coverage varies by funder."
+      - "Does not imply unpublished grants are zero."
+
+  - id: Q15
+    question: "Where are the food banks in Newcastle?"
+    places: ["Newcastle upon Tyne"]
+    intent: facilities
+    expected: supported
+    tags: [infrastructure, food]
+    required_tools: [find_place, get_indicators]
+    required_indicators: [infrastructure.food_banks_count]
+    candidate_indicator_keys: []
+    expected_blocks: [text, map, indicator-card]
+    success_criteria:
+      - "Uses the food-bank/facility data rather than substituting a charity-register search."
+      - "Uses point/boundary presentation rather than an invalid choropleth."
+
+  - id: Q16
+    question: "How much community infrastructure is there in Bristol — libraries and community centres?"
+    places: ["Bristol"]
+    intent: facilities
+    expected: supported
+    tags: [infrastructure, community]
+    required_tools: [find_place, get_indicators]
+    required_indicators: [infrastructure.libraries_count, infrastructure.community_centres_count]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Keeps OSM-derived facility counts separate from registered organisations."
+      - "Does not overstate completeness."
+
+  - id: Q17
+    question: "How good is access to green space in Sheffield?"
+    places: ["Sheffield"]
+    intent: indicator
+    expected: supported
+    tags: [environment, greenspace]
+    required_tools: [find_place, get_indicators, get_peer_distribution]
+    required_indicators: [environment.greenspace.access_pct, environment.greenspace.area_per_capita]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card, distribution-chart]
+    success_criteria:
+      - "Uses both access and amount where useful."
+      - "Provides context rather than calling one value simply good or bad."
+
+  - id: Q18
+    question: "What does Soundings know about air quality in Bristol?"
+    places: ["Bristol"]
+    intent: indicator
+    expected: supported
+    tags: [environment, air-quality]
+    required_tools: [find_place, get_indicators]
+    required_indicators: [environment.air_quality.pm25, environment.air_quality.no2]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "States that the values are modelled/centroid sampled."
+      - "Notes that local exposure can vary."
+
+  - id: Q19
+    question: "How physically inactive is Gateshead compared with other places?"
+    places: ["Gateshead"]
+    intent: compare
+    expected: supported
+    tags: [sport, wellbeing, peers]
+    required_tools: [find_place, get_peer_distribution]
+    required_indicators: [sport.inactive_share]
+    candidate_indicator_keys: []
+    expected_blocks: [text, distribution-chart]
+    success_criteria:
+      - "Uses the Active Lives measure and peer context."
+      - "Reports the share consistently."
+
+  - id: Q20
+    question: "How many active companies are registered in Manchester, and is that high for its population?"
+    places: ["Manchester"]
+    intent: compare
+    expected: supported
+    tags: [economy, business]
+    required_tools: [find_place, get_indicators, get_peer_distribution]
+    required_indicators: [economy.active_companies_count, economy.active_companies_per_1000]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card, distribution-chart]
+    success_criteria:
+      - "Uses the per-1,000 measure for comparability."
+      - "Notes the registered-office caveat."
+
+  - id: Q21
+    question: "How do Sheffield and Middlesbrough differ across population, employment, health and deprivation?"
+    places: ["Sheffield", "Middlesbrough"]
+    intent: compare
+    expected: supported
+    tags: [comparison, cross-domain]
+    required_tools: [find_place, compare_places]
+    required_indicators:
+      - population.total
+      - economy.employment_rate
+      - health.life_expectancy.male
+      - deprivation.imd.score
+    candidate_indicator_keys: []
+    expected_blocks: [text, compare-chart]
+    success_criteria:
+      - "Compares like-for-like indicators and periods."
+      - "Does not collapse several domains into a single unsupported score."
+
+  - id: Q22
+    question: "How common is overcrowding in Birmingham?"
+    places: ["Birmingham"]
+    intent: indicator
+    expected: supported
+    tags: [housing, census]
+    required_tools: [find_place, get_indicators]
+    required_indicators: [housing.overcrowding_share]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Uses the Census occupancy-rating derived measure."
+      - "States that the measure is Census-based rather than current monthly data."
+
+  - id: Q23
+    question: "How affordable is housing in Bristol compared with similar places?"
+    places: ["Bristol"]
+    intent: compare
+    expected: partial
+    tags: [housing, affordability, peers]
+    required_tools: [find_place, compare_places]
+    required_indicators: [housing.affordability_ratio]
+    candidate_indicator_keys: []
+    expected_blocks: [text, compare-chart]
+    success_criteria:
+      - "If data are unavailable, says so rather than substituting another housing measure."
+      - "If available, explains what the ratio means."
+    known_gap: "The current affordability mapping has not been live-verified in this consolidation."
+
+  - id: Q24
+    question: "What has got noticeably worse in Sunderland in the last few years?"
+    places: ["Sunderland"]
+    intent: insight
+    expected: partial
+    tags: [trend, cross-domain, insight]
+    required_tools: [find_place, detect_insights, get_trend]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text, insight-callout, trend-chart]
+    success_criteria:
+      - "Compares actual time series rather than inferring decline from a single snapshot."
+      - "Distinguishes different update cadences."
+    known_gap: "Not every catalogue domain has comparable multi-year series at LTLA level."
+
+  - id: Q25
+    question: "What pressures are families in Stockton-on-Tees facing?"
+    places: ["Stockton-on-Tees"]
+    intent: synthesis
+    expected: partial
+    tags: [families, cross-domain]
+    required_tools: [find_place, get_indicators, detect_insights]
+    required_indicators:
+      - education.fsm_eligibility_share
+      - economy.universal_credit_claimants
+      - housing.overcrowding_share
+    candidate_indicator_keys: [deprivation.child_poverty_ahc]
+    expected_blocks: [text, indicator-card, insight-callout]
+    success_criteria:
+      - "Uses several signals and calls them signals/proxies where appropriate."
+      - "Does not invent a child-poverty rate."
+    known_gap: "The direct AHC child-poverty proportion was retired pending an explicit tested derivation."
+
+  - id: Q26
+    question: "Summarise Glasgow."
+    places: ["Glasgow"]
+    intent: summary
+    expected: partial
+    tags: [summary, scotland, coverage]
+    required_tools: [find_place, get_place_profile, detect_insights]
+    required_indicators: [population.total, economy.universal_credit_claimants]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Uses UK-wide data where available."
+      - "Explicitly marks England-only gaps rather than implying full UK parity."
+    known_gap: "Several high-value sources and deprivation measures are England-only."
+
+  - id: Q27
+    question: "Summarise Belfast."
+    places: ["Belfast"]
+    intent: summary
+    expected: partial
+    tags: [summary, northern-ireland, coverage]
+    required_tools: [find_place, get_place_profile, detect_insights]
+    required_indicators: [population.total]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Uses data that genuinely cover Northern Ireland."
+      - "Makes missing England/GB-only indicators visible."
+    known_gap: "Cross-source coverage is thinner for Northern Ireland than for English local authorities."
+
+  - id: Q28
+    question: "Which charities operate in Glasgow, and what are they focused on?"
+    places: ["Glasgow"]
+    intent: civil-society
+    expected: gap
+    tags: [civil-society, scotland, coverage]
+    required_tools: [find_place, find_organisations_in_place]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text, organisations]
+    success_criteria:
+      - "Returns an explicit partial/unavailable result rather than a complete-looking zero."
+      - "Does not present a national charity slice as Glasgow-specific."
+    known_gap: "Current Find That Charity v1 supports direct lookup but not Scottish local-authority place discovery."
+
+  - id: Q29
+    question: "What is the claimant count rate in Stockton-on-Tees, and how has it changed?"
+    places: ["Stockton-on-Tees"]
+    intent: trend
+    expected: gap
+    tags: [economy, derived-measure, trend]
+    required_tools: [find_place, get_trend]
+    required_indicators: []
+    candidate_indicator_keys: [economy.claimant_count_rate]
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "Does not relabel Alternative Claimant Count totals as a rate."
+      - "Explains that a denominator/derived measure is required."
+    known_gap: "The former rate mapping was retired because the live Stat-Xplore product exposes counts, not the advertised proportion."
+
+  - id: Q30
+    question: "What proportion of children in Middlesbrough are in relative low-income families after housing costs?"
+    places: ["Middlesbrough"]
+    intent: indicator
+    expected: gap
+    tags: [deprivation, families, derived-measure]
+    required_tools: [find_place, get_indicators]
+    required_indicators: []
+    candidate_indicator_keys: [deprivation.child_poverty_ahc]
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Does not return the CILIF_AHC count as a proportion."
+      - "Explains that a tested denominator/derivation is needed."
+    known_gap: "The live CILIF_AHC dataset exposes a count measure; the former proportion-shaped mapping was retired."

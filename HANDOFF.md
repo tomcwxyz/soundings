@@ -4,7 +4,7 @@
 
 Soundings is no longer at the Phase 5 position described by the old README. Phases 0–5 are complete, Phase 6a's depth work is shipped, and Phase 6b has already delivered several additional data sources.
 
-The 29 August work is a **consolidation pass**, not a feature phase.
+The consolidation pass is complete. Development has now moved into **Phase 6.5 — Questions before sources**.
 
 ### Consolidation completed
 
@@ -42,17 +42,21 @@ That is the useful product boundary. Avoid letting the web UI become the only wa
 
 ## What to do next
 
-The next product work should be chosen from real usage rather than automatically continuing the old source-expansion list.
+Phase 6.5 starts from `evaluation/questions.yaml`: a curated baseline of 30 real place questions with expected supported/partial/gap status, required tools/indicators, likely answer forms and explicit success criteria.
 
-Likely candidates:
+The immediate development loop is:
 
-- improve the interactive map and cross-layer exploration;
-- deepen high-value questions where current data is weak;
-- selectively add Phase 6b sources that unlock those questions;
-- improve corpus/public-learning presentation;
-- expose/use the MCP/API layer more explicitly outside the Soundings website.
+1. validate the question set statically;
+2. inspect/run questions without making the Anthropic smoke a release gate;
+3. classify failures as routing, missing-data, geography, upstream, synthesis, presentation or coverage-honesty;
+4. fix the smallest reusable capability that improves the most important questions;
+5. only add a source when a real question requires it.
 
-The nightly infrastructure and currently configured live integrations have now been exercised successfully, including Stat-Xplore. The Anthropic smoke is deliberately skipped for now. The next feature work should start from a question/evaluation set; Scottish/NI organisation place discovery remains the clearest known coverage gap.
+The current baseline deliberately includes known gaps for Scottish local-authority organisation discovery, claimant-count rate and AHC child-poverty proportion. The latter two are derived-measure questions: current Stat-Xplore products expose counts, so Soundings must not return those counts under rate/proportion labels.
+
+The evaluation set is a hypothesis/benchmark, not a claim that every question is already answered well. The manual scoring rubric is in `evaluation/rubric.md`.
+
+The nightly infrastructure and configured live integrations have been exercised successfully, including Stat-Xplore. The Anthropic Ask smoke is deliberately skipped for now.
 
 ## Operations
 
