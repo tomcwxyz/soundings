@@ -94,8 +94,10 @@ class AskOrchestrator:
         for follow-ups) is always captured.
 
         If an answer cache is configured and a fresh entry exists for
-        this query, replay the cached events without calling Claude.
-        Otherwise, run the loop, collect events, and store them.
+        this query, replay the cached events without calling Claude and return
+        its stored message/tool history so a normal follow-up conversation can
+        continue from the cached answer. Legacy cache entries without message
+        history are treated as misses.
 
         Returns the full messages list on success (for conversation
         storage), or None on error/timeout.
@@ -105,11 +107,13 @@ class AskOrchestrator:
         if self._answer_cache is not None and prior_messages is None and not skip_cache:
             place_id = self._prompt_builder.place_id
             cached = await self._answer_cache.get(query, place_id)
-            if cached is not None:
+            if cached is not None and cached.messages is not None:
                 logger.info("Answer cache HIT for query: %s", query[:80])
-                for event in cached:
+                for event in cached.events:
                     await _emit(callback, event)
-                return None
+                return cached.messages
+            if cached is not None:
+                logger.info("Answer cache legacy entry ignored for query: %s", query[:80])
 
         # ── Cache miss — run the Claude loop ─────────────────────────
         client = get_anthropic_client(self._api_key)
@@ -161,6 +165,7 @@ class AskOrchestrator:
                         query,
                         self._prompt_builder.place_id,
                         collected_events,
+                        messages=messages,
                     )
                     logger.info("Answer cache STORED for query: %s", query[:80])
                 except Exception:
