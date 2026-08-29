@@ -1,0 +1,502 @@
+---
+// Public /observations stream — recent experiential evidence contributed by
+// organisations working in UK places. Phase 7 / observations MVP (Task 13).
+import Base from "../layouts/Base.astro";
+import { getObservations } from "../lib/api";
+import type { ObservationRecord } from "../lib/types";
+
+// 12 initial themes (key → label). Mirrors server/soundings/seed/themes.py.
+// Kept inline rather than fetched so the dropdown renders even when the API
+// has no observations yet.
+const THEMES: Record<string, string> = {
+  housing: "Housing",
+  health: "Health",
+  mental_health: "Mental Health",
+  employment: "Employment",
+  education: "Education",
+  crime: "Crime & Safety",
+  food_insecurity: "Food Insecurity",
+  debt: "Debt & Financial Exclusion",
+  immigration_asylum: "Immigration & Asylum",
+  digital_exclusion: "Digital Exclusion",
+  social_isolation: "Social Isolation",
+  climate_environment: "Climate & Environment",
+};
+
+// Query-string filters let the page be linked to / bookmarked. The server
+// applies `theme` server-side; `place` is a client-side text filter over the
+// returned place_name so we don't need a place_id round-trip for a free-text
+// search.
+const url = Astro.url;
+const themeFilter = url.searchParams.get("theme") ?? "";
+const placeFilter = url.searchParams.get("place") ?? "";
+
+const cookieHeader = Astro.request.headers.get("cookie") ?? undefined;
+
+let observations: ObservationRecord[] = [];
+let total = 0;
+let caveats: string[] = [];
+let loadError: string | null = null;
+
+try {
+  const result = await getObservations(
+    {
+      limit: 50,
+      ...(themeFilter ? { theme: themeFilter } : {}),
+    },
+    { cookieHeader },
+  );
+  observations = result.observations;
+  total = result.total;
+  caveats = result.caveats ?? [];
+} catch (err) {
+  loadError = err instanceof Error ? err.message : String(err);
+}
+
+function formatDate(ts: string): string {
+  const d = new Date(ts);
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatPeriod(start: string, end: string | null): string {
+  const s = new Date(start).toLocaleDateString("en-GB", {
+    month: "short",
+    year: "numeric",
+  });
+  if (!end) return s;
+  const e = new Date(end).toLocaleDateString("en-GB", {
+    month: "short",
+    year: "numeric",
+  });
+  return s === e ? s : `${s} – ${e}`;
+}
+
+function confidenceLabel(c: string): string {
+  return c.charAt(0).toUpperCase() + c.slice(1);
+}
+
+function evidenceLabel(e: string): string {
+  return e === "quantitative" ? "Quantitative" : "Qualitative";
+}
+
+function themeLabel(key: string): string {
+  return THEMES[key] ?? key;
+}
+
+// Apply the client-side place text filter here too, so the SSR HTML matches
+// what the client shows before JS hydrates the filter.
+const visible = placeFilter
+  ? observations.filter((o) =>
+      o.place_name.toLowerCase().includes(placeFilter.toLowerCase()),
+    )
+  : observations;
+---
+
+<Base title="Observations — Soundings">
+  <header class="obs-header">
+    <h1>Observations</h1>
+    <p class="lead">
+      Recent experiential evidence contributed by organisations working in UK
+      places. These are first-hand observations — not official statistics —
+      sourced from civil society. Each record is clearly labelled with the
+      contributing organisation, theme, evidence type, and confidence.
+    </p>
+  </header>
+
+  {loadError ? (
+    <p class="error">Couldn't load observations: {loadError}</p>
+  ) : (
+    <>
+      <form class="filter-bar" method="get" action="/observations">
+        <label class="filter-field">
+          <span>Theme</span>
+          <select name="theme">
+            <option value="">All themes</option>
+            {Object.entries(THEMES).map(([key, label]) => (
+              <option value={key} selected={key === themeFilter}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>Place</span>
+          <input
+            type="search"
+            name="place"
+            value={placeFilter}
+            placeholder="Place name…"
+            autocomplete="off"
+          />
+        </label>
+        <button type="submit" class="filter-submit">Filter</button>
+        {(themeFilter || placeFilter) && (
+          <a class="filter-clear" href="/observations">Clear</a>
+        )}
+      </form>
+
+      <div class="obs-toolbar">
+        <p class="text-muted text-small">
+          Showing {visible.length} of {total} observation{total === 1 ? "" : "s"}.
+        </p>
+        <a class="cta" href="/contribute">+ Add an observation</a>
+      </div>
+
+      {caveats.length > 0 && (
+        <ul class="caveats">
+          {caveats.map((c) => (
+            <li>{c}</li>
+          ))}
+        </ul>
+      )}
+
+      {visible.length === 0 ? (
+        <div class="empty-state">
+          <p class="empty-title">No observations yet</p>
+          <p class="empty-desc">
+            Organisations contributing first-hand evidence about the places they
+            work in will appear here. If you work for a charity or community
+            group, consider adding an observation.
+          </p>
+          <a class="cta" href="/contribute">+ Add an observation</a>
+        </div>
+      ) : (
+        <ul class="obs-list">
+          {visible.map((o) => (
+            <li class="obs-card" data-place={o.place_name.toLowerCase()}>
+              <div class="obs-badge-row">
+                <span class={`obs-theme theme-${o.theme}`}>{themeLabel(o.theme)}</span>
+                <span class={`obs-evidence evidence-${o.evidence_type}`}>
+                  {evidenceLabel(o.evidence_type)}
+                </span>
+                <span class={`obs-confidence confidence-${o.confidence}`}>
+                  {confidenceLabel(o.confidence)} confidence
+                </span>
+              </div>
+              <p class="obs-statement">{o.statement}</p>
+              <dl class="obs-meta">
+                <div class="meta-row">
+                  <dt>Organisation</dt>
+                  <dd>{o.organisation_name}</dd>
+                </div>
+                <div class="meta-row">
+                  <dt>Place</dt>
+                  <dd>{o.place_name}</dd>
+                </div>
+                {o.value !== null && o.value !== undefined && (
+                  <div class="meta-row">
+                    <dt>Value</dt>
+                    <dd>
+                      {o.value}
+                      {o.unit ? ` ${o.unit}` : ""}
+                    </dd>
+                  </div>
+                )}
+                {o.period_start && (
+                  <div class="meta-row">
+                    <dt>Period</dt>
+                    <dd>{formatPeriod(o.period_start, o.period_end)}</dd>
+                  </div>
+                )}
+                <div class="meta-row">
+                  <dt>Submitted</dt>
+                  <dd>{formatDate(o.submitted_at)}</dd>
+                </div>
+              </dl>
+              <p class="obs-disclaimer">
+                <span class="obs-tag">Experiential evidence</span>
+                — contributed by a civil society organisation, not an official
+                statistic. Treat as a first-hand observation.
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <section class="obs-footer">
+        <h2>Add your observation</h2>
+        <p>
+          If your organisation works directly in a UK place, you can contribute
+          a first-hand observation to the public stream. Submissions are
+          authenticated and attributed to your organisation.
+        </p>
+        <a class="cta" href="/contribute">+ Add an observation</a>
+      </section>
+    </>
+  )}
+
+  <script>
+    // Progressive enhancement: live-filter the place field without a full
+    // page reload. The form still works without JS (server-rendered GET).
+    const form = document.querySelector("form.filter-bar");
+    const placeInput = form?.querySelector(
+      'input[name="place"]',
+    ) as HTMLInputElement | null;
+    const cards = Array.from(
+      document.querySelectorAll<HTMLLIElement>(".obs-card"),
+    );
+    const countEl = document.querySelector(".obs-toolbar .text-small");
+    const totalEl = document
+      .querySelector(".obs-toolbar .text-small")
+      ?.textContent?.match(/of (\d+)/);
+    const total = totalEl ? parseInt(totalEl[1], 10) : cards.length;
+
+    if (placeInput) {
+      placeInput.addEventListener("input", () => {
+        const q = placeInput.value.trim().toLowerCase();
+        let shown = 0;
+        for (const card of cards) {
+          const place = card.dataset.place ?? "";
+          const match = q === "" || place.includes(q);
+          card.style.display = match ? "" : "none";
+          if (match) shown++;
+        }
+        if (countEl) {
+          countEl.textContent = `Showing ${shown} of ${total} observation${total === 1 ? "" : "s"}.`;
+        }
+      });
+    }
+  </script>
+
+  <style>
+    .obs-header {
+      padding-bottom: var(--space-lg);
+      margin-bottom: var(--space-xl);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .obs-header h1 {
+      margin: 0 0 var(--space-md);
+    }
+    .lead {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      color: var(--color-text-light);
+      line-height: var(--line-height-relaxed);
+    }
+
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-lg);
+    }
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      font-weight: var(--font-weight-medium);
+      font-size: var(--font-size-sm);
+    }
+    .filter-field select,
+    .filter-field input {
+      padding: var(--space-sm) var(--space-md);
+      min-width: 14rem;
+      font-size: var(--font-size-base);
+    }
+    .filter-submit {
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--color-accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-weight: var(--font-weight-medium);
+    }
+    .filter-clear {
+      align-self: center;
+      font-size: var(--font-size-sm);
+      color: var(--color-muted);
+      text-decoration: underline;
+    }
+
+    .obs-toolbar {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+
+    .cta {
+      display: inline-block;
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--color-accent);
+      color: #fff;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      font-weight: var(--font-weight-medium);
+      white-space: nowrap;
+    }
+    .cta:hover {
+      opacity: 0.9;
+    }
+
+    .caveats {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 var(--space-lg);
+    }
+    .caveats li {
+      padding: var(--space-sm) var(--space-md);
+      background: rgba(234, 179, 8, 0.08);
+      border-left: 3px solid #eab308;
+      color: var(--color-text-light);
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-xs);
+      border-radius: var(--radius-sm);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: var(--space-3xl) var(--space-xl);
+    }
+    .empty-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-primary);
+      margin-bottom: var(--space-sm);
+    }
+    .empty-desc {
+      color: var(--color-text-light);
+      max-width: 32rem;
+      margin: 0 auto var(--space-lg);
+      line-height: var(--line-height-relaxed);
+    }
+
+    .obs-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 var(--space-2xl);
+    }
+    .obs-card {
+      padding: var(--space-lg);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-light);
+      border-radius: var(--radius);
+      margin-bottom: var(--space-md);
+      transition: box-shadow 0.15s ease;
+    }
+    .obs-card:hover {
+      box-shadow: var(--shadow-sm);
+    }
+    .obs-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+    .obs-theme,
+    .obs-evidence,
+    .obs-confidence {
+      display: inline-block;
+      padding: 0.15em 0.6em;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+    }
+    .obs-theme {
+      background: rgba(26, 47, 78, 0.08);
+      color: var(--color-primary);
+    }
+    .obs-evidence {
+      background: rgba(74, 124, 89, 0.1);
+      color: var(--color-accent);
+    }
+    .obs-confidence {
+      background: rgba(107, 114, 128, 0.12);
+      color: var(--color-text-light);
+    }
+    .confidence-high {
+      background: rgba(34, 197, 94, 0.12);
+      color: #16a34a;
+    }
+    .confidence-medium {
+      background: rgba(234, 179, 8, 0.15);
+      color: #a16207;
+    }
+    .confidence-low {
+      background: rgba(239, 68, 68, 0.12);
+      color: #dc2626;
+    }
+
+    .obs-statement {
+      font-size: var(--font-size-lg);
+      line-height: var(--line-height-relaxed);
+      color: var(--color-text);
+      margin: 0 0 var(--space-md);
+    }
+
+    .obs-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+      gap: var(--space-sm) var(--space-lg);
+      margin: 0 0 var(--space-md);
+      padding: var(--space-md) 0;
+      border-top: 1px solid var(--color-border-light);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+    .meta-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .meta-row dt {
+      font-size: var(--font-size-xs);
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .meta-row dd {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text);
+    }
+
+    .obs-disclaimer {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-light);
+      margin: 0;
+    }
+    .obs-tag {
+      display: inline-block;
+      padding: 0.1em 0.5em;
+      background: rgba(59, 130, 246, 0.12);
+      color: #2563eb;
+      border-radius: var(--radius-sm);
+      font-weight: var(--font-weight-medium);
+      font-size: var(--font-size-xs);
+    }
+
+    .obs-footer {
+      margin-top: var(--space-3xl);
+      padding-top: var(--space-xl);
+      border-top: 1px solid var(--color-border);
+    }
+    .obs-footer h2 {
+      margin-bottom: var(--space-md);
+    }
+    .obs-footer p {
+      line-height: var(--line-height-relaxed);
+      color: var(--color-text-light);
+      margin-bottom: var(--space-lg);
+      max-width: 40rem;
+    }
+
+    .error {
+      padding: var(--space-lg);
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: var(--radius);
+      margin-bottom: var(--space-lg);
+    }
+  </style>
+</Base>

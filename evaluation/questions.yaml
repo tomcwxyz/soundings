@@ -440,3 +440,18 @@ questions:
       - "Does not return the CILIF_AHC count as a proportion."
       - "Explains that a tested denominator/derivation is needed."
     known_gap: "The live CILIF_AHC dataset exposes a count measure; the former proportion-shaped mapping was retired."
+
+  - id: Q31
+    question: "Have any local organisations reported on food bank demand in Stockton-on-Tees recently?"
+    places: ["Stockton-on-Tees"]
+    intent: observation
+    expected: supported
+    tags: [observations, civil-society, community-reported]
+    required_tools: [find_place, get_observations]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text]
+    success_criteria:
+      - "Draws on organisation-submitted observations rather than only catalogue indicators."
+      - "Attributes each observation to the submitting organisation and states its confidence/evidence type."
+      - "Says plainly when no observations exist for the place/theme instead of inventing one."

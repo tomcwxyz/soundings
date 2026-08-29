@@ -8,6 +8,7 @@ implementations are also registered with the MCP server at `/mcp`.
 from fastapi import APIRouter, Request
 
 from soundings.contracts.civil_society import CivilSocietyProfile
+from soundings.contracts.observation import GetObservationsInput, GetObservationsOutput
 from soundings.tools.compare_places import (
     ComparePlacesInput,
     ComparePlacesOutput,
@@ -39,6 +40,8 @@ from soundings.tools.get_indicators import (
     get_indicators,
 )
 from soundings.tools.get_indicators import tool_spec as get_indicators_spec
+from soundings.tools.get_observations import get_observations
+from soundings.tools.get_observations import tool_spec as get_observations_spec
 from soundings.tools.get_peer_distribution import (
     GetPeerDistributionInput,
     GetPeerDistributionOutput,
@@ -69,6 +72,7 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
         "tools": [
             find_place_spec(),
             get_indicators_spec(),
+            get_observations_spec(),
             get_place_profile_spec(),
             compare_places_spec(),
             get_trend_spec(),
@@ -87,6 +91,13 @@ async def http_find_place(input: FindPlaceInput, request: Request) -> FindPlaceO
 @router.post("/get_indicators", response_model=GetIndicatorsOutput)
 async def http_get_indicators(input: GetIndicatorsInput, request: Request) -> GetIndicatorsOutput:
     return await get_indicators(input, request.app.state.orchestrator)
+
+
+@router.post("/get_observations", response_model=GetObservationsOutput)
+async def http_get_observations(
+    input: GetObservationsInput, request: Request
+) -> GetObservationsOutput:
+    return await get_observations(input, request.app.state.engine)
 
 
 @router.post("/get_place_profile", response_model=GetPlaceProfileOutput)

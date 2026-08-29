@@ -64,6 +64,18 @@ export interface GetIndicatorsResponse {
   results: IndicatorValue[];
 }
 
+export interface ObservationSummaryItem {
+  theme: string;
+  count: number;
+  latest_submission: string;
+  organisation_names: string[];
+}
+
+export interface ObservationSummary {
+  total_observations: number;
+  themes: ObservationSummaryItem[];
+}
+
 export interface PlaceProfile {
   place: {
     id: string;
@@ -71,6 +83,7 @@ export interface PlaceProfile {
     type: string;
   };
   indicators: IndicatorValue[];
+  observations_summary: ObservationSummary | null;
 }
 
 // compare_places (spec §4.4 / Phase 3 Block G) ------------------------------
@@ -135,6 +148,100 @@ export interface ConsentResponse {
 
 export interface FeedbackResponse {
   ok: true;
+}
+
+// observations (Phase 7 / observations MVP) -----------------------------------
+
+export type EvidenceType = "quantitative" | "qualitative";
+export type ConfidenceLevel = "high" | "medium" | "low";
+
+export interface ObservationRecord {
+  id: string;
+  organisation_id: string;
+  organisation_name: string;
+  place_id: string;
+  place_name: string;
+  period_start: string;
+  period_end: string | null;
+  theme: string;
+  statement: string;
+  indicator_key: string | null;
+  value: number | null;
+  unit: string | null;
+  evidence_type: EvidenceType;
+  methodology_note: string | null;
+  confidence: ConfidenceLevel;
+  submitted_at: string;
+}
+
+export interface ObservationSummaryItem {
+  theme: string;
+  count: number;
+  latest_submission: string;
+  organisation_names: string[];
+}
+
+export interface ObservationSummary {
+  total_observations: number;
+  themes: ObservationSummaryItem[];
+}
+
+export interface ObservationSubmit {
+  organisation_id: string;
+  place_id: string;
+  period_start: string;
+  period_end?: string | null;
+  theme: string;
+  statement: string;
+  indicator_key?: string | null;
+  value?: number | null;
+  unit?: string | null;
+  evidence_type: EvidenceType;
+  methodology_note?: string | null;
+  confidence: ConfidenceLevel;
+}
+
+export interface SubmitObservationOutput {
+  status: "accepted";
+  observation_id: string;
+}
+
+export interface GetObservationsResponse {
+  observations: ObservationRecord[];
+  total: number;
+  summary: ObservationSummary | null;
+  caveats: string[];
+}
+
+// contribute auth (observations MVP) ----------------------------------------
+
+export interface RequestMagicLinkInput {
+  organisation_id: string;
+  email: string;
+}
+
+export interface RequestMagicLinkOutput {
+  status: "link_sent";
+}
+
+export interface VerifyMagicLinkInput {
+  token: string;
+}
+
+export interface VerifyMagicLinkOutput {
+  status: "verified";
+  organisation_id: string;
+}
+
+export interface SignupOrgInput {
+  name: string;
+  email: string;
+  primary_place_id: string;
+}
+
+export interface SignupOrgOutput {
+  status: "created" | "exists";
+  organisation_id: string;
 }
 
 // find_organisations_in_place (spec §4.6 / Phase 4 Block D) ------------------------

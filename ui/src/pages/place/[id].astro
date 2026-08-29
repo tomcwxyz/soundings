@@ -3,6 +3,7 @@ import Base from "../../layouts/Base.astro";
 import AskBox from "../../components/AskBox.astro";
 import DomainSection from "../../components/DomainSection.astro";
 import CivilSocietyPanel from "../../components/CivilSocietyPanel.astro";
+import ObservationsPanel from "../../components/ObservationsPanel.astro";
 import SourceCitations from "../../components/SourceCitations.astro";
 import DataPanel from "../../components/DataPanel.astro";
 import { getPlaceProfile, getTrend } from "../../lib/api";
@@ -113,6 +114,8 @@ const sources: SourceRef[] = profile
       />
 
       <CivilSocietyPanel placeId={profile.place.id} cookieHeader={cookieHeader} />
+
+      <ObservationsPanel summary={profile.observations_summary} placeId={profile.place.id} />
     </>
   )}
 
