@@ -8,16 +8,16 @@ from urllib.parse import quote
 import httpx
 
 BASE = "https://stat-xplore.dwp.gov.uk/webapi/rest/v1/schema"
+TARGET_FOLDERS = ("str:folder:facc", "str:folder:fcilif")
 TERMS = (
-    "claimant",
-    "low income",
-    "child",
-    "poverty",
     "geography",
     "local authority",
     "date",
     "quarter",
     "year",
+    "count",
+    "rate",
+    "percentage",
 )
 
 
@@ -34,13 +34,13 @@ def relevant(item: dict) -> bool:
     return any(term in haystack for term in TERMS)
 
 
-async def get(client: httpx.AsyncClient, schema_id: str | None = None) -> dict:
-    url = BASE if schema_id is None else f"{BASE}/{quote(schema_id, safe='')}"
+async def get(client: httpx.AsyncClient, schema_id: str) -> dict:
+    url = f"{BASE}/{quote(schema_id, safe='')}"
     response = await client.get(
         url,
         headers={"APIKey": os.environ["STATXPLORE_API_KEY"]},
     )
-    print("GET", schema_id or "<root>", response.status_code)
+    print("GET", schema_id, response.status_code)
     if response.status_code >= 400:
         print(response.text[:1000])
         return {}
@@ -48,38 +48,33 @@ async def get(client: httpx.AsyncClient, schema_id: str | None = None) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
-async def inspect(client: httpx.AsyncClient, schema_id: str, depth: int = 0) -> None:
-    payload = await get(client, schema_id)
+async def inspect_database(client: httpx.AsyncClient, database_id: str) -> None:
+    payload = await get(client, database_id)
     children = [c for c in payload.get("children", []) if isinstance(c, dict)]
-    selected = [c for c in children if relevant(c)]
-    print("NODE", json.dumps(brief(payload)))
-    print("RELEVANT_CHILDREN", json.dumps([brief(c) for c in selected], indent=2))
-    if depth >= 2:
-        return
-    for child in selected:
+    print("DATABASE", json.dumps(brief(payload)))
+    print("DATABASE_RELEVANT", json.dumps([brief(c) for c in children if relevant(c)], indent=2))
+
+    for child in [c for c in children if relevant(c)]:
         child_id = child.get("id")
-        if isinstance(child_id, str):
-            await inspect(client, child_id, depth + 1)
+        if not isinstance(child_id, str):
+            continue
+        detail = await get(client, child_id)
+        grandchildren = [c for c in detail.get("children", []) if isinstance(c, dict)]
+        print("CHILD", json.dumps(brief(detail)))
+        print("CHILDREN", json.dumps([brief(c) for c in grandchildren], indent=2))
 
 
 async def main() -> None:
     async with httpx.AsyncClient(timeout=90.0) as client:
-        root = await get(client)
-        root_children = [c for c in root.get("children", []) if isinstance(c, dict)]
-        matches = [c for c in root_children if relevant(c)]
-        print("ROOT_MATCHES", json.dumps([brief(c) for c in matches], indent=2))
-
-        candidates = {
-            "str:database:cc_quarterly",
-            "str:database:children_in_low_income_families_ahc",
-        }
-        candidates.update(
-            c["id"]
-            for c in matches
-            if isinstance(c.get("id"), str) and c.get("type") == "DATABASE"
-        )
-        for candidate in sorted(candidates):
-            await inspect(client, candidate)
+        for folder_id in TARGET_FOLDERS:
+            folder = await get(client, folder_id)
+            children = [c for c in folder.get("children", []) if isinstance(c, dict)]
+            print("FOLDER", json.dumps(brief(folder)))
+            print("FOLDER_CHILDREN", json.dumps([brief(c) for c in children], indent=2))
+            for child in children:
+                child_id = child.get("id")
+                if child.get("type") == "DATABASE" and isinstance(child_id, str):
+                    await inspect_database(client, child_id)
 
 
 if __name__ == "__main__":
