@@ -11,9 +11,20 @@ function normaliseQuery(query: string): string {
   return query.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-export function readAskHistory(storage: Storage = window.localStorage): AskHistoryEntry[] {
+function resolveStorage(storage?: Storage): Storage | null {
+  if (storage) return storage;
   try {
-    const raw = storage.getItem(STORAGE_KEY);
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readAskHistory(storage?: Storage): AskHistoryEntry[] {
+  const resolved = resolveStorage(storage);
+  if (!resolved) return [];
+  try {
+    const raw = resolved.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -36,13 +47,16 @@ export function readAskHistory(storage: Storage = window.localStorage): AskHisto
 export function rememberQuestion(
   query: string,
   placeId?: string,
-  storage: Storage = window.localStorage,
+  storage?: Storage,
 ): void {
   const trimmed = query.trim();
   if (!trimmed) return;
 
   const key = normaliseQuery(trimmed) + "|" + (placeId ?? "");
-  const existing = readAskHistory(storage).filter(
+  const resolved = resolveStorage(storage);
+  if (!resolved) return;
+
+  const existing = readAskHistory(resolved).filter(
     (entry) =>
       normaliseQuery(entry.query) + "|" + (entry.placeId ?? "") !== key,
   );
@@ -56,7 +70,7 @@ export function rememberQuestion(
   ].slice(0, MAX_HISTORY);
 
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(next));
+    resolved.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
     // Storage can be unavailable in private/restricted browser contexts.
   }
@@ -64,7 +78,7 @@ export function rememberQuestion(
 
 export function recentQuestions(
   placeId?: string,
-  storage: Storage = window.localStorage,
+  storage?: Storage,
 ): AskHistoryEntry[] {
   const entries = readAskHistory(storage);
   if (!placeId) return entries;
