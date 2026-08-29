@@ -4,12 +4,12 @@ Covers the current capability boundary end-to-end:
 
 - England (`ltla24:E06000004`, Stockton-on-Tees) → SQL SELECT from
   `data.organisation` (Charity Commission loader path).
-- Scotland (`ltla24:S12000033`, Aberdeen City) → empty result because
+- Scotland (`ltla24:S12000033`, Aberdeen City) → partial empty result because
   Find That Charity v1 no longer exposes the filtered place-discovery
   endpoint the original Phase 4 implementation depended on.
 
-The Scotland leg deliberately fails closed rather than returning a national
-slice and presenting it as local-authority data.
+The Scotland leg deliberately reports missing coverage rather than returning a
+national slice as local data or presenting an ordinary complete-looking empty result.
 """
 
 from collections.abc import AsyncIterator
@@ -134,9 +134,14 @@ async def test_find_organisations_serves_england_and_fails_closed_for_scotland()
     )
 
     # Scotland: current FTC v1 has direct lookup but no place discovery.
-    # Soundings must return no organisations rather than national data
-    # misrepresented as Aberdeen-specific.
+    # Soundings returns no invented organisations, while explicitly reporting
+    # the missing coverage so callers can distinguish it from a true zero.
     assert scotland["organisations"] == []
+    assert scotland["partial"] is True
+    assert any(
+        "place discovery unavailable" in caveat.lower()
+        for caveat in scotland["caveats"]
+    )
 
     # Response-shape sanity (mirrors FindOrganisationsInPlaceOutput).
     for response in (england, scotland):
