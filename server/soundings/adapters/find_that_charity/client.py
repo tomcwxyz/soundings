@@ -1,14 +1,13 @@
 """Async HTTP client for the Find That Charity API.
 
-Base: https://findthatcharity.uk/api/
+Base: https://findthatcharity.uk/api/v1/
 
-Public, no auth required. Two endpoints:
+Public, no auth required. The current API exposes direct charity and
+organisation lookup, but no longer exposes the legacy country/name/postcode
+charity search endpoint Soundings originally used for place discovery.
 
-- `GET /charity/{id}` — single-charity detail lookup by registered ID
-  (cross-regulator: GB-CHC-NNNNNN for England/Wales, SC-NNNNNN for Scotland,
-  NI-NNNNNN for Northern Ireland).
-- `GET /charity/search` — cross-jurisdiction search with filters:
-  `name`, `postcode`, `country`.
+- `GET /charities/{id}` — single-charity detail lookup by registered ID.
+- `GET /organisations/{id}` — canonical organisation lookup.
 
 Used by the FindThatCharityAdapter to provide organisation lookup for
 Scotland and Northern Ireland (E&W uses the Charity Commission loader).
@@ -20,7 +19,7 @@ from typing import Any
 import httpx
 from aiolimiter import AsyncLimiter
 
-FIND_THAT_CHARITY_BASE = "https://findthatcharity.uk/api"
+FIND_THAT_CHARITY_BASE = "https://findthatcharity.uk/api/v1"
 
 
 @dataclass
@@ -72,7 +71,7 @@ class FindThatCharityClient:
         async with self._limiter:
             client = self._client or httpx.AsyncClient(timeout=30.0)
             try:
-                response = await client.get(f"{FIND_THAT_CHARITY_BASE}/charity/{charity_id}")
+                response = await client.get(f"{FIND_THAT_CHARITY_BASE}/charities/{charity_id}")
             finally:
                 if self._owns_client:
                     await client.aclose()
@@ -81,7 +80,12 @@ class FindThatCharityClient:
             return None
         response.raise_for_status()
         payload = response.json()
-        return self._parse_charity_detail(payload)
+        if not isinstance(payload, dict):
+            return None
+        result = payload.get("result")
+        if not isinstance(result, dict):
+            return None
+        return self._parse_charity_detail(result, requested_id=charity_id)
 
     async def search(
         self,
@@ -102,50 +106,36 @@ class FindThatCharityClient:
         Returns:
             List of CharitySearchResult objects.
         """
-        params: dict[str, Any] = {"limit": limit}
-        if name:
-            params["name"] = name
-        if postcode:
-            params["postcode"] = postcode
-        if country:
-            params["country"] = country
-
-        async with self._limiter:
-            client = self._client or httpx.AsyncClient(timeout=30.0)
-            try:
-                response = await client.get(
-                    f"{FIND_THAT_CHARITY_BASE}/charity/search",
-                    params=params,
-                )
-            finally:
-                if self._owns_client:
-                    await client.aclose()
-
-        response.raise_for_status()
-        payload = response.json()
-
-        results: list[CharitySearchResult] = []
-        for item in payload.get("results", []):
-            results.append(
-                CharitySearchResult(
-                    id=item.get("id", ""),
-                    name=item.get("name", ""),
-                    postcode=item.get("postcode"),
-                    country=item.get("country", ""),
-                )
-            )
-        return results
-
-    def _parse_charity_detail(self, payload: dict[str, Any]) -> CharityDetail:
-        """Parse the FTC charity detail response into a typed dataclass."""
-        return CharityDetail(
-            id=payload.get("id", ""),
-            name=payload.get("name", ""),
-            registered_date=payload.get("registered_date"),
-            postcode=payload.get("postcode"),
-            country=payload.get("country", ""),
-            status=payload.get("status", ""),
-            activities=payload.get("activities"),
-            charitable_objects=payload.get("charitable_objects"),
-            source_url=payload.get("url", ""),
+        del name, postcode, country, limit
+        raise NotImplementedError(
+            "Find That Charity v1 no longer exposes the legacy filtered charity search endpoint"
         )
+
+    def _parse_charity_detail(
+        self,
+        payload: dict[str, Any],
+        *,
+        requested_id: str,
+    ) -> CharityDetail:
+        """Parse the current v1 charity response while keeping stable Soundings fields."""
+        active = payload.get("active")
+        return CharityDetail(
+            id=requested_id,
+            name=str(payload.get("name") or ""),
+            registered_date=payload.get("date_registered"),
+            postcode=payload.get("postcode"),
+            country=_country_from_id(requested_id),
+            status="Registered" if active is True else "Removed" if active is False else "",
+            activities=payload.get("activities"),
+            charitable_objects=None,
+            source_url=f"https://findthatcharity.uk/charity/{requested_id}",
+        )
+
+
+def _country_from_id(charity_id: str) -> str:
+    value = charity_id.upper()
+    if value.startswith("SC") or value.startswith("GB-SC-"):
+        return "Scotland"
+    if value.startswith("NI") or value.startswith("GB-NIC-"):
+        return "Northern Ireland"
+    return "England/Wales"

@@ -4,6 +4,7 @@ Nightly only. Requires ANTHROPIC_API_KEY in env.
 """
 
 import json
+import os
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -56,6 +57,8 @@ async def _seed_stockton() -> None:
 
 
 async def test_ask_summary_returns_text_and_indicator_blocks() -> None:
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        pytest.skip("ANTHROPIC_API_KEY not configured for live Ask test")
     await _seed_stockton()
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
