@@ -2,7 +2,7 @@
 
 > Last updated: **29 August 2026**
 >
-> Current position: **Phase 6 consolidation complete; depth shipped, breadth continuing.**
+> Current position: **Phase 6.5 started — questions before sources.**
 
 This file is the canonical short-form statement of what is actually implemented. Older phase plans in `docs/plans/` are useful design history, but should not be read as the current status.
 
@@ -54,7 +54,7 @@ Shipped.
 
 ### Phase 6b — breadth
 
-Partially shipped and still the natural data-expansion track.
+Partially shipped. It remains available as a data-expansion track, but it is no longer the default next step.
 
 Implemented sources include, alongside the earlier ONS/IMD/OHID/DfE/Police/Charity Commission/360Giving stack:
 
@@ -67,6 +67,25 @@ Implemented sources include, alongside the earlier ONS/IMD/OHID/DfE/Police/Chari
 Additional housing, environment, transport, digital and service-quality sources remain candidates rather than assumed commitments.
 
 **Find That Charity capability note:** the current v1 API supports direct charity lookup, but no longer exposes the filtered country/place search Soundings originally used for Scottish and Northern Irish local-authority discovery. That place-discovery path now fails closed with an empty organisation list **and `partial: true` plus an explicit coverage caveat**, rather than presenting national results as local or making missing coverage look like a genuine zero. A replacement area-discovery source is needed before that capability can be restored.
+
+## Phase 6.5 — questions before sources
+
+Started on **29 August 2026**.
+
+Soundings now has a curated 30-question evaluation baseline in `evaluation/questions.yaml`. It spans summaries, peer comparisons, neighbourhoods, trends, health, education, housing, crime, civil society, infrastructure, environment and cross-UK coverage.
+
+Each case records:
+
+- whether the current system is expected to be **supported**, **partial** or a known **gap**;
+- the Soundings tools and active indicators the question should rely on;
+- likely answer-block forms and explicit success criteria;
+- known coverage/derived-measure gaps where relevant.
+
+`server/scripts/check_question_set.py` validates the set without an Anthropic key, and CI ensures the baseline references real tools/active indicators and exercises every non-terminal Ask tool.
+
+This is an **evaluation hypothesis set**, not a claim that all 30 questions are currently answered well. The development loop is now: run/inspect questions, classify the failure, fix the smallest reusable capability, then re-run affected questions. New sources should be added because important questions need them, not simply to increase source count.
+
+The live Ask/Anthropic smoke remains deliberately skipped for this phase.
 
 ## Architecture
 
@@ -97,9 +116,10 @@ These are the repo-level follow-ups that remain after consolidation:
 
 1. **Keep the Anthropic Ask smoke skipped for now.** The rest of the configured live suite is the active integration gate.
 2. **Replace Scottish/NI organisation place discovery** with a source that genuinely supports area-level lookup; FTC direct lookup alone is not sufficient.
-3. **Move into question-led evaluation.** Reintroduce derived claimant-count / child-poverty rates only if real questions need them, with explicit denominators and tests rather than relabelling counts.
-4. **Keep TypeScript/Pydantic mirrors together** whenever organisation or answer-block contracts change.
-5. **Retire stale branches deliberately.** Several branches have no commits ahead of `main`; squash-merged branches can appear technically divergent even where their content is already present. Compare before deleting rather than reviving old branches.
+3. **Run the Phase 6.5 question baseline and classify failures.** Prioritise fixes that improve several high-value questions.
+4. **Reintroduce derived claimant-count / child-poverty rates only if the question baseline justifies them**, with explicit denominators and tests rather than relabelling counts.
+5. **Keep TypeScript/Pydantic mirrors together** whenever organisation or answer-block contracts change.
+6. **Retire stale branches deliberately.** Several branches have no commits ahead of `main`; squash-merged branches can appear technically divergent even where their content is already present. Compare before deleting rather than reviving old branches.
 
 ## Branch notes from the consolidation
 
