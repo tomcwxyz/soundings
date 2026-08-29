@@ -31,6 +31,8 @@ async def test_scheduler_schedules_one_job_per_loader_source() -> None:
     assert "ons.census2021" in job_source_ids
     assert "mhclg.imd2025" in job_source_ids
     assert "ons.geography" in job_source_ids
+    assert "corpus.retention" in job_source_ids
+    assert "corpus.publication" in job_source_ids
 
 
 def test_source_registry_returns_callable_for_each_phase_1_loader() -> None:

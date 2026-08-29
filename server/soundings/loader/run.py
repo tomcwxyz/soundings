@@ -7,6 +7,7 @@ ENTRYPOINT (Docker Compose `loader` service).
 
 import argparse
 import asyncio
+import logging
 import sys
 from collections.abc import Awaitable, Callable
 
@@ -36,8 +37,10 @@ from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimates
 from soundings.adapters.ons_nspl.loader import NsplLoader
 from soundings.capture.retention import delete_old_raw_records
 from soundings.db.engine import get_engine
+from soundings.publication.automatic import PUBLICATION_CRON, publish_previous_month_if_due
 
 LoaderCallable = Callable[[], Awaitable[None]]
+_log = logging.getLogger("soundings.loader")
 
 
 def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
@@ -116,12 +119,31 @@ async def build_scheduler(
         id="corpus.retention",
         name="corpus.retention",
     )
+
+    async def _publish_corpus() -> None:
+        await publish_previous_month_if_due()
+
+    sched.add_job(
+        _publish_corpus,
+        trigger=CronTrigger.from_crontab(PUBLICATION_CRON),
+        id="corpus.publication",
+        name="corpus.publication",
+    )
     return sched
 
 
 async def _run_forever() -> None:
     engine = get_engine()
     registry = build_source_registry(engine)
+
+    # Catch up a missed first-of-month run before starting the recurring
+    # scheduler. Publication failures are already alerted by publish(); do not
+    # take the source-loader daemon down if the snapshot cannot be written.
+    try:
+        await publish_previous_month_if_due()
+    except Exception:
+        _log.exception("startup corpus publication catch-up failed")
+
     sched = await build_scheduler(engine, registry)
     sched.start()
     try:
