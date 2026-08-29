@@ -1,7 +1,7 @@
 """store conversation messages with cached ask answers
 
-Revision ID: 0009
-Revises: 0008
+Revision ID: 0009_answer_cache_messages
+Revises: 0008_organisation_classification
 Create Date: 2026-08-29
 """
 
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0009"
-down_revision: str | Sequence[str] | None = "0008"
+revision: str = "0009_answer_cache_messages"
+down_revision: str | Sequence[str] | None = "0008_organisation_classification"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
