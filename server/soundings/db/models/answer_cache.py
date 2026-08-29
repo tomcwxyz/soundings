@@ -23,6 +23,7 @@ class AnswerCache(Base):
     question_text: Mapped[str] = mapped_column(Text, nullable=False)
     place_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     events: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
+    messages: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     hit_count: Mapped[int] = mapped_column(default=0)
