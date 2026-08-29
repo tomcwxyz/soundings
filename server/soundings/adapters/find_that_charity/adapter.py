@@ -12,8 +12,10 @@ Per Phase 4 Block C:
 - ttl: 168 hours (weekly)
 
 Does NOT publish indicators. Direct FTC charity lookup remains available in
-the client for enrichment/testing, but `fetch_organisations` returns [] until
-Soundings has a genuine area-discovery source for Scotland and Northern Ireland.
+the client for enrichment/testing, but `fetch_organisations` raises an
+unsupported-capability signal for Scotland/Northern Ireland until Soundings has
+a genuine area-discovery source. The orchestrator converts that into a partial
+response with a caveat rather than a complete-looking empty result.
 """
 
 from collections.abc import Callable
