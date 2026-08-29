@@ -51,11 +51,24 @@ class ConversationStore:
         return conv
 
     def append_messages(self, conversation_id: str, messages: list[dict[str, Any]]) -> None:
-        """Append messages to a conversation and update last_active."""
+        """Append message deltas to a conversation and update last_active."""
         conv = self._store.get(conversation_id)
         if conv is None:
             return
         conv.messages.extend(messages)
+        conv.last_active = datetime.now(tz=UTC)
+
+    def set_messages(self, conversation_id: str, messages: list[dict[str, Any]]) -> None:
+        """Replace a conversation's complete message history.
+
+        AskOrchestrator returns the full history after each turn, including on
+        cache hits. Replacing avoids duplicating earlier turns when follow-ups
+        are stored.
+        """
+        conv = self._store.get(conversation_id)
+        if conv is None:
+            return
+        conv.messages = list(messages)
         conv.last_active = datetime.now(tz=UTC)
 
     def update_place_id(self, conversation_id: str, place_id: str) -> None:

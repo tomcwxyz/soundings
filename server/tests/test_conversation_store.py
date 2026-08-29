@@ -40,6 +40,22 @@ def test_append_messages() -> None:
     assert conv.messages[0]["role"] == "user"
 
 
+def test_set_messages_replaces_complete_history() -> None:
+    store = ConversationStore()
+    cid = store.create()
+    store.append_messages(cid, [{"role": "user", "content": "old"}])
+
+    replacement = [
+        {"role": "user", "content": "new"},
+        {"role": "assistant", "content": [{"type": "text", "text": "answer"}]},
+    ]
+    store.set_messages(cid, replacement)
+
+    conv = store.get(cid)
+    assert conv is not None
+    assert conv.messages == replacement
+
+
 def test_append_updates_last_active() -> None:
     store = ConversationStore(ttl_minutes=1)
     cid = store.create()
