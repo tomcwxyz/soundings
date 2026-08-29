@@ -15,7 +15,7 @@ jobs:
           version: "0.11.12"
       - run: cd server && uv sync --frozen
       - run: cd server && uv run ruff check .
-      - run: cd server && uv run ruff format --check .
+      - run: cd server && uv run ruff format --diff .
       - run: cd server && uv run mypy soundings
 
   test:
