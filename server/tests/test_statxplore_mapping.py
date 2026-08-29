@@ -26,10 +26,8 @@ def test_uc_caseload_entry_carries_long_identifiers() -> None:
     assert uc.unit == "people"
 
 
-def test_mapping_covers_catalogue_statxplore_indicators() -> None:
-    """All catalogue indicators sourced from dwp.statxplore have mappings."""
+def test_mapping_only_exposes_verified_statxplore_indicators() -> None:
+    """Speculative rate-shaped mappings must not be advertised as working."""
     mappings = load_statxplore_mapping()
     keys = {m.indicator_key for m in mappings}
-    assert "economy.universal_credit_claimants" in keys
-    assert "economy.claimant_count_rate" in keys
-    assert "deprivation.child_poverty_ahc" in keys
+    assert keys == {"economy.universal_credit_claimants"}

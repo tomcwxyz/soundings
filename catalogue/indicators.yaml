@@ -349,18 +349,6 @@ indicators:
     caveats:
       - "series_break: IoD 2025 changes datasets and methodology versus IoD 2019. Direct comparison across editions is not recommended."
 
-  - key: deprivation.child_poverty_ahc
-    label: "Children in low-income families (after housing costs)"
-    description: "Number and percentage of children aged under 16 in households with relative low income (below 60% of median, after housing costs)."
-    unit: "proportion"
-    higher_is: "worse"
-    source_id: "dwp.statxplore"
-    available_at: ["ltla24", "utla24", "westminster_constituency_24"]
-    refresh_cadence: "annual"
-    caveats:
-      - "Local-area child poverty AHC statistics published from FYE 2024 onwards following DWP discovery work."
-      - "Three-year averages recommended for sub-regional series due to sample noise."
-
   # ---------------------------------------------------------------------------
   # Economy
   # ---------------------------------------------------------------------------
@@ -384,15 +372,6 @@ indicators:
     source_id: "ons.aps"
     available_at: ["ltla24", "utla24", "region", "country"]
     refresh_cadence: "quarterly"
-
-  - key: economy.claimant_count_rate
-    label: "Claimant count rate (16-64)"
-    description: "People claiming Jobseeker's Allowance plus Universal Credit claimants required to seek work, as a proportion of the resident population aged 16–64."
-    unit: "proportion"
-    higher_is: "worse"
-    source_id: "dwp.statxplore"
-    available_at: ["ltla24", "utla24", "westminster_constituency_24", "region", "country"]
-    refresh_cadence: "monthly"
 
   - key: economy.median_pay_resident
     label: "Median weekly pay (resident-based)"

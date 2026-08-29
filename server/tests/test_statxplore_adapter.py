@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 from soundings.adapters.dwp_statxplore.adapter import DwpStatXploreAdapter
 from soundings.adapters.dwp_statxplore.client import StatXploreClient
+from soundings.adapters.dwp_statxplore.mapping import StatXploreMapping
 from soundings.db.engine import get_engine
 
 pytestmark = pytest.mark.integration
@@ -129,7 +130,16 @@ async def test_date_schema_preserves_annual_period_codes(
     )
 
     adapter = DwpStatXploreAdapter(get_engine(), statxplore_client=fake_client)
-    mapping = adapter._mapping["deprivation.child_poverty_ahc"]
+    mapping = StatXploreMapping(
+        indicator_key="example.annual",
+        database="str:database:annual",
+        measures=["str:count:annual:V_F_ANNUAL"],
+        geography_dim="str:field:annual:V_F_ANNUAL:GEOGRAPHY",
+        geography_value_template="str:value:annual:GEOGRAPHY:{place_code}",
+        date_dim="str:field:annual:F_DATE:DATE_NAME",
+        place_type="ltla24",
+        unit="count",
+    )
     values = await adapter._date_value_ids(mapping)
 
     assert values == {
