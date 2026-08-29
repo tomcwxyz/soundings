@@ -31,6 +31,26 @@ describe("ask history", () => {
     expect(stockton[0]?.placeId).toBe("ltla24:E06000004");
   });
 
+  it("degrades safely when localStorage access is blocked", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("blocked", "SecurityError");
+      },
+    });
+
+    try {
+      expect(readAskHistory()).toEqual([]);
+      expect(recentQuestions()).toEqual([]);
+      expect(() => rememberQuestion("Still works")).not.toThrow();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(window, "localStorage", descriptor);
+      }
+    }
+  });
+
   it("builds a link back to the cached ask URL", () => {
     const href = askHistoryHref({
       query: "What is changing here?",
