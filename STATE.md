@@ -18,7 +18,8 @@ The 29 August consolidation established a clean baseline:
   - Astro/TypeScript typecheck + UI tests.
 - The corrected nightly workflow was exercised manually on **29 August 2026**. The first real run exposed upstream drift; after fixes, a fresh live run passed.
 - Stat-Xplore was then enabled with a real Actions secret and its current authenticated schema was verified. The Universal Credit mapping now uses the live `UC_Monthly` local-authority/date IDs and narrows latest-value queries to one month, avoiding the old 60-second full-series timeout.
-- The latest live validation passed with **13 passed, 1 skipped, 652 deselected**. The remaining skip is the live Ask/Anthropic smoke because `ANTHROPIC_API_KEY` is not configured in Actions.
+- The latest live validation passes with **13 passed and 1 deliberate skip**. The skipped check is the live Ask/Anthropic smoke; it is intentionally not being pursued in the current phase.
+- Live schema inspection also retired two speculative Stat-Xplore capabilities: `economy.claimant_count_rate` and `deprivation.child_poverty_ahc`. The current DWP products expose Alternative Claimant Count and AHC Relative Low Income as counts; Soundings had advertised proportion-shaped values without a tested denominator/derivation. Those indicators are no longer active until a question-led use case justifies a correct derived measure.
 - Live validation also updated source assumptions for DfE pagination, Police.uk rate limiting, Find That Charity v1, and Stat-Xplore's current geography/date schema.
 
 ## Product state
@@ -94,9 +95,9 @@ The private `soundings-ops` repository is for the operated instance only: encryp
 
 These are the repo-level follow-ups that remain after consolidation:
 
-1. **Add the Anthropic Actions secret** if the live Ask smoke should run rather than skip. Stat-Xplore is now configured and live-verified.
+1. **Keep the Anthropic Ask smoke skipped for now.** The rest of the configured live suite is the active integration gate.
 2. **Replace Scottish/NI organisation place discovery** with a source that genuinely supports area-level lookup; FTC direct lookup alone is not sufficient.
-3. **Continue Phase 6b selectively** rather than adding sources simply for breadth; prioritise data that improves real place questions.
+3. **Move into question-led evaluation.** Reintroduce derived claimant-count / child-poverty rates only if real questions need them, with explicit denominators and tests rather than relabelling counts.
 4. **Keep TypeScript/Pydantic mirrors together** whenever organisation or answer-block contracts change.
 5. **Retire stale branches deliberately.** Several branches have no commits ahead of `main`; squash-merged branches can appear technically divergent even where their content is already present. Compare before deleting rather than reviving old branches.
 

@@ -5,8 +5,12 @@
 # long strings that must match Stat-Xplore's internal schema exactly.
 # Discovery requires the API key. The Universal Credit mapping below was
 # live-verified against the authenticated schema on 29 August 2026.
-# Other mappings should still be treated as unverified until each has its
-# own live smoke test.
+#
+# Two older speculative mappings (claimant-count rate and child-poverty AHC
+# proportion) were removed after live schema inspection showed that their
+# pinned database IDs were stale and the current Stat-Xplore products expose
+# counts rather than the proportion-shaped measures those Soundings contracts
+# advertised. Reintroduce them only with an explicit, tested derivation.
 #
 # `geography_dim` is the dimension we filter on by place_id; the
 # adapter recodes it per request. `date_dim` is the time axis used
@@ -28,30 +32,3 @@ mappings:
     place_type: ltla24
     unit: "people"
 
-  - indicator_key: economy.claimant_count_rate
-    database: "str:database:cc_quarterly"
-    measures:
-      - "str:count:cc_quarterly:V_F_CC_QUARTERLY"
-    geography_dim: "str:field:cc_quarterly:V_F_CC_QUARTERLY:GEOGRAPHY"
-    geography_value_template:
-      "str:value:cc_quarterly:V_F_CC_QUARTERLY:GEOGRAPHY:V_C_MASTERGEOG11_UTLA_TO_NATIONAL:{place_code}"
-    date_dim: "str:field:cc_quarterly:V_F_CC_QUARTERLY:DATE_NAME"
-    place_type: ltla24
-    unit: "proportion"
-    caveats:
-      - "Claimant count includes JSA recipients and UC claimants required to seek work."
-
-  - indicator_key: deprivation.child_poverty_ahc
-    database: "str:database:children_in_low_income_families_ahc"
-    measures:
-      - "str:count:children_in_low_income_families_ahc:V_F_CHILDREN"
-    geography_dim:
-      "str:field:children_in_low_income_families_ahc:V_F_CHILDREN:GEOGRAPHY"
-    geography_value_template:
-      "str:value:children_in_low_income_families_ahc:V_F_CHILDREN:GEOGRAPHY:V_C_MASTERGEOG11_UTLA_TO_NATIONAL:{place_code}"
-    date_dim:
-      "str:field:children_in_low_income_families_ahc:V_F_CHILDREN:DATE_NAME"
-    place_type: ltla24
-    unit: "proportion"
-    caveats:
-      - "Local-area child poverty AHC statistics published from FYE 2024 onwards."
