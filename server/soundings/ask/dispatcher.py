@@ -16,6 +16,7 @@ from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import text
 
 from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs
+from soundings.contracts.observation import GetObservationsInput
 from soundings.tools.compare_places import (
     ComparePlacesInput,
     compare_places,
@@ -58,10 +59,7 @@ from soundings.tools.get_indicators import (
 from soundings.tools.get_indicators import (
     tool_spec as get_indicators_spec,
 )
-from soundings.tools.get_observations import (
-    GetObservationsInput,
-    get_observations,
-)
+from soundings.tools.get_observations import get_observations
 from soundings.tools.get_observations import (
     tool_spec as get_observations_spec,
 )

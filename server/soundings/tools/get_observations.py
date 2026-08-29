@@ -10,7 +10,9 @@ Uses raw SQL via ``sqlalchemy.text()`` — the same pattern used throughout
 the codebase (see ``get_place_profile``, ``get_indicators``).
 """
 
-from sqlalchemy import text
+from typing import Any
+
+from sqlalchemy import Row, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.contracts.observation import (
@@ -85,7 +87,7 @@ def _build_where(input: GetObservationsInput) -> tuple[str, dict[str, object]]:
     return where, params
 
 
-def _row_to_record(row: object) -> ObservationRecord:
+def _row_to_record(row: Row[Any]) -> ObservationRecord:
     """Build an ObservationRecord from a SQLAlchemy row."""
     return ObservationRecord(
         id=row.id,

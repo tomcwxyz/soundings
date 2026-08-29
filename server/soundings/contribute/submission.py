@@ -10,6 +10,7 @@ HTTP layer translates that into a 422 response.
 
 from __future__ import annotations
 
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import text
@@ -113,4 +114,4 @@ async def submit_observation(
                 "confidence": observation.confidence,
             },
         )
-        return result.scalar_one()
+        return cast(UUID, result.scalar_one())

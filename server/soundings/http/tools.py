@@ -8,6 +8,7 @@ implementations are also registered with the MCP server at `/mcp`.
 from fastapi import APIRouter, Request
 
 from soundings.contracts.civil_society import CivilSocietyProfile
+from soundings.contracts.observation import GetObservationsInput, GetObservationsOutput
 from soundings.tools.compare_places import (
     ComparePlacesInput,
     ComparePlacesOutput,
@@ -39,11 +40,7 @@ from soundings.tools.get_indicators import (
     get_indicators,
 )
 from soundings.tools.get_indicators import tool_spec as get_indicators_spec
-from soundings.tools.get_observations import (
-    GetObservationsInput,
-    GetObservationsOutput,
-    get_observations,
-)
+from soundings.tools.get_observations import get_observations
 from soundings.tools.get_observations import tool_spec as get_observations_spec
 from soundings.tools.get_peer_distribution import (
     GetPeerDistributionInput,

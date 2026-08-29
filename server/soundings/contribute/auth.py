@@ -19,7 +19,7 @@ import hmac
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Protocol, runtime_checkable
+from typing import Protocol, cast, runtime_checkable
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -129,7 +129,7 @@ class MagicLinkService:
                 text("UPDATE contribution.contributor_session SET used_at = :now WHERE id = :id"),
                 {"now": now, "id": row.id},
             )
-            return row.organisation_id
+            return cast(str, row.organisation_id)
 
     # ------------------------------------------------------------------ #
     # cookie signing / verification
