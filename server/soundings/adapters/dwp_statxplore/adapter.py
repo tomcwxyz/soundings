@@ -157,7 +157,7 @@ class DwpStatXploreAdapter(PassthroughAdapter):
             if not isinstance(value_id, str):
                 continue
             period = value_id.rsplit(":", 1)[-1]
-            if period.isdigit() and len(period) == 6:
+            if period:
                 out[period] = value_id
 
         if out:
