@@ -16,7 +16,8 @@ async def test_fetch_organisations_scotland_returns_empty_until_area_source_exis
     assert result == []
 
 
-async def test_fetch_organisations_northern_ireland_returns_empty_until_area_source_exists() -> None:
+async def test_fetch_organisations_northern_ireland_returns_empty_until_area_source_exists(
+) -> None:
     adapter = FindThatCharityAdapter(MagicMock())
     adapter._ftc = MagicMock()
     adapter._ftc.search = AsyncMock()

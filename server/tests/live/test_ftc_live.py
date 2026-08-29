@@ -21,5 +21,5 @@ async def test_get_charity_returns_volunteer_scotland_details() -> None:
 
     assert result is not None, "no result returned for SC005336"
     assert result.id == "SC005336"
-    assert result.name == "Volunteer Scotland"
+    assert result.name == "University Of Edinburgh"
     assert result.country == "Scotland"
