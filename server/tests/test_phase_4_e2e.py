@@ -1,28 +1,24 @@
-"""Phase 4 e2e — find_organisations_in_place across CC + FTC paths.
+"""Phase 4 e2e — find_organisations_in_place across current source paths.
 
-Per Phase 4 plan Task 28. Covers the mixed-mode dispatch end-to-end:
+Covers the current capability boundary end-to-end:
 
 - England (`ltla24:E06000004`, Stockton-on-Tees) → SQL SELECT from
-  `data.organisation` (CC loader path).
-- Scotland (`ltla24:S12000033`, Aberdeen City) → FTC passthrough.
+  `data.organisation` (Charity Commission loader path).
+- Scotland (`ltla24:S12000033`, Aberdeen City) → empty result because
+  Find That Charity v1 no longer exposes the filtered place-discovery
+  endpoint the original Phase 4 implementation depended on.
 
-Seeds the catalogue + geography + a handful of CC organisations
-directly; patches `FindThatCharityClient.search` to return canned
-results for the Scotland leg so the test doesn't hit the FTC API.
-Asserts the right adapter served each request and the response shape
-matches the contract.
+The Scotland leg deliberately fails closed rather than returning a national
+slice and presenting it as local-authority data.
 """
 
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
-
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
-from soundings.adapters.find_that_charity.client import CharitySearchResult
 from soundings.app import app
 from soundings.db.engine import get_engine
 
@@ -96,20 +92,6 @@ async def _seed() -> None:
             )
 
 
-def _ftc_aberdeen_results() -> list[CharitySearchResult]:
-    return [
-        CharitySearchResult(
-            id="SC005336", name="Glasgow City Mission", postcode=None, country="Scotland"
-        ),
-        CharitySearchResult(
-            id="SC012345",
-            name="Aberdeen Community Trust",
-            postcode="AB10 1XL",
-            country="Scotland",
-        ),
-    ]
-
-
 async def _post(client: AsyncClient, place_id: str) -> dict:
     response = await client.post(
         "/v1/tools/find_organisations_in_place",
@@ -120,24 +102,19 @@ async def _post(client: AsyncClient, place_id: str) -> dict:
 
 
 @pytest.mark.asyncio
-async def test_find_organisations_dispatches_cc_for_england_ftc_for_scotland() -> None:
-    """One test, two legs — proves the dispatch is wired correctly and
-    each leg returns rows with the expected source.source_id."""
+async def test_find_organisations_serves_england_and_fails_closed_for_scotland() -> None:
+    """England remains backed by CC; Scotland returns no invented local results."""
     await _seed()
 
-    with patch(
-        "soundings.adapters.find_that_charity.client.FindThatCharityClient.search",
-        new=AsyncMock(return_value=_ftc_aberdeen_results()),
-    ):
-        async with app.router.lifespan_context(app):
-            async with AsyncClient(
-                transport=ASGITransport(app=app),
-                base_url="http://test",
-            ) as ac:
-                england = await _post(ac, STOCKTON)
-                scotland = await _post(ac, ABERDEEN)
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as ac:
+            england = await _post(ac, STOCKTON)
+            scotland = await _post(ac, ABERDEEN)
 
-    # --- England leg: CC loader served from data.organisation ---
+    # England: Charity Commission loader serves the seeded local organisations.
     assert england["partial"] is False
     england_orgs = england["organisations"]
     assert len(england_orgs) == 2
@@ -149,15 +126,10 @@ async def test_find_organisations_dispatches_cc_for_england_ftc_for_scotland() -
     assert all(o["source"]["cache_status"] == "cached" for o in england_orgs)
     assert all(o["registered_address_place_id"] == STOCKTON for o in england_orgs)
 
-    # --- Scotland leg: FTC passthrough served from the mocked search ---
-    scotland_orgs = scotland["organisations"]
-    assert len(scotland_orgs) == 2
-    assert {o["name"] for o in scotland_orgs} == {
-        "Glasgow City Mission",
-        "Aberdeen Community Trust",
-    }
-    assert all(o["source"]["source_id"] == "find_that_charity" for o in scotland_orgs)
-    assert all(o["source"]["cache_status"] == "live" for o in scotland_orgs)
+    # Scotland: current FTC v1 has direct lookup but no place discovery.
+    # Soundings must return no organisations rather than national data
+    # misrepresented as Aberdeen-specific.
+    assert scotland["organisations"] == []
 
     # Response-shape sanity (mirrors FindOrganisationsInPlaceOutput).
     for response in (england, scotland):
@@ -170,3 +142,4 @@ async def test_find_organisations_dispatches_cc_for_england_ftc_for_scotland() -
                 "recent_grants",
                 "source",
             }
+
