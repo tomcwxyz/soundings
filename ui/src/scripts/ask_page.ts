@@ -1,4 +1,5 @@
       import { streamAsk } from "../lib/answer_stream";
+      import { rememberQuestion } from "../lib/ask_history";
       import { marked } from "marked";
       import type { ComparePlacesResponse } from "../lib/types";
 
@@ -1486,6 +1487,10 @@
               clearThinking();
               finishSteps();
               isStreaming = false;
+              rememberQuestion(query, placeId);
+              window.dispatchEvent(
+                new CustomEvent("soundings:ask-history-updated"),
+              );
               renderFollowUpForm();
               break;
             case "error":
