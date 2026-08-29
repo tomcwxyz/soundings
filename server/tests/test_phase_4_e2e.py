@@ -14,6 +14,7 @@ slice and presenting it as local-authority data.
 
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
