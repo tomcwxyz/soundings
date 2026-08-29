@@ -1,49 +1,70 @@
-# ADR-0004: Corpus publication scope in v1 (local artefacts only)
+# ADR-0004: Corpus publication scope in v1 (local artefacts)
 
-**Status:** Accepted
-**Date:** 2026-05-11
+**Status:** Accepted, amended 2026-08-29  
+**Date:** 2026-05-11  
 **Context:** Phase 2 — Block E publication tasks
 (`docs/plans/2026-05-11-soundings-v1-phase-2-plan.md`).
 
 ## Decision
 
-The v1 monthly publication job (`make publish-corpus`) writes **local
-artefacts only** to `./corpus/`:
+Corpus snapshots remain **local-first artefacts**, but publication is now
+automatic on the operated Docker instance.
 
-- `corpus-YYYY-MM.csv.gz` (flattened-wide)
-- `corpus-YYYY-MM.jsonl.gz` (full nested)
-- `manifest.json` (SHA-256s + catalogue_version + sanitisation_rules_version + git sha)
+The publication job writes to the durable `corpus_data` Docker volume shared
+by the `loader` and `server` services:
 
-It also creates a local git tag `corpus-YYYY-MM` for reproducibility.
-**Pushing the tag and uploading the archives is left to the operator.**
+- `corpus-YYYY-MM.csv.gz` (flattened-wide);
+- `corpus-YYYY-MM.jsonl.gz` (full nested);
+- `manifest.json` (SHA-256s + catalogue version + sanitisation rules version
+  + generator git sha when available).
 
-The design (§5) describes pushing to a Backblaze B2 bucket; we
-explicitly defer that to a follow-up task gated on:
+The files are cumulative snapshots: `corpus-2026-07.*` contains every cleared,
+consented corpus record with a timestamp before 1 August 2026. This preserves
+the existing publication contract.
 
-1. The B2 bucket being created.
-2. `B2_KEY_ID` / `B2_APPLICATION_KEY` stored in `soundings-ops`.
-3. A decision on whether `/about` reads the bucket index directly
-   (single source of truth) or ships a baked list at build time
-   (cheap, eventually-consistent).
+## Automatic schedule
 
-This ADR exists so future-readers don't think the B2 push was
-forgotten — it's a deliberate "local-first" deferral following the
-global rule of preferring local artefacts before reaching for a hosted
-service.
+The existing loader daemon owns the publication schedule:
 
-## Operator workflow in v1
+- **04:30 UTC on the first day of each month**;
+- target period is the previous calendar month;
+- on every loader startup, Soundings checks the current manifest and catches up
+  the previous month if that publication was missed;
+- if the manifest is already current (or manually ahead), publication is
+  skipped;
+- publication failure does not stop source loaders, and the existing alert path
+  is used for the failure.
 
-1. `make publish-corpus PERIOD=2026-05`
-2. Inspect `./corpus/` — verify row counts, manifest hashes.
-3. Decide if the snapshot is releasable.
-4. Manually upload to wherever the public download lives (initially
-   GitHub releases on the repo).
-5. `git push origin corpus-2026-05` to make the tag public.
+This means a host outage on the first of the month does not permanently miss a
+snapshot: the next loader start catches it up.
 
-## When this ADR is superseded
+## Persistence and serving
 
-Add a Task 28b in the Phase 2 plan that wires B2 push using the
-existing manifest. The local artefact write stays — B2 becomes an
-additional sink, not a replacement. ADR-0004 then gets a "superseded
-by …" note rather than being deleted, so the deferral history is
-visible.
+Docker Compose mounts the same named `corpus_data` volume at `/app/corpus`
+for both the API and loader containers. The server image still contains the
+checked-in seed corpus so a newly created Docker volume starts with the latest
+repository snapshot, while subsequent generated snapshots survive rebuilds and
+container replacement.
+
+The public UI/API serves the latest manifest and its files through
+`/v1/corpus/*`.
+
+## Manual publication
+
+`make publish-corpus PERIOD=YYYY-MM` remains available for recovery,
+verification and deliberate re-publication. Manual CLI runs can still create a
+local git tag; the automatic container job deliberately does not because the
+runtime image is not a Git checkout.
+
+## Hosted replication
+
+The original design described pushing snapshots to Backblaze B2. That remains a
+separate optional replication step, gated on:
+
+1. a B2 bucket;
+2. encrypted `B2_KEY_ID` / `B2_APPLICATION_KEY` material in
+   `soundings-ops`;
+3. a retention/restore decision for the remote archive.
+
+Local automatic publication is the source of truth until that replication layer
+is added.
