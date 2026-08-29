@@ -106,7 +106,15 @@ class AskOrchestrator:
         # Skip when explicitly requested (conversation store is active).
         if self._answer_cache is not None and prior_messages is None and not skip_cache:
             place_id = self._prompt_builder.place_id
-            cached = await self._answer_cache.get(query, place_id)
+            try:
+                cached = await self._answer_cache.get(query, place_id)
+            except Exception:
+                # Cache availability must never determine Ask availability.
+                # During rolling deploys the schema may briefly lag the app,
+                # and transient DB failures should simply fall through to a
+                # normal model/tool run.
+                logger.warning("Answer cache read failed; treating as miss", exc_info=True)
+                cached = None
             if cached is not None and cached.messages is not None:
                 logger.info("Answer cache HIT for query: %s", query[:80])
                 for event in cached.events:
