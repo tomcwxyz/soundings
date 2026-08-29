@@ -25,7 +25,7 @@ def _tool_names() -> set[str]:
 
 def test_question_set_has_curated_baseline() -> None:
     question_set = load_question_set()
-    assert len(question_set.questions) == 30
+    assert len(question_set.questions) == 31
     assert {case.expected for case in question_set.questions} == {
         "supported",
         "partial",
