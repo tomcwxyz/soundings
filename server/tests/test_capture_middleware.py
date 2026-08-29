@@ -12,6 +12,7 @@ from uuid import UUID, uuid4
 import httpx
 import pytest
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 
 from soundings.capture.context import CaptureContext
 from soundings.capture.middleware import CaptureMiddleware
@@ -104,6 +105,51 @@ async def test_middleware_extracts_nl_question_and_invokes_writer(
     assert ctx.asker_sector == "researcher"
     assert ctx.natural_language_question == "What's the population of Stockton?"
     assert "nl_question" not in ctx.tool_inputs
+
+
+async def test_middleware_captures_ask_query_and_sse_sources() -> None:
+    """The natural-language Ask route should produce a corpus record too."""
+    app = FastAPI()
+    writer = FakeRawWriter()
+    app.state.raw_writer = writer
+    app.add_middleware(CaptureMiddleware)
+    app.add_middleware(SessionMiddleware)
+
+    @app.post("/v1/ask")
+    async def ask(body: dict[str, Any]) -> StreamingResponse:
+        assert body["query"] == "How is Stockton doing?"
+
+        async def events() -> Any:
+            yield (
+                'data: {"type":"sources","sources":'
+                '[{"source_id":"ons.aps"}]}\n\n'
+            )
+            yield 'data: {"type":"done"}\n\n'
+
+        return StreamingResponse(events(), media_type="text/event-stream")
+
+    session_id = uuid4()
+    transport = httpx.ASGITransport(app=app)
+    cookies = {
+        "soundings_session": str(session_id),
+        "soundings_consent": "full",
+    }
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test", cookies=cookies
+    ) as client:
+        response = await client.post(
+            "/v1/ask",
+            json={"query": "How is Stockton doing?"},
+        )
+
+    assert response.status_code == 200
+    assert len(writer.calls) == 1
+    ctx = writer.calls[0]
+    assert ctx.tool_called == "ask"
+    assert ctx.session_id == session_id
+    assert ctx.natural_language_question == "How is Stockton doing?"
+    assert ctx.sources_used == ["ons.aps"]
+    assert ctx.result_status == "ok"
 
 
 async def test_middleware_discards_nl_question_under_non_full_consent(
