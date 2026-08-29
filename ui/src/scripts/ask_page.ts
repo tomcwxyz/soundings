@@ -445,6 +445,7 @@
             id: string;
             name: string;
             classification: string[];
+            operates_in_place_names: string[];
             recent_grants: {
               funder: string;
               amount: number;
@@ -1417,18 +1418,16 @@
           if (placeId) fuBody.place_id = placeId;
           fuBody.conversation_id = conversationId;
 
-          // Temporarily redirect renderBlock to render into the turn's answer area
-          const origRenderBlock = renderBlock;
-          const origRenderError = renderError;
-          renderBlock = function (block: AnswerBlock) {
-            renderBlockInto(aEl, block);
-          };
-          renderError = function (message: string) {
+          // Follow-up answers render into this turn without mutating the
+          // top-level renderer functions. Function declarations are immutable
+          // bindings in TypeScript, and swapping them also made concurrent
+          // rendering state unnecessarily fragile.
+          function renderFollowUpError(message: string) {
             const div = document.createElement("div");
             div.className = "answer-error";
             div.textContent = "Sorry — something went wrong: " + message;
             aEl.appendChild(div);
-          };
+          }
 
           streamAsk(apiBase + "/v1/ask", fuBody, (event) => {
             switch (event.type) {
@@ -1442,7 +1441,7 @@
                 break;
               case "block":
                 clearThinking();
-                renderBlock(event.block);
+                renderBlockInto(aEl, event.block);
                 break;
               case "sources":
                 renderSources(event.sources);
@@ -1451,23 +1450,17 @@
                 clearThinking();
                 finishSteps();
                 isStreaming = false;
-                renderBlock = origRenderBlock;
-                renderError = origRenderError;
                 renderFollowUpForm();
                 break;
               case "error":
-                renderError(event.message);
+                renderFollowUpError(event.message);
                 isStreaming = false;
-                renderBlock = origRenderBlock;
-                renderError = origRenderError;
                 renderFollowUpForm();
                 break;
             }
           }).catch((err) => {
-            renderError(err instanceof Error ? err.message : String(err));
+            renderFollowUpError(err instanceof Error ? err.message : String(err));
             isStreaming = false;
-            renderBlock = origRenderBlock;
-            renderError = origRenderError;
             renderFollowUpForm();
           });
         }

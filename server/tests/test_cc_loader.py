@@ -46,6 +46,17 @@ class _StubBulkClient:
         for row in self._rows:
             yield row
 
+    async def iter_area_of_operation(self) -> AsyncIterator[dict[str, Any]]:
+        # These loader tests exercise the registered-address fallback.
+        # Dedicated client/mapping tests cover area-of-operation parsing.
+        for row in []:
+            yield row
+
+    async def iter_classifications(self) -> AsyncIterator[dict[str, Any]]:
+        # Structured classification loading is covered separately.
+        for row in []:
+            yield row
+
 
 async def _seed_baseline() -> None:
     """Clean slate + the catalogue.source row + the LTLAs we'll claim."""

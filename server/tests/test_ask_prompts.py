@@ -90,10 +90,11 @@ def test_prompt_mentions_air_quality():
     assert "air quality" in prompt.lower()
 
 
-def test_prompt_notes_air_quality_is_point_sensor_data():
+def test_prompt_notes_air_quality_is_centroid_sampled_model_data():
     prompt = SystemPromptBuilder().build()
-    assert "point-sensor" in prompt.lower() or "point sensor" in prompt.lower()
-    assert "interpolat" in prompt.lower()
+    assert "modelled" in prompt.lower()
+    assert "centroid" in prompt.lower()
+    assert "local exposure may vary" in prompt.lower()
 
 
 def test_prompt_mentions_infrastructure_domain():

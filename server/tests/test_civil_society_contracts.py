@@ -27,6 +27,7 @@ def test_profile_round_trips_through_json() -> None:
     profile = CivilSocietyProfile(
         place_id="ltla24:E06000047",
         total_organisations=1034,
+        registered_address_count=900,
         with_reported_income=812,
         median_income=42000.0,
         mean_income=187000.0,
