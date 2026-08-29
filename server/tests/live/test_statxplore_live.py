@@ -4,10 +4,9 @@ Marker `live` — runs nightly, not in PR CI. Requires `STATXPLORE_API_KEY`
 in the env (a GitHub Actions Secret in CI). Skipped with a clear
 message when the key is missing.
 
-Stat-Xplore's `/schema` endpoint is auth-gated (503 without a key), so
-the cube identifiers pinned in `catalogue/statxplore-mapping.yaml` are
-plausible-but-unverified — when this test fails, the next step is
-adjusting those identifiers against the real cube schema.
+Stat-Xplore's `/schema` endpoint is auth-gated. The Universal Credit
+mapping exercised here was verified against the live authenticated schema
+on 29 August 2026; this test guards against future schema drift.
 """
 
 import os
