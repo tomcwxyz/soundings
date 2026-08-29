@@ -52,8 +52,12 @@ seed:  ## Full geography + catalogue seed (~1 hour)
 seed-light:  ## Dev seed (single LTLA, ~5 min)
 	docker compose -f infra/docker-compose.yml --project-directory . exec server python -m soundings.seed.run --light
 
-decrypt-env:  ## Decrypt .env from soundings-ops (placeholder until soundings-ops exists)
-	@echo "TODO: implement once soundings-ops repo exists"
+OPS_ENV ?= ../soundings-ops/env/production.env.sops
+
+decrypt-env:  ## Decrypt an encrypted instance env from the sibling soundings-ops repo
+	@test -f "$(OPS_ENV)" || (echo "No encrypted ops env found at $(OPS_ENV). Use .env.example for local development."; exit 1)
+	@command -v sops >/dev/null 2>&1 || (echo "sops is required to decrypt $(OPS_ENV)"; exit 1)
+	sops --decrypt "$(OPS_ENV)" > .env
 
 # PERIOD defaults to last month if not provided. OUT defaults to ./corpus/.
 PERIOD ?=
