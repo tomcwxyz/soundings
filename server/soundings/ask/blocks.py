@@ -5,7 +5,7 @@ payload. The orchestrator validates compose_answer calls against these
 models; the UI receives the same shapes via SSE.
 """
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -81,6 +81,12 @@ class MapOverlay(BaseModel):
         max_length=6,
         description="Required for amenities overlay; ignored for organisations overlay.",
     )
+
+    @model_validator(mode="after")
+    def _require_amenity_indicator_keys(self) -> Self:
+        if self.source == "amenities" and not self.indicator_keys:
+            raise ValueError("amenities overlay requires at least one indicator_key")
+        return self
 
 
 class MapBlock(BaseModel):

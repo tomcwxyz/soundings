@@ -153,6 +153,7 @@ class AskOrchestrator:
             if (
                 collected_events is not None
                 and prior_messages is None
+                and self._answer_cache is not None
                 and any(e.get("type") == "done" for e in collected_events)
             ):
                 try:

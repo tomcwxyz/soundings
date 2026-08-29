@@ -1204,7 +1204,12 @@ class IndicatorOrchestrator:
         normalised_keywords = [k.strip() for k in (keywords or []) if k and k.strip()]
 
         # --- Task 4: build the NotableOrgs object from the single notable_row.
-        def _notable(org_id, name, income, reg_date) -> NotableOrg | None:
+        def _notable(
+            org_id: Any,
+            name: Any,
+            income: Any,
+            reg_date: Any,
+        ) -> NotableOrg | None:
             if org_id is None:
                 return None
             register_url = None
