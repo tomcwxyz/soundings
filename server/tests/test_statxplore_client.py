@@ -67,7 +67,7 @@ async def test_schema_follows_paginated_children(
                 },
                 headers={
                     "Link": (
-                        '<https://stat-xplore.dwp.gov.uk/webapi/rest/v1/'
+                        "<https://stat-xplore.dwp.gov.uk/webapi/rest/v1/"
                         'schema/str%3Avalueset%3Ax?page=2>; rel="next"'
                     )
                 },

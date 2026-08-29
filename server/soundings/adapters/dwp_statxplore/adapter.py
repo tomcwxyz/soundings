@@ -99,11 +99,7 @@ class DwpStatXploreAdapter(PassthroughAdapter):
         date_values: dict[str, str] | None = None
         if period_from is not None or period_to is not None:
             date_values = await self._date_value_ids(mapping)
-            periods = [
-                p
-                for p in sorted(date_values)
-                if _within_window(p, period_from, period_to)
-            ]
+            periods = [p for p in sorted(date_values) if _within_window(p, period_from, period_to)]
             if not periods:
                 return None
 
@@ -178,10 +174,7 @@ class DwpStatXploreAdapter(PassthroughAdapter):
     ) -> list[dict[str, Any]]:
         place_code = _strip_type_prefix(place_id)
         period_key = ",".join(periods) if periods else "all"
-        cache_key = (
-            f"statxplore:{mapping.database}:{mapping.measures[0]}:"
-            f"{place_code}:{period_key}"
-        )
+        cache_key = f"statxplore:{mapping.database}:{mapping.measures[0]}:{place_code}:{period_key}"
         cached = await self._cache.get(self.source_id, cache_key)
         if cached is not None and isinstance(cached, list):
             return cached

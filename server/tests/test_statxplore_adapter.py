@@ -90,10 +90,7 @@ def _build_transport(
         body = json.loads(request.read().decode("utf-8"))
         date_recode = body.get("recodes", {}).get(DATE_FIELD)
         if date_recode and date_recode.get("map"):
-            periods = [
-                value_group[0].rsplit(":", 1)[-1]
-                for value_group in date_recode["map"]
-            ]
+            periods = [value_group[0].rsplit(":", 1)[-1] for value_group in date_recode["map"]]
         else:
             periods = list(PERIOD_VALUES)
         if table_calls is not None:
@@ -110,9 +107,7 @@ async def test_fetch_indicator_returns_latest_period(
     await _seed_statxplore_source()
     table_calls: list[list[str]] = []
 
-    async with httpx.AsyncClient(
-        transport=_build_transport(table_calls=table_calls)
-    ) as http:
+    async with httpx.AsyncClient(transport=_build_transport(table_calls=table_calls)) as http:
         client = StatXploreClient(http_client=http)
         adapter = DwpStatXploreAdapter(get_engine(), statxplore_client=client)
         iv = await adapter.fetch_indicator(
@@ -136,9 +131,7 @@ async def test_fetch_indicator_by_explicit_period(
     await _seed_statxplore_source()
     table_calls: list[list[str]] = []
 
-    async with httpx.AsyncClient(
-        transport=_build_transport(table_calls=table_calls)
-    ) as http:
+    async with httpx.AsyncClient(transport=_build_transport(table_calls=table_calls)) as http:
         client = StatXploreClient(http_client=http)
         adapter = DwpStatXploreAdapter(get_engine(), statxplore_client=client)
         iv = await adapter.fetch_indicator(
@@ -159,9 +152,7 @@ async def test_fetch_trend_returns_ordered_series(
     await _seed_statxplore_source()
     table_calls: list[list[str]] = []
 
-    async with httpx.AsyncClient(
-        transport=_build_transport(table_calls=table_calls)
-    ) as http:
+    async with httpx.AsyncClient(transport=_build_transport(table_calls=table_calls)) as http:
         client = StatXploreClient(http_client=http)
         adapter = DwpStatXploreAdapter(get_engine(), statxplore_client=client)
         trend = await adapter.fetch_trend(
@@ -183,9 +174,7 @@ async def test_fetch_trend_filters_upstream_by_window(
     await _seed_statxplore_source()
     table_calls: list[list[str]] = []
 
-    async with httpx.AsyncClient(
-        transport=_build_transport(table_calls=table_calls)
-    ) as http:
+    async with httpx.AsyncClient(transport=_build_transport(table_calls=table_calls)) as http:
         client = StatXploreClient(http_client=http)
         adapter = DwpStatXploreAdapter(get_engine(), statxplore_client=client)
         trend = await adapter.fetch_trend(
