@@ -1,6 +1,7 @@
 """Integration tests for DwpStatXploreAdapter."""
 
 import json
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
@@ -98,6 +99,43 @@ def _build_transport(
         return httpx.Response(200, json=_sample_payload(periods))
 
     return httpx.MockTransport(handler)
+
+
+async def test_date_schema_preserves_annual_period_codes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("STATXPLORE_API_KEY", "test-key")
+    await _seed_statxplore_source()
+
+    fake_client = MagicMock(spec=StatXploreClient)
+    fake_client.get_schema = AsyncMock(
+        side_effect=[
+            {
+                "children": [
+                    {
+                        "id": "str:valueset:annual",
+                        "label": "Financial year",
+                        "type": "VALUESET",
+                    }
+                ]
+            },
+            {
+                "children": [
+                    {"id": "str:value:annual:2023", "type": "VALUE"},
+                    {"id": "str:value:annual:2024", "type": "VALUE"},
+                ]
+            },
+        ]
+    )
+
+    adapter = DwpStatXploreAdapter(get_engine(), statxplore_client=fake_client)
+    mapping = adapter._mapping["deprivation.child_poverty_ahc"]
+    values = await adapter._date_value_ids(mapping)
+
+    assert values == {
+        "2023": "str:value:annual:2023",
+        "2024": "str:value:annual:2024",
+    }
 
 
 async def test_fetch_indicator_returns_latest_period(
