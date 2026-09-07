@@ -57,9 +57,7 @@ async def get_grant_index_status(engine: AsyncEngine) -> dict[str, Any]:
     )
     async with engine.connect() as conn:
         row = (await conn.execute(stats_sql, {"source_id": SOURCE_ID})).mappings().one()
-        snapshot = (
-            await conn.execute(snapshot_sql, {"source_id": SOURCE_ID})
-        ).mappings().first()
+        snapshot = (await conn.execute(snapshot_sql, {"source_id": SOURCE_ID})).mappings().first()
 
     complete = snapshot is not None
 
