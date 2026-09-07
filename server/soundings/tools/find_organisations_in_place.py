@@ -7,6 +7,7 @@ Per spec §4.6. Mixed-mode dispatch:
   enrichment use the local grant index rather than live 360Giving fan-out.
 """
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -16,6 +17,8 @@ from sqlalchemy import text
 from soundings.contracts.organisation import OrganisationRef
 from soundings.contracts.source_ref import SourceRef
 from soundings.grants.status import has_complete_grant_index
+
+_log = logging.getLogger(__name__)
 
 
 class FindOrganisationsInPlaceInput(BaseModel):
@@ -69,7 +72,16 @@ def tool_spec() -> dict[str, object]:
 
 
 def _uses_ftc_place(place_id: str) -> bool:
-    return place_id.startswith(("country:S", "country:NI", "ltla24:S", "utla24:S", "ltla24:N", "utla24:N"))
+    return place_id.startswith(
+        (
+            "country:S",
+            "country:NI",
+            "ltla24:S",
+            "utla24:S",
+            "ltla24:N",
+            "utla24:N",
+        )
+    )
 
 
 async def _candidate_count(engine: Any, place_id: str) -> int:
@@ -220,7 +232,7 @@ async def find_organisations_in_place(
         except Exception:
             # The enrichment result already carries its own source when grants
             # were returned. Source metadata should not make the tool fail.
-            pass
+            _log.debug("Could not add 360Giving source metadata", exc_info=True)
     elif not full_index:
         caveats.append(
             "Per-organisation grant detail is unavailable until the full GrantNav index is loaded."
