@@ -20,15 +20,11 @@ async def _cleanup() -> AsyncIterator[None]:
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.execute(text("DELETE FROM data.grant_record"))
-        await conn.execute(
-            text("DELETE FROM data.loader_run WHERE source_id = 'threesixtygiving'")
-        )
+        await conn.execute(text("DELETE FROM data.loader_run WHERE source_id = 'threesixtygiving'"))
     yield
     async with engine.begin() as conn:
         await conn.execute(text("DELETE FROM data.grant_record"))
-        await conn.execute(
-            text("DELETE FROM data.loader_run WHERE source_id = 'threesixtygiving'")
-        )
+        await conn.execute(text("DELETE FROM data.loader_run WHERE source_id = 'threesixtygiving'"))
 
 
 async def test_full_import_records_snapshot_and_preserves_publisher_row(tmp_path: Path) -> None:
@@ -65,20 +61,24 @@ async def test_full_import_records_snapshot_and_preserves_publisher_row(tmp_path
 
     async with engine.connect() as conn:
         run = (
-            await conn.execute(
-                text(
-                    "SELECT provenance, status, rows_written, notes "
-                    "FROM data.loader_run "
-                    "WHERE source_id = 'threesixtygiving' "
-                    "ORDER BY started_at DESC LIMIT 1"
+            (
+                await conn.execute(
+                    text(
+                        "SELECT provenance, status, rows_written, notes "
+                        "FROM data.loader_run "
+                        "WHERE source_id = 'threesixtygiving' "
+                        "ORDER BY started_at DESC LIMIT 1"
+                    )
                 )
             )
-        ).mappings().one()
+            .mappings()
+            .one()
+        )
         grant = (
-            await conn.execute(
-                text("SELECT raw FROM data.grant_record WHERE id = '360G-Test-1'")
-            )
-        ).mappings().one()
+            (await conn.execute(text("SELECT raw FROM data.grant_record WHERE id = '360G-Test-1'")))
+            .mappings()
+            .one()
+        )
 
     assert run["status"] == "ok"
     assert run["rows_written"] == 1
