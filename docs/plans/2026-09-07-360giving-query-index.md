@@ -38,6 +38,13 @@ full import. Production refresh is weekly by default and configurable through
 `SOUNDINGS_GRANT_INDEX_REFRESH_CRON`; `make refresh-grants` provides the explicit
 operational bootstrap/refresh command.
 
+Each import records structured run-level provenance. Automated GrantNav
+snapshots include the requested/final URL, retrieval time, byte count, SHA-256
+digest and HTTP validators when supplied. Every indexed grant also preserves the
+complete GrantNav CSV row in `raw.grantnav_row`, retaining publisher/licence data
+needed for attribution and correction workflows without duplicating it into new
+normalised columns.
+
 ## Increment 1 — query/index foundation
 
 - [x] Extend `data.grant_record` with searchable human-readable grant fields and
@@ -69,8 +76,10 @@ operational bootstrap/refresh command.
       for deployments that need a tighter cadence.
 - [x] Resolve Grant Location / Beneficiary Location geographic codes to the
       Soundings geography spine during import, including known ONS code changes.
-- [ ] Record publisher/dataset provenance sufficiently to support data
-      corrections and removals beyond full-export replacement semantics.
+- [x] Record publisher/dataset provenance sufficiently to support data
+      corrections and removals: snapshot identity lives on `data.loader_run`,
+      original publisher fields remain in each grant's preserved GrantNav row,
+      and successful full exports remove grants absent from the new snapshot.
 - [x] Rework place-level 360Giving indicators to query `data.grant_record`
       instead of live fan-out when the index is complete, retaining live API
       fallback before bootstrap.
