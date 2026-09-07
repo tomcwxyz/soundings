@@ -23,6 +23,25 @@ from soundings.db.models.data import GrantRecord
 SOURCE_ID = "threesixtygiving"
 UPSERT_CHUNK = 1000
 
+# Prefer explicit beneficiary geography. Only infer place from the recipient's
+# operating geography when GrantNav has no beneficiary place for the grant.
+# This prevents an award benefiting Leeds, for example, being counted as money
+# "into" Stockton solely because the recipient's registered organisation is
+# based there.
+_PLACE_PREDICATE = """
+(
+    :place_id = ANY(g.beneficiary_place_ids)
+    OR (
+        COALESCE(cardinality(g.beneficiary_place_ids), 0) = 0
+        AND EXISTS (
+            SELECT 1 FROM data.organisation_operates_in oi
+            WHERE oi.organisation_id = g.recipient_org_id
+              AND oi.place_id = :place_id
+        )
+    )
+)
+"""
+
 
 class GrantStore:
     """Read/write boundary for the local grants index."""
@@ -140,12 +159,7 @@ class GrantStore:
             params["recipient"] = recipient
             params["recipient_like"] = f"%{recipient}%"
         if place_id:
-            where.append(
-                "(:place_id = ANY(g.beneficiary_place_ids) OR EXISTS ("
-                "SELECT 1 FROM data.organisation_operates_in oi "
-                "WHERE oi.organisation_id = g.recipient_org_id "
-                "AND oi.place_id = :place_id))"
-            )
+            where.append(_PLACE_PREDICATE)
             params["place_id"] = place_id
         if awarded_from:
             where.append("g.awarded_on >= :awarded_from")
@@ -191,6 +205,137 @@ class GrantStore:
             "limit": limit,
             "offset": offset,
         }
+
+    async def aggregate_for_place(
+        self,
+        place_id: str,
+        *,
+        awarded_from: date | None = None,
+        awarded_to: date | None = None,
+    ) -> dict[str, Any]:
+        """Return GBP grant count and total for a place from the local index.
+
+        This mirrors the legacy place indicators' GBP semantics while using
+        beneficiary geography where GrantNav provides it.
+        """
+        where = [
+            "g.source_id = :source_id",
+            "g.currency = 'GBP'",
+            "g.amount IS NOT NULL",
+            "g.awarded_on IS NOT NULL",
+            _PLACE_PREDICATE,
+        ]
+        params: dict[str, Any] = {"source_id": SOURCE_ID, "place_id": place_id}
+        if awarded_from:
+            where.append("g.awarded_on >= :awarded_from")
+            params["awarded_from"] = awarded_from
+        if awarded_to:
+            where.append("g.awarded_on <= :awarded_to")
+            params["awarded_to"] = awarded_to
+
+        sql = text(
+            f"""
+            SELECT COUNT(*) AS grants, COALESCE(SUM(g.amount), 0) AS total_gbp
+            FROM data.grant_record g
+            WHERE {' AND '.join(where)}
+            """
+        )
+        async with self._engine.connect() as conn:
+            row = (await conn.execute(sql, params)).mappings().one()
+        return {
+            "grants": int(row["grants"] or 0),
+            "total_gbp": self._number(row["total_gbp"]) or 0.0,
+        }
+
+    async def list_for_place(
+        self,
+        place_id: str,
+        *,
+        awarded_from: date | None = None,
+        awarded_to: date | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return GBP grants for a place, newest first, from the local index."""
+        where = [
+            "g.source_id = :source_id",
+            "g.currency = 'GBP'",
+            "g.amount IS NOT NULL",
+            "g.awarded_on IS NOT NULL",
+            _PLACE_PREDICATE,
+        ]
+        params: dict[str, Any] = {"source_id": SOURCE_ID, "place_id": place_id}
+        if awarded_from:
+            where.append("g.awarded_on >= :awarded_from")
+            params["awarded_from"] = awarded_from
+        if awarded_to:
+            where.append("g.awarded_on <= :awarded_to")
+            params["awarded_to"] = awarded_to
+
+        limit_sql = ""
+        if limit is not None:
+            params["limit"] = max(1, min(limit, 1000))
+            limit_sql = "LIMIT :limit"
+
+        sql = text(
+            f"""
+            SELECT g.id, g.title, g.funder_id, g.funder_name,
+                   g.recipient_external_id, g.recipient_name,
+                   g.amount, g.currency, g.awarded_on, g.purpose, g.programme,
+                   g.beneficiary_place_ids
+            FROM data.grant_record g
+            WHERE {' AND '.join(where)}
+            ORDER BY g.awarded_on DESC, g.amount DESC, g.id
+            {limit_sql}
+            """
+        )
+        async with self._engine.connect() as conn:
+            rows = (await conn.execute(sql, params)).mappings().all()
+        return [self._serialise_row(dict(row)) for row in rows]
+
+    async def list_for_recipient(
+        self,
+        recipient: str,
+        *,
+        limit: int = 3,
+    ) -> list[dict[str, Any]]:
+        """Return a recipient's newest GBP grants from the local index."""
+        external_id = recipient
+        local_id = recipient
+        if recipient.startswith("charity_commission:"):
+            number = recipient.split(":", 1)[1]
+            external_id = f"GB-CHC-{number}"
+        elif recipient.startswith("GB-CHC-"):
+            local_id = "charity_commission:" + recipient.removeprefix("GB-CHC-")
+
+        sql = text(
+            """
+            SELECT g.id, g.title, g.funder_id, g.funder_name,
+                   g.recipient_external_id, g.recipient_name,
+                   g.amount, g.currency, g.awarded_on, g.purpose, g.programme,
+                   g.beneficiary_place_ids
+            FROM data.grant_record g
+            WHERE g.source_id = :source_id
+              AND g.currency = 'GBP'
+              AND g.amount IS NOT NULL
+              AND g.awarded_on IS NOT NULL
+              AND (g.recipient_external_id = :external_id OR g.recipient_org_id = :local_id)
+            ORDER BY g.awarded_on DESC, g.amount DESC, g.id
+            LIMIT :limit
+            """
+        )
+        async with self._engine.connect() as conn:
+            rows = (
+                await conn.execute(
+                    sql,
+                    {
+                        "source_id": SOURCE_ID,
+                        "external_id": external_id,
+                        "local_id": local_id,
+                        "limit": max(1, min(limit, 100)),
+                    },
+                )
+            ).mappings().all()
+        return [self._serialise_row(dict(row)) for row in rows]
 
     async def funder_profile(self, funder: str, *, top_n: int = 10) -> dict[str, Any]:
         """Aggregate one funder from records already present in the index."""
