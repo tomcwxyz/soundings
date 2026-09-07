@@ -17,6 +17,7 @@ import asyncio
 import csv
 import sys
 import uuid
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -25,12 +26,12 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.db.engine import get_engine
-from soundings.grants.store import GrantStore, SOURCE_ID
+from soundings.grants.store import SOURCE_ID, GrantStore
 
 BATCH_SIZE = 2000
 
 
-def _first(row: dict[str, str], *names: str) -> str | None:
+def _first(row: Mapping[str, str | None], *names: str) -> str | None:
     for name in names:
         value = row.get(name)
         if value is not None and value.strip():
@@ -38,7 +39,8 @@ def _first(row: dict[str, str], *names: str) -> str | None:
     return None
 
 
-def _to_api_shape(row: dict[str, str]) -> dict[str, Any] | None:
+def _to_api_shape(row: Mapping[str, str | None]) -> dict[str, Any] | None:
+    """Translate GrantNav's flat CSV headings to the official API shape."""
     grant_id = _first(row, "Identifier", "Grant Identifier", "id", "identifier")
     if grant_id is None:
         return None
@@ -77,7 +79,12 @@ def _to_api_shape(row: dict[str, str]) -> dict[str, Any] | None:
         "title": _first(row, "Title", "title"),
         "description": _first(row, "Description", "description"),
         "currency": _first(row, "Currency", "currency"),
-        "amountAwarded": _first(row, "Amount Awarded", "amountAwarded", "amount_awarded"),
+        "amountAwarded": _first(
+            row,
+            "Amount Awarded",
+            "amountAwarded",
+            "amount_awarded",
+        ),
         "awardDate": _first(row, "Award Date", "awardDate", "award_date"),
         "grantProgramme": _first(
             row,
@@ -88,7 +95,7 @@ def _to_api_shape(row: dict[str, str]) -> dict[str, Any] | None:
         "fundingOrganization": [{"id": funder_id, "name": funder_name}],
         "recipientOrganization": [{"id": recipient_id, "name": recipient_name}],
     }
-    return {"data": data, "grantnav_row": row}
+    return {"data": data, "grantnav_row": dict(row)}
 
 
 async def _start_run(engine: AsyncEngine) -> tuple[uuid.UUID, datetime]:
@@ -150,6 +157,7 @@ async def import_grantnav_csv(
     *,
     full_corpus: bool = False,
 ) -> int:
+    """Stream a GrantNav CSV into the local index in bounded batches."""
     store = GrantStore(engine)
     run_id, started = await _start_run(engine)
     written = 0
@@ -170,7 +178,7 @@ async def import_grantnav_csv(
                 written += await store.upsert_api_grants(batch)
 
         if full_corpus:
-            # Only remove records not present in the new export AFTER a successful
+            # Only remove records absent from the new export AFTER a successful
             # import. Interrupted imports therefore leave the previous index usable.
             async with engine.begin() as conn:
                 await conn.execute(
@@ -180,7 +188,12 @@ async def import_grantnav_csv(
                     ),
                     {"sid": SOURCE_ID, "started": started},
                 )
-        await _finish_run(engine, run_id, rows_written=written, full_corpus=full_corpus)
+        await _finish_run(
+            engine,
+            run_id,
+            rows_written=written,
+            full_corpus=full_corpus,
+        )
         return written
     except Exception as exc:
         await _fail_run(engine, run_id, exc)
