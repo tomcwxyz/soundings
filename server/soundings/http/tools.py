@@ -1,4 +1,4 @@
-"""HTTP routes for the three Phase 1 tools.
+"""HTTP routes for Soundings tools.
 
 Mounted under `/v1/tools/...`. Each route validates input against the tool's
 Pydantic model and returns the tool's output Pydantic. The same tool
@@ -33,6 +33,12 @@ from soundings.tools.get_civil_society_profile import (
 from soundings.tools.get_civil_society_profile import (
     tool_spec as get_civil_society_profile_spec,
 )
+from soundings.tools.get_funder_profile import (
+    GetFunderProfileInput,
+    GetFunderProfileOutput,
+    get_funder_profile,
+)
+from soundings.tools.get_funder_profile import tool_spec as get_funder_profile_spec
 from soundings.tools.get_indicators import (
     GetIndicatorsInput,
     GetIndicatorsOutput,
@@ -59,6 +65,12 @@ from soundings.tools.get_trend import (
     get_trend,
 )
 from soundings.tools.get_trend import tool_spec as get_trend_spec
+from soundings.tools.search_grants import (
+    SearchGrantsInput,
+    SearchGrantsOutput,
+    search_grants,
+)
+from soundings.tools.search_grants import tool_spec as search_grants_spec
 
 router = APIRouter(prefix="/v1/tools")
 
@@ -75,6 +87,8 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
             find_orgs_spec(),
             get_civil_society_profile_spec(),
             get_peer_distribution_spec(),
+            search_grants_spec(),
+            get_funder_profile_spec(),
         ]
     }
 
@@ -130,3 +144,15 @@ async def http_get_peer_distribution(
     input: GetPeerDistributionInput, request: Request
 ) -> GetPeerDistributionOutput:
     return await get_peer_distribution(input, request.app.state.orchestrator)
+
+
+@router.post("/search_grants", response_model=SearchGrantsOutput)
+async def http_search_grants(input: SearchGrantsInput, request: Request) -> SearchGrantsOutput:
+    return await search_grants(input, request.app.state.engine)
+
+
+@router.post("/get_funder_profile", response_model=GetFunderProfileOutput)
+async def http_get_funder_profile(
+    input: GetFunderProfileInput, request: Request
+) -> GetFunderProfileOutput:
+    return await get_funder_profile(input, request.app.state.engine)

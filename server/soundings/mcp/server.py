@@ -1,10 +1,7 @@
-"""MCP server exposing the three Phase 1 tools.
+"""MCP server exposing Soundings tools.
 
-Uses `FastMCP` from the mcp Python SDK. The same tool implementations from
-`soundings.tools.*` are used for both transports (HTTP and MCP) — this
-module is just the registration boilerplate.
-
-The server is mounted on the FastAPI app at `/mcp` via the SSE sub-app.
+Uses ``FastMCP`` from the MCP Python SDK. The same implementations from
+``soundings.tools.*`` back HTTP, MCP and the in-process Ask dispatcher.
 """
 
 from typing import Any
@@ -21,21 +18,20 @@ from soundings.tools.get_civil_society_profile import (
     GetCivilSocietyProfileInput,
     get_civil_society_profile,
 )
+from soundings.tools.get_funder_profile import (
+    GetFunderProfileInput,
+    get_funder_profile,
+)
 from soundings.tools.get_indicators import GetIndicatorsInput, get_indicators
 from soundings.tools.get_place_profile import GetPlaceProfileInput, get_place_profile
 from soundings.tools.get_trend import GetTrendInput, get_trend
+from soundings.tools.search_grants import SearchGrantsInput, search_grants
 
 _MCP_SERVER: FastMCP | None = None
 
 
 def build_mcp_server(state: Any | None = None) -> FastMCP:
-    """Build (or return the cached) FastMCP instance.
-
-    `state` is the FastAPI app.state object — passed in by the lifespan so
-    tool handlers can reach the orchestrator + geography service. When
-    omitted (e.g. in tests), tools are registered against a placeholder
-    that raises if invoked.
-    """
+    """Build (or return the cached) FastMCP instance."""
     global _MCP_SERVER
     if _MCP_SERVER is not None:
         return _MCP_SERVER
@@ -150,6 +146,54 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
         result = await get_civil_society_profile(
             GetCivilSocietyProfileInput(place_id=place_id),
             state.orchestrator,
+        )
+        return result.model_dump(mode="json")
+
+    @mcp.tool(name="search_grants")
+    async def _search_grants(
+        query: str | None = None,
+        funder: str | None = None,
+        recipient: str | None = None,
+        place_id: str | None = None,
+        awarded_from: str | None = None,
+        awarded_to: str | None = None,
+        amount_min: float | None = None,
+        amount_max: float | None = None,
+        limit: int = 25,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        if state is None:
+            raise RuntimeError("MCP search_grants invoked without app state")
+        result = await search_grants(
+            SearchGrantsInput.model_validate(
+                {
+                    "query": query,
+                    "funder": funder,
+                    "recipient": recipient,
+                    "place_id": place_id,
+                    "awarded_from": awarded_from,
+                    "awarded_to": awarded_to,
+                    "amount_min": amount_min,
+                    "amount_max": amount_max,
+                    "limit": limit,
+                    "offset": offset,
+                }
+            ),
+            state.engine,
+        )
+        return result.model_dump(mode="json")
+
+    @mcp.tool(name="get_funder_profile")
+    async def _get_funder_profile(
+        funder: str,
+        top_n: int = 10,
+        refresh: bool = True,
+    ) -> dict[str, Any]:
+        if state is None:
+            raise RuntimeError("MCP get_funder_profile invoked without app state")
+        result = await get_funder_profile(
+            GetFunderProfileInput(funder=funder, top_n=top_n, refresh=refresh),
+            state.engine,
         )
         return result.model_dump(mode="json")
 

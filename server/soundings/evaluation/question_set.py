@@ -7,7 +7,9 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field
 
-DEFAULT_QUESTION_SET_PATH = Path(__file__).resolve().parents[3] / "evaluation" / "questions.yaml"
+EVALUATION_DIR = Path(__file__).resolve().parents[3] / "evaluation"
+DEFAULT_QUESTION_SET_PATH = EVALUATION_DIR / "questions.yaml"
+DEFAULT_GRANTS_QUESTION_SET_PATH = EVALUATION_DIR / "grants_questions.yaml"
 
 ANSWER_BLOCK_TYPES = frozenset(
     {
@@ -50,6 +52,19 @@ class QuestionSet(BaseModel):
 def load_question_set(path: Path | None = None) -> QuestionSet:
     target = path or DEFAULT_QUESTION_SET_PATH
     payload = yaml.safe_load(target.read_text())
+
+    if path is None:
+        # Keep grants evaluation in a separate artefact so it can move with the
+        # grants boundary if that capability is later extracted. The default
+        # Soundings evaluation still composes both slices into one contract.
+        grants_payload = yaml.safe_load(DEFAULT_GRANTS_QUESTION_SET_PATH.read_text())
+        if grants_payload.get("version") != payload.get("version"):
+            raise ValueError("Grant question-set version does not match baseline")
+        payload["questions"] = [
+            *payload.get("questions", []),
+            *grants_payload.get("questions", []),
+        ]
+
     return QuestionSet.model_validate(payload)
 
 

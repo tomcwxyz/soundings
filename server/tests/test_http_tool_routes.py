@@ -40,7 +40,8 @@ async def _seed_full() -> None:
             text(
                 "INSERT INTO data.indicator_value "
                 "(place_id, indicator_key, period, value, source_id, retrieved_at, caveats) VALUES "
-                "('ltla24:E06000004', 'population.total', '2024', 200000, 'ons.mid_year_estimates', :ret, '[]'::jsonb)"
+                "('ltla24:E06000004', 'population.total', '2024', 200000, "
+                "'ons.mid_year_estimates', :ret, '[]'::jsonb)"
             ),
             {"ret": now},
         )
@@ -111,6 +112,8 @@ async def test_get_v1_tools_lists_specs() -> None:
         "find_organisations_in_place",
         "get_civil_society_profile",
         "get_peer_distribution",
+        "search_grants",
+        "get_funder_profile",
     }
 
 

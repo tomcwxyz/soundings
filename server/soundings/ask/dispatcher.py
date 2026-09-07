@@ -51,6 +51,13 @@ from soundings.tools.get_civil_society_profile import (
 from soundings.tools.get_civil_society_profile import (
     tool_spec as get_csp_spec,
 )
+from soundings.tools.get_funder_profile import (
+    GetFunderProfileInput,
+    get_funder_profile,
+)
+from soundings.tools.get_funder_profile import (
+    tool_spec as get_funder_profile_spec,
+)
 from soundings.tools.get_indicators import (
     GetIndicatorsInput,
     get_indicators,
@@ -85,6 +92,13 @@ from soundings.tools.get_trend import (
 )
 from soundings.tools.get_trend import (
     tool_spec as get_trend_spec,
+)
+from soundings.tools.search_grants import (
+    SearchGrantsInput,
+    search_grants,
+)
+from soundings.tools.search_grants import (
+    tool_spec as search_grants_spec,
 )
 
 logger = logging.getLogger(__name__)
@@ -142,6 +156,8 @@ class ToolDispatcher:
             get_trend_spec(),
             find_orgs_spec(),
             get_csp_spec(),
+            search_grants_spec(),
+            get_funder_profile_spec(),
             detect_insights_spec(),
             get_peer_dist_spec(),
             get_sub_areas_spec(),
@@ -247,6 +263,8 @@ class ToolDispatcher:
             "get_trend": self._handle_get_trend,
             "find_organisations_in_place": self._handle_find_organisations,
             "get_civil_society_profile": self._handle_get_csp,
+            "search_grants": self._handle_search_grants,
+            "get_funder_profile": self._handle_get_funder_profile,
             "detect_insights": self._handle_detect_insights,
             "get_peer_distribution": self._handle_get_peer_distribution,
             "get_sub_areas": self._handle_get_sub_areas,
@@ -287,6 +305,16 @@ class ToolDispatcher:
     async def _handle_get_csp(self, args: dict[str, Any]) -> dict[str, Any]:
         model = GetCivilSocietyProfileInput.model_validate(args)
         result = await get_civil_society_profile(model, self._state.orchestrator)
+        return result.model_dump(mode="json")
+
+    async def _handle_search_grants(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = SearchGrantsInput.model_validate(args)
+        result = await search_grants(model, self._state.engine)
+        return result.model_dump(mode="json")
+
+    async def _handle_get_funder_profile(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetFunderProfileInput.model_validate(args)
+        result = await get_funder_profile(model, self._state.engine)
         return result.model_dump(mode="json")
 
     async def _handle_detect_insights(self, args: dict[str, Any]) -> dict[str, Any]:
