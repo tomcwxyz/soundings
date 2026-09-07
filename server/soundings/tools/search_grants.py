@@ -87,10 +87,7 @@ def tool_spec() -> dict[str, object]:
     }
 
 
-async def search_grants(
-    input: SearchGrantsInput,
-    engine: AsyncEngine,
-) -> SearchGrantsOutput:
+async def search_grants(input: SearchGrantsInput, engine: AsyncEngine) -> SearchGrantsOutput:
     store = GrantStore(engine)
     result = await store.search(
         query=input.query,
