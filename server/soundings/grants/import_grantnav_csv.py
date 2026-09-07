@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from sqlalchemy import bindparam, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.db.engine import get_engine
@@ -72,7 +73,13 @@ def _place_codes(row: Mapping[str, str | None]) -> list[str]:
 
 
 def _to_api_shape(row: Mapping[str, str | None]) -> dict[str, Any] | None:
-    """Translate GrantNav's flat CSV headings to the official API shape."""
+    """Translate GrantNav's flat CSV headings to the official API shape.
+
+    The complete source row is retained in ``grantnav_row``. This is
+    intentionally broader than the normalised query columns: publisher,
+    licence and other GrantNav fields remain available for attribution,
+    corrections and later re-materialisation without widening the core table.
+    """
     grant_id = _first(row, "Identifier", "Grant Identifier", "id", "identifier")
     if grant_id is None:
         return None
@@ -197,17 +204,50 @@ async def _attach_soundings_places(
         raw["soundings_beneficiary_place_ids"] = sorted(place_ids)
 
 
-async def _start_run(engine: AsyncEngine) -> tuple[uuid.UUID, datetime]:
+def _run_provenance(
+    path: Path,
+    *,
+    full_corpus: bool,
+    provenance: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "dataset": "GrantNav",
+        "aggregator": "360Giving",
+        "format": "csv",
+        "coverage": "full" if full_corpus else "partial",
+        "acquisition": "local-file",
+        "file_name": path.name,
+        "bytes": path.stat().st_size,
+        "grantnav_attribution": "Contains data from GrantNav, a 360Giving application",
+        "grantnav_licence": "CC-BY-SA",
+        "original_publisher_metadata": "preserved in grant_record.raw.grantnav_row",
+    }
+    if provenance:
+        base.update(dict(provenance))
+    return base
+
+
+async def _start_run(
+    engine: AsyncEngine,
+    *,
+    provenance: Mapping[str, Any],
+) -> tuple[uuid.UUID, datetime]:
     run_id = uuid.uuid4()
     started = datetime.now(tz=UTC)
+    stmt = text(
+        "INSERT INTO data.loader_run "
+        "(id, source_id, started_at, status, rows_written, notes, provenance) "
+        "VALUES (:id, :sid, :started, 'running', 0, 'grant_index_import', :provenance)"
+    ).bindparams(bindparam("provenance", type_=JSONB))
     async with engine.begin() as conn:
         await conn.execute(
-            text(
-                "INSERT INTO data.loader_run "
-                "(id, source_id, started_at, status, rows_written, notes) "
-                "VALUES (:id, :sid, :started, 'running', 0, 'grant_index_import')"
-            ),
-            {"id": run_id, "sid": SOURCE_ID, "started": started},
+            stmt,
+            {
+                "id": run_id,
+                "sid": SOURCE_ID,
+                "started": started,
+                "provenance": dict(provenance),
+            },
         )
     return run_id, started
 
@@ -255,10 +295,21 @@ async def import_grantnav_csv(
     path: Path,
     *,
     full_corpus: bool = False,
+    provenance: Mapping[str, Any] | None = None,
 ) -> int:
-    """Stream a GrantNav CSV into the local index in bounded batches."""
+    """Stream a GrantNav CSV into the local index in bounded batches.
+
+    ``provenance`` describes the acquired snapshot (URL, digest, HTTP
+    validators, etc.). It is stored once on the loader run; each grant retains
+    its original GrantNav row for publisher-level attribution and corrections.
+    """
     store = GrantStore(engine)
-    run_id, started = await _start_run(engine)
+    run_provenance = _run_provenance(
+        path,
+        full_corpus=full_corpus,
+        provenance=provenance,
+    )
+    run_id, started = await _start_run(engine, provenance=run_provenance)
     written = 0
     batch: list[dict[str, Any]] = []
 
