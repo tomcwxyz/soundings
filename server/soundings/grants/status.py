@@ -8,6 +8,28 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from soundings.grants.store import SOURCE_ID
 
 
+async def has_complete_grant_index(engine: AsyncEngine) -> bool:
+    """Return whether a successful full GrantNav import has completed.
+
+    This deliberately checks loader metadata only. Callers that merely need to
+    choose between the local corpus and live API fallback should not scan the
+    grant table just to establish coverage.
+    """
+    stmt = text(
+        """
+        SELECT 1
+        FROM data.loader_run
+        WHERE source_id = :source_id
+          AND status = 'ok'
+          AND notes LIKE '%grant_index_scope=full%'
+        ORDER BY finished_at DESC NULLS LAST
+        LIMIT 1
+        """
+    )
+    async with engine.connect() as conn:
+        return (await conn.execute(stmt, {"source_id": SOURCE_ID})).first() is not None
+
+
 async def get_grant_index_status(engine: AsyncEngine) -> dict[str, Any]:
     stats_sql = text(
         """
@@ -22,22 +44,10 @@ async def get_grant_index_status(engine: AsyncEngine) -> dict[str, Any]:
         WHERE source_id = :source_id
         """
     )
-    full_run_sql = text(
-        """
-        SELECT finished_at
-        FROM data.loader_run
-        WHERE source_id = :source_id
-          AND status = 'ok'
-          AND notes LIKE '%grant_index_scope=full%'
-        ORDER BY finished_at DESC NULLS LAST
-        LIMIT 1
-        """
-    )
     async with engine.connect() as conn:
         row = (await conn.execute(stats_sql, {"source_id": SOURCE_ID})).mappings().one()
-        full_run = (await conn.execute(full_run_sql, {"source_id": SOURCE_ID})).first()
 
-    complete = full_run is not None
+    complete = await has_complete_grant_index(engine)
 
     def iso(value: Any) -> str | None:
         if value is None:
