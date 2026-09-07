@@ -8,11 +8,14 @@ importer rather than buffering it in memory.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import tempfile
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -43,6 +46,33 @@ _REQUIRED_HEADERS: Final = frozenset(
 )
 
 
+@dataclass(frozen=True)
+class GrantNavDownload:
+    """Identity and HTTP provenance for one downloaded GrantNav snapshot."""
+
+    bytes_written: int
+    sha256: str
+    requested_url: str
+    source_url: str
+    retrieved_at: str
+    content_type: str | None = None
+    etag: str | None = None
+    last_modified: str | None = None
+
+    def as_provenance(self) -> dict[str, Any]:
+        return {
+            "acquisition": "grantnav-http",
+            "requested_url": self.requested_url,
+            "source_url": self.source_url,
+            "retrieved_at": self.retrieved_at,
+            "bytes": self.bytes_written,
+            "sha256": self.sha256,
+            "content_type": self.content_type,
+            "etag": self.etag,
+            "last_modified": self.last_modified,
+        }
+
+
 def _validate_download(path: Path) -> None:
     """Fail closed before a bad response can replace a healthy full index."""
     size = path.stat().st_size
@@ -62,14 +92,15 @@ async def download_grantnav_csv(
     *,
     url: str = GRANTNAV_FULL_CSV_URL,
     http_client: httpx.AsyncClient | None = None,
-) -> int:
-    """Stream GrantNav's CSV export to ``destination`` and return bytes written."""
+) -> GrantNavDownload:
+    """Stream GrantNav's CSV export and return its durable snapshot identity."""
     owns_client = http_client is None
     client = http_client or httpx.AsyncClient(
         follow_redirects=True,
         timeout=httpx.Timeout(connect=30.0, read=600.0, write=60.0, pool=30.0),
     )
     written = 0
+    digest = hashlib.sha256()
     try:
         async with client.stream(
             "GET",
@@ -80,14 +111,26 @@ async def download_grantnav_csv(
             },
         ) as response:
             response.raise_for_status()
+            retrieved_at = datetime.now(tz=UTC).isoformat()
             with destination.open("wb") as handle:
                 async for chunk in response.aiter_bytes(DOWNLOAD_CHUNK_BYTES):
                     if not chunk:
                         continue
                     handle.write(chunk)
+                    digest.update(chunk)
                     written += len(chunk)
+            download = GrantNavDownload(
+                bytes_written=written,
+                sha256=digest.hexdigest(),
+                requested_url=url,
+                source_url=str(response.url),
+                retrieved_at=retrieved_at,
+                content_type=response.headers.get("content-type"),
+                etag=response.headers.get("etag"),
+                last_modified=response.headers.get("last-modified"),
+            )
         _validate_download(destination)
-        return written
+        return download
     finally:
         if owns_client:
             await client.aclose()
@@ -104,7 +147,8 @@ async def refresh_grant_index(
 
     The importer only removes stale grants after the new CSV has imported
     successfully. Download/validation/import failures therefore leave the
-    previous full index intact.
+    previous full index intact. Successful runs store a SHA-256 digest and HTTP
+    provenance so the active corpus can be tied to an exact acquired snapshot.
     """
     fd, raw_path = tempfile.mkstemp(
         prefix="soundings-grantnav-",
@@ -114,13 +158,22 @@ async def refresh_grant_index(
     os.close(fd)
     path = Path(raw_path)
     try:
-        bytes_written = await download_grantnav_csv(
+        download = await download_grantnav_csv(
             path,
             url=url,
             http_client=http_client,
         )
-        _log.info("GrantNav export downloaded: %s bytes", bytes_written)
-        rows = await import_grantnav_csv(engine, path, full_corpus=True)
+        _log.info(
+            "GrantNav export downloaded: %s bytes sha256=%s",
+            download.bytes_written,
+            download.sha256,
+        )
+        rows = await import_grantnav_csv(
+            engine,
+            path,
+            full_corpus=True,
+            provenance=download.as_provenance(),
+        )
         _log.info("GrantNav full index refreshed: %s rows", rows)
         return rows
     finally:

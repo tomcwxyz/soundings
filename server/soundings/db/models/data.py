@@ -113,3 +113,4 @@ class LoaderRun(Base):
     status: Mapped[str] = mapped_column(String(32))
     rows_written: Mapped[int] = mapped_column(default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
