@@ -24,12 +24,8 @@ def test_standard_grantnav_headers_map_to_api_shape() -> None:
     data = raw["data"]
     assert data["id"] == "360G-Test-1"
     assert data["amountAwarded"] == "25000"
-    assert data["fundingOrganization"] == [
-        {"id": "GB-CHC-999999", "name": "Example Foundation"}
-    ]
-    assert data["recipientOrganization"] == [
-        {"id": "GB-CHC-123456", "name": "Example Charity"}
-    ]
+    assert data["fundingOrganization"] == [{"id": "GB-CHC-999999", "name": "Example Foundation"}]
+    assert data["recipientOrganization"] == [{"id": "GB-CHC-123456", "name": "Example Charity"}]
     assert data["grantProgramme"] == "Communities"
 
 
