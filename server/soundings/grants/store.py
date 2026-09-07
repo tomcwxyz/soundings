@@ -59,11 +59,11 @@ class GrantStore:
         local_ids = [local_id for local_id in candidates.values() if local_id]
         existing: set[str] = set()
         if local_ids:
-            stmt = text("SELECT id FROM data.organisation WHERE id IN :ids").bindparams(
+            lookup_stmt = text("SELECT id FROM data.organisation WHERE id IN :ids").bindparams(
                 bindparam("ids", expanding=True)
             )
             async with self._engine.connect() as conn:
-                result = await conn.execute(stmt, {"ids": local_ids})
+                result = await conn.execute(lookup_stmt, {"ids": local_ids})
                 existing = {str(row.id) for row in result}
 
         for row in rows:
@@ -75,9 +75,9 @@ class GrantStore:
         async with self._engine.begin() as conn:
             for start in range(0, len(rows), UPSERT_CHUNK):
                 chunk = rows[start : start + UPSERT_CHUNK]
-                stmt = insert(GrantRecord).values(chunk)
-                excluded = stmt.excluded
-                stmt = stmt.on_conflict_do_update(
+                upsert_stmt = insert(GrantRecord).values(chunk)
+                excluded = upsert_stmt.excluded
+                upsert_stmt = upsert_stmt.on_conflict_do_update(
                     index_elements=[GrantRecord.id],
                     set_={
                         "funder_id": excluded.funder_id,
@@ -97,7 +97,7 @@ class GrantStore:
                         "raw": excluded.raw,
                     },
                 )
-                await conn.execute(stmt)
+                await conn.execute(upsert_stmt)
         return len(rows)
 
     async def search(
