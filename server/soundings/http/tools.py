@@ -59,6 +59,12 @@ from soundings.tools.get_place_profile import (
     get_place_profile,
 )
 from soundings.tools.get_place_profile import tool_spec as get_place_profile_spec
+from soundings.tools.get_recipient_profile import (
+    GetRecipientProfileInput,
+    GetRecipientProfileOutput,
+    get_recipient_profile,
+)
+from soundings.tools.get_recipient_profile import tool_spec as get_recipient_profile_spec
 from soundings.tools.get_trend import (
     GetTrendInput,
     GetTrendOutput,
@@ -89,6 +95,7 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
             get_peer_distribution_spec(),
             search_grants_spec(),
             get_funder_profile_spec(),
+            get_recipient_profile_spec(),
         ]
     }
 
@@ -156,3 +163,10 @@ async def http_get_funder_profile(
     input: GetFunderProfileInput, request: Request
 ) -> GetFunderProfileOutput:
     return await get_funder_profile(input, request.app.state.engine)
+
+
+@router.post("/get_recipient_profile", response_model=GetRecipientProfileOutput)
+async def http_get_recipient_profile(
+    input: GetRecipientProfileInput, request: Request
+) -> GetRecipientProfileOutput:
+    return await get_recipient_profile(input, request.app.state.engine)
