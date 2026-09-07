@@ -1,3 +1,4 @@
+# ruff: noqa: S608
 """Local query/index layer for 360Giving grants.
 
 The live 360Giving API is organisation-centric and rate-limited. This store
@@ -165,7 +166,7 @@ class GrantStore:
             if query
             else "0.0"
         )
-        sql = text(  # noqa: S608 -- predicate is assembled only from fixed SQL fragments above.
+        sql = text(
             f"""
             SELECT g.id, g.title, g.funder_id, g.funder_name,
                    g.recipient_external_id, g.recipient_name,
@@ -178,9 +179,7 @@ class GrantStore:
             LIMIT :limit OFFSET :offset
             """
         )
-        count_sql = text(  # noqa: S608 -- same fixed-fragment predicate as above.
-            f"SELECT COUNT(*) FROM data.grant_record g WHERE {predicate}"
-        )
+        count_sql = text(f"SELECT COUNT(*) FROM data.grant_record g WHERE {predicate}")
 
         async with self._engine.connect() as conn:
             result = (await conn.execute(sql, params)).mappings().all()
@@ -206,7 +205,7 @@ class GrantStore:
             "source_id = :source_id "
             "AND (funder_id = :funder OR funder_name ILIKE :funder_like)"
         )
-        summary_sql = text(  # noqa: S608 -- predicate is a fixed SQL string.
+        summary_sql = text(
             f"""
             SELECT COUNT(*) AS grants,
                    COALESCE(SUM(amount) FILTER (WHERE currency = 'GBP'), 0) AS total_gbp,
@@ -219,7 +218,7 @@ class GrantStore:
             WHERE {predicate}
             """
         )
-        recipients_sql = text(  # noqa: S608 -- predicate is a fixed SQL string.
+        recipients_sql = text(
             f"""
             SELECT COALESCE(
                        recipient_name,
@@ -240,7 +239,7 @@ class GrantStore:
             LIMIT :top_n
             """
         )
-        programmes_sql = text(  # noqa: S608 -- predicate is a fixed SQL string.
+        programmes_sql = text(
             f"""
             SELECT programme, COUNT(*) AS grants,
                    COALESCE(
