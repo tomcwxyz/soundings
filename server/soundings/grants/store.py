@@ -2,9 +2,9 @@
 
 The live 360Giving API is organisation-centric and rate-limited. This store
 makes grant records queryable by topic, funder, recipient, date and place once
-they have been indexed. Existing targeted API calls write through to the store,
-so useful local coverage grows immediately; a bulk GrantNav/Datastore loader can
-populate the same table later without changing tool contracts.
+they have been indexed. Targeted API calls can write through to the store; a
+bulk GrantNav/Datastore loader can populate the same table without changing the
+tool contracts.
 """
 
 from __future__ import annotations
@@ -20,37 +20,42 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from soundings.db.models.data import GrantRecord
 
 SOURCE_ID = "threesixtygiving"
+UPSERT_CHUNK = 1000
 
 
 class GrantStore:
+    """Read/write boundary for the local grants index."""
+
     def __init__(self, engine: AsyncEngine) -> None:
         self._engine = engine
 
     async def upsert_api_grants(self, raw_grants: list[dict[str, Any]]) -> int:
-        """Materialise 360Giving API grant payloads into ``data.grant_record``.
+        """Materialise official-API-shaped payloads into ``data.grant_record``.
 
-        The method is intentionally idempotent and tolerant of partially-filled
-        records. It keeps the original payload in ``raw`` for provenance and
-        later re-materialisation as our index evolves.
+        The operation is idempotent and tolerant of partially-filled records.
+        Original payloads are kept in ``raw`` for provenance and later
+        re-materialisation as the index evolves.
         """
         if not raw_grants:
             return 0
 
         retrieved_at = datetime.now(tz=UTC)
-        rows = [self._normalise_api_grant(raw, retrieved_at) for raw in raw_grants]
-        rows = [row for row in rows if row is not None]
+        normalised = [self._normalise_api_grant(raw, retrieved_at) for raw in raw_grants]
+        rows: list[dict[str, Any]] = [row for row in normalised if row is not None]
         if not rows:
             return 0
 
-        # Link 360Giving charity IDs to Soundings' existing Charity Commission
-        # organisation rows where possible. Keep recipient_external_id regardless
-        # so non-CC organisations remain searchable.
+        # Link 360Giving charity IDs to Soundings' Charity Commission rows where
+        # possible. Keep recipient_external_id regardless, so non-CC recipients
+        # remain searchable.
         candidates = {
-            row["recipient_external_id"]: self._to_local_org_id(row["recipient_external_id"])
+            str(row["recipient_external_id"]): self._to_local_org_id(
+                str(row["recipient_external_id"])
+            )
             for row in rows
             if row.get("recipient_external_id")
         }
-        local_ids = [value for value in candidates.values() if value]
+        local_ids = [local_id for local_id in candidates.values() if local_id]
         existing: set[str] = set()
         if local_ids:
             stmt = text("SELECT id FROM data.organisation WHERE id IN :ids").bindparams(
@@ -61,13 +66,14 @@ class GrantStore:
                 existing = {str(row.id) for row in result}
 
         for row in rows:
-            external_id = row.get("recipient_external_id")
+            external_value = row.get("recipient_external_id")
+            external_id = str(external_value) if external_value else None
             local_id = candidates.get(external_id) if external_id else None
             row["recipient_org_id"] = local_id if local_id in existing else None
 
         async with self._engine.begin() as conn:
-            for start in range(0, len(rows), 1000):
-                chunk = rows[start : start + 1000]
+            for start in range(0, len(rows), UPSERT_CHUNK):
+                chunk = rows[start : start + UPSERT_CHUNK]
                 stmt = insert(GrantRecord).values(chunk)
                 excluded = stmt.excluded
                 stmt = stmt.on_conflict_do_update(
@@ -107,10 +113,15 @@ class GrantStore:
         limit: int = 25,
         offset: int = 0,
     ) -> dict[str, Any]:
+        """Search the local index with deterministic filters and FTS ranking."""
         limit = max(1, min(limit, 100))
         offset = max(0, offset)
         where = ["g.source_id = :source_id"]
-        params: dict[str, Any] = {"source_id": SOURCE_ID, "limit": limit, "offset": offset}
+        params: dict[str, Any] = {
+            "source_id": SOURCE_ID,
+            "limit": limit,
+            "offset": offset,
+        }
 
         if query:
             where.append("g.search_document @@ websearch_to_tsquery('english', :query)")
@@ -121,16 +132,18 @@ class GrantStore:
             params["funder_like"] = f"%{funder}%"
         if recipient:
             where.append(
-                "(g.recipient_external_id = :recipient OR g.recipient_org_id = :recipient "
+                "(g.recipient_external_id = :recipient "
+                "OR g.recipient_org_id = :recipient "
                 "OR g.recipient_name ILIKE :recipient_like)"
             )
             params["recipient"] = recipient
             params["recipient_like"] = f"%{recipient}%"
         if place_id:
             where.append(
-                "(g.beneficiary_place_ids @> ARRAY[:place_id]::varchar[] OR EXISTS ("
+                "(:place_id = ANY(g.beneficiary_place_ids) OR EXISTS ("
                 "SELECT 1 FROM data.organisation_operates_in oi "
-                "WHERE oi.organisation_id = g.recipient_org_id AND oi.place_id = :place_id))"
+                "WHERE oi.organisation_id = g.recipient_org_id "
+                "AND oi.place_id = :place_id))"
             )
             params["place_id"] = place_id
         if awarded_from:
@@ -152,7 +165,7 @@ class GrantStore:
             if query
             else "0.0"
         )
-        sql = text(
+        sql = text(  # noqa: S608 -- predicate is assembled only from fixed SQL fragments above.
             f"""
             SELECT g.id, g.title, g.funder_id, g.funder_name,
                    g.recipient_external_id, g.recipient_name,
@@ -160,11 +173,14 @@ class GrantStore:
                    g.beneficiary_place_ids, {rank_sql} AS relevance
             FROM data.grant_record g
             WHERE {predicate}
-            ORDER BY relevance DESC, g.awarded_on DESC NULLS LAST, g.amount DESC NULLS LAST
+            ORDER BY relevance DESC, g.awarded_on DESC NULLS LAST,
+                     g.amount DESC NULLS LAST
             LIMIT :limit OFFSET :offset
             """
         )
-        count_sql = text(f"SELECT COUNT(*) FROM data.grant_record g WHERE {predicate}")
+        count_sql = text(  # noqa: S608 -- same fixed-fragment predicate as above.
+            f"SELECT COUNT(*) FROM data.grant_record g WHERE {predicate}"
+        )
 
         async with self._engine.connect() as conn:
             result = (await conn.execute(sql, params)).mappings().all()
@@ -178,12 +194,19 @@ class GrantStore:
         }
 
     async def funder_profile(self, funder: str, *, top_n: int = 10) -> dict[str, Any]:
+        """Aggregate one funder from records already present in the index."""
         top_n = max(1, min(top_n, 25))
-        params = {"source_id": SOURCE_ID, "funder": funder, "funder_like": f"%{funder}%", "top_n": top_n}
+        params: dict[str, Any] = {
+            "source_id": SOURCE_ID,
+            "funder": funder,
+            "funder_like": f"%{funder}%",
+            "top_n": top_n,
+        }
         predicate = (
-            "source_id = :source_id AND (funder_id = :funder OR funder_name ILIKE :funder_like)"
+            "source_id = :source_id "
+            "AND (funder_id = :funder OR funder_name ILIKE :funder_like)"
         )
-        summary_sql = text(
+        summary_sql = text(  # noqa: S608 -- predicate is a fixed SQL string.
             f"""
             SELECT COUNT(*) AS grants,
                    COALESCE(SUM(amount) FILTER (WHERE currency = 'GBP'), 0) AS total_gbp,
@@ -196,12 +219,20 @@ class GrantStore:
             WHERE {predicate}
             """
         )
-        recipients_sql = text(
+        recipients_sql = text(  # noqa: S608 -- predicate is a fixed SQL string.
             f"""
-            SELECT COALESCE(recipient_name, recipient_external_id, recipient_org_id, 'Unknown') AS name,
+            SELECT COALESCE(
+                       recipient_name,
+                       recipient_external_id,
+                       recipient_org_id,
+                       'Unknown'
+                   ) AS name,
                    recipient_external_id AS id,
                    COUNT(*) AS grants,
-                   COALESCE(SUM(amount) FILTER (WHERE currency = 'GBP'), 0) AS total_gbp
+                   COALESCE(
+                       SUM(amount) FILTER (WHERE currency = 'GBP'),
+                       0
+                   ) AS total_gbp
             FROM data.grant_record
             WHERE {predicate}
             GROUP BY recipient_name, recipient_external_id, recipient_org_id
@@ -209,10 +240,13 @@ class GrantStore:
             LIMIT :top_n
             """
         )
-        programmes_sql = text(
+        programmes_sql = text(  # noqa: S608 -- predicate is a fixed SQL string.
             f"""
             SELECT programme, COUNT(*) AS grants,
-                   COALESCE(SUM(amount) FILTER (WHERE currency = 'GBP'), 0) AS total_gbp
+                   COALESCE(
+                       SUM(amount) FILTER (WHERE currency = 'GBP'),
+                       0
+                   ) AS total_gbp
             FROM data.grant_record
             WHERE {predicate} AND programme IS NOT NULL AND programme <> ''
             GROUP BY programme
@@ -236,38 +270,14 @@ class GrantStore:
             "top_programmes": [self._serialise_row(dict(row)) for row in programmes],
         }
 
-    async def index_status(self) -> dict[str, Any]:
-        sql = text(
-            """
-            SELECT COUNT(*) AS grants,
-                   COUNT(DISTINCT funder_id) FILTER (WHERE funder_id IS NOT NULL) AS funders,
-                   COUNT(DISTINCT recipient_external_id) FILTER (WHERE recipient_external_id IS NOT NULL) AS recipients,
-                   MIN(awarded_on) AS earliest_award,
-                   MAX(awarded_on) AS latest_award,
-                   MAX(retrieved_at) AS last_indexed_at
-            FROM data.grant_record
-            WHERE source_id = :source_id
-            """
-        )
-        async with self._engine.connect() as conn:
-            row = (await conn.execute(sql, {"source_id": SOURCE_ID})).mappings().one()
-        return {
-            "grants": int(row["grants"] or 0),
-            "funders": int(row["funders"] or 0),
-            "recipients": int(row["recipients"] or 0),
-            "earliest_award": self._iso(row["earliest_award"]),
-            "latest_award": self._iso(row["latest_award"]),
-            "last_indexed_at": self._iso(row["last_indexed_at"]),
-            # Until the bulk loader lands, coverage consists of records written
-            # through by targeted 360Giving API calls. Make that explicit so an
-            # agent never mistakes an empty/partial index for the whole corpus.
-            "coverage": "partial-write-through",
-            "complete": False,
-        }
-
     @staticmethod
-    def _normalise_api_grant(raw: dict[str, Any], retrieved_at: datetime) -> dict[str, Any] | None:
+    def _normalise_api_grant(
+        raw: dict[str, Any],
+        retrieved_at: datetime,
+    ) -> dict[str, Any] | None:
         data = raw.get("data") or {}
+        if not isinstance(data, dict):
+            return None
         grant_id = data.get("id") or raw.get("grant_id")
         if not grant_id:
             return None
@@ -364,11 +374,12 @@ class GrantStore:
 
     @classmethod
     def _serialise_row(cls, row: dict[str, Any]) -> dict[str, Any]:
-        return {
-            key: cls._number(value)
-            if isinstance(value, Decimal)
-            else cls._iso(value)
-            if isinstance(value, (date, datetime))
-            else value
-            for key, value in row.items()
-        }
+        serialised: dict[str, Any] = {}
+        for key, value in row.items():
+            if isinstance(value, Decimal):
+                serialised[key] = cls._number(value)
+            elif isinstance(value, (date, datetime)):
+                serialised[key] = cls._iso(value)
+            else:
+                serialised[key] = value
+        return serialised
