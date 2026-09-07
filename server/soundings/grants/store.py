@@ -202,8 +202,7 @@ class GrantStore:
             "top_n": top_n,
         }
         predicate = (
-            "source_id = :source_id "
-            "AND (funder_id = :funder OR funder_name ILIKE :funder_like)"
+            "source_id = :source_id AND (funder_id = :funder OR funder_name ILIKE :funder_like)"
         )
         summary_sql = text(
             f"""
