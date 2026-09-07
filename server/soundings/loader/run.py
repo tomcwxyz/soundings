@@ -37,14 +37,16 @@ from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimates
 from soundings.adapters.ons_nspl.loader import NsplLoader
 from soundings.capture.retention import delete_old_raw_records
 from soundings.db.engine import get_engine
+from soundings.grants.grantnav_refresh import GRANT_INDEX_REFRESH_CRON, refresh_grant_index
 from soundings.publication.automatic import PUBLICATION_CRON, publish_previous_month_if_due
 
 LoaderCallable = Callable[[], Awaitable[None]]
 _log = logging.getLogger("soundings.loader")
+GRANT_INDEX_JOB_ID = "threesixtygiving.grant_index"
 
 
 def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
-    """Map source_id → idempotent loader coroutine factory."""
+    """Map source/internal-job IDs to idempotent loader coroutine factories."""
 
     async def _geography() -> None:
         await OnsGeographyPlacesLoader(engine).load()
@@ -78,6 +80,9 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     async def _nspl() -> None:
         await NsplLoader(engine).load()
 
+    async def _grant_index() -> None:
+        await refresh_grant_index(engine)
+
     return {
         "ons.geography": _geography,
         "ons.mid_year_estimates": _mye,
@@ -88,6 +93,7 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
         "companies_house": _companies_house,
         "foe.green_space": _foe_green_space,
         "ons.nspl": _nspl,
+        GRANT_INDEX_JOB_ID: _grant_index,
     }
 
 
@@ -107,6 +113,20 @@ async def build_scheduler(
             continue
         trigger = CronTrigger.from_crontab(row.refresh_cadence)
         sched.add_job(loader, trigger=trigger, id=row.id, name=row.id)
+
+    # Full GrantNav index refresh is an internal materialisation job rather than
+    # a catalogue source: `threesixtygiving` remains a passthrough source for
+    # targeted API hydration. Default is weekly because the full export is large.
+    grant_index_loader = registry.get(GRANT_INDEX_JOB_ID)
+    if grant_index_loader is not None:
+        sched.add_job(
+            grant_index_loader,
+            trigger=CronTrigger.from_crontab(GRANT_INDEX_REFRESH_CRON),
+            id=GRANT_INDEX_JOB_ID,
+            name=GRANT_INDEX_JOB_ID,
+            max_instances=1,
+            coalesce=True,
+        )
 
     # Cross-source retention: daily at 04:00 UTC, deletes corpus.raw_record
     # rows older than 30 days. Not in catalogue.source (it's an internal job).
