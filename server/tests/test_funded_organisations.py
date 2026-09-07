@@ -107,9 +107,7 @@ async def _seed(*, mark_full: bool) -> IndicatorOrchestrator:
                     "currency": "GBP",
                     "amountAwarded": 25_000,
                     "awardDate": "2026-04-01",
-                    "fundingOrganization": [
-                        {"id": "GB-CHC-999999", "name": "Example Foundation"}
-                    ],
+                    "fundingOrganization": [{"id": "GB-CHC-999999", "name": "Example Foundation"}],
                     "recipientOrganization": [
                         {"id": "GB-CHC-1001", "name": "Funded Small Charity"}
                     ],
