@@ -84,16 +84,22 @@ class GrantRecord(Base):
 
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     funder_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    funder_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     recipient_org_id: Mapped[str | None] = mapped_column(
         ForeignKey("data.organisation.id"), nullable=True
     )
+    recipient_external_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    recipient_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
     awarded_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     purpose: Mapped[str | None] = mapped_column(Text, nullable=True)
+    programme: Mapped[str | None] = mapped_column(Text, nullable=True)
     beneficiary_place_ids: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     source_id: Mapped[str] = mapped_column(ForeignKey("catalogue.source.id"))
     retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    raw: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
 
 class LoaderRun(Base):
