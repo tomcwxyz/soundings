@@ -4,10 +4,10 @@ Usage inside the server environment::
 
     python -m soundings.grants.import_grantnav_csv /data/grantnav.csv --full-corpus
 
-The importer intentionally accepts a local CSV rather than scraping GrantNav.
-360Giving documents GrantNav full-dataset downloads and Datastore access as the
-supported bulk routes. A later loader can automate retrieval without changing
-the ``GrantStore`` or tool contracts introduced here.
+GrantNav enriches its standard download with recipient/beneficiary geography.
+This importer resolves those codes onto Soundings' current LTLA spine in bounded
+batches, including ONS code-change mappings where an older district code has
+been superseded.
 """
 
 from __future__ import annotations
@@ -17,18 +17,20 @@ import asyncio
 import csv
 import sys
 import uuid
+from collections import defaultdict
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.db.engine import get_engine
 from soundings.grants.store import SOURCE_ID, GrantStore
 
 BATCH_SIZE = 2000
+MAX_CODE_CHANGE_DEPTH = 5
 
 
 def _first(row: Mapping[str, str | None], *names: str) -> str | None:
@@ -37,6 +39,36 @@ def _first(row: Mapping[str, str | None], *names: str) -> str | None:
         if value is not None and value.strip():
             return value.strip()
     return None
+
+
+def _place_codes(row: Mapping[str, str | None]) -> list[str]:
+    """Collect GrantNav geography codes that may resolve to a current LTLA.
+
+    GrantNav's enriched district fields are preferred, but standard beneficiary
+    and recipient location fields are included too. Resolution later filters to
+    Soundings' ``ltla24`` places, so region/ward codes are harmless here.
+    """
+    preferred_names = (
+        "Beneficiary District Geographic code (additional data)",
+        "Best Available District Geographic Code (additional data)",
+        "Recipient District Geographic code (additional data)",
+    )
+    candidates: list[str] = []
+    for name in preferred_names:
+        value = _first(row, name)
+        if value:
+            candidates.append(value)
+
+    for index in range(8):
+        value = _first(row, f"Beneficiary Location:{index}:Geographic Code")
+        if value:
+            candidates.append(value)
+    for index in range(3):
+        value = _first(row, f"Recipient Org:Location:{index}:Geographic Code")
+        if value:
+            candidates.append(value)
+
+    return list(dict.fromkeys(candidates))
 
 
 def _to_api_shape(row: Mapping[str, str | None]) -> dict[str, Any] | None:
@@ -95,7 +127,80 @@ def _to_api_shape(row: Mapping[str, str | None]) -> dict[str, Any] | None:
         "fundingOrganization": [{"id": funder_id, "name": funder_name}],
         "recipientOrganization": [{"id": recipient_id, "name": recipient_name}],
     }
-    return {"data": data, "grantnav_row": dict(row)}
+    return {
+        "data": data,
+        "grantnav_row": dict(row),
+        "soundings_place_codes": _place_codes(row),
+    }
+
+
+async def _resolve_place_codes(
+    engine: AsyncEngine,
+    codes: set[str],
+) -> dict[str, list[str]]:
+    """Resolve raw ONS codes to current Soundings LTLA place IDs.
+
+    Direct current codes are matched first. A bounded recursive CTE follows the
+    existing ``geography.code_change`` spine for older/reorganised codes; splits
+    can therefore resolve one historic code to more than one current place.
+    """
+    if not codes:
+        return {}
+
+    direct_stmt = text(
+        "SELECT code, id FROM geography.place "
+        "WHERE type = 'ltla24' AND code IN :codes"
+    ).bindparams(bindparam("codes", expanding=True))
+    changed_stmt = text(
+        """
+        WITH RECURSIVE changes(source_code, current_code, depth) AS (
+            SELECT old_code, new_code, 1
+            FROM geography.code_change
+            WHERE old_code IN :codes
+          UNION ALL
+            SELECT changes.source_code, cc.new_code, changes.depth + 1
+            FROM changes
+            JOIN geography.code_change cc ON cc.old_code = changes.current_code
+            WHERE changes.depth < :max_depth
+        )
+        SELECT changes.source_code, p.id
+        FROM changes
+        JOIN geography.place p
+          ON p.code = changes.current_code AND p.type = 'ltla24'
+        """
+    ).bindparams(bindparam("codes", expanding=True))
+
+    resolved: defaultdict[str, set[str]] = defaultdict(set)
+    params = {"codes": sorted(codes), "max_depth": MAX_CODE_CHANGE_DEPTH}
+    async with engine.connect() as conn:
+        direct = await conn.execute(direct_stmt, {"codes": params["codes"]})
+        for row in direct:
+            resolved[str(row.code)].add(str(row.id))
+        changed = await conn.execute(changed_stmt, params)
+        for row in changed:
+            resolved[str(row.source_code)].add(str(row.id))
+
+    return {code: sorted(place_ids) for code, place_ids in resolved.items()}
+
+
+async def _attach_soundings_places(
+    engine: AsyncEngine,
+    batch: list[dict[str, Any]],
+) -> None:
+    codes = {
+        str(code)
+        for raw in batch
+        for code in raw.get("soundings_place_codes", [])
+        if code
+    }
+    resolved = await _resolve_place_codes(engine, codes)
+    for raw in batch:
+        place_ids = {
+            place_id
+            for code in raw.get("soundings_place_codes", [])
+            for place_id in resolved.get(str(code), [])
+        }
+        raw["soundings_beneficiary_place_ids"] = sorted(place_ids)
 
 
 async def _start_run(engine: AsyncEngine) -> tuple[uuid.UUID, datetime]:
@@ -163,6 +268,14 @@ async def import_grantnav_csv(
     written = 0
     batch: list[dict[str, Any]] = []
 
+    async def flush() -> None:
+        nonlocal written
+        if not batch:
+            return
+        await _attach_soundings_places(engine, batch)
+        written += await store.upsert_api_grants(batch)
+        batch.clear()
+
     try:
         with path.open("r", encoding="utf-8-sig", newline="") as handle:
             reader = csv.DictReader(handle)
@@ -172,10 +285,8 @@ async def import_grantnav_csv(
                     continue
                 batch.append(raw)
                 if len(batch) >= BATCH_SIZE:
-                    written += await store.upsert_api_grants(batch)
-                    batch.clear()
-            if batch:
-                written += await store.upsert_api_grants(batch)
+                    await flush()
+            await flush()
 
         if full_corpus:
             # Only remove records absent from the new export AFTER a successful
