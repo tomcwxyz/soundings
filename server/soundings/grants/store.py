@@ -284,6 +284,12 @@ class GrantStore:
         recipient = GrantStore._first_org(data.get("recipientOrganization"))
         award_date = GrantStore._parse_date(data.get("awardDate"))
         amount = data.get("amountAwarded")
+        raw_place_ids = raw.get("soundings_beneficiary_place_ids")
+        beneficiary_place_ids = (
+            [str(place_id) for place_id in raw_place_ids if place_id]
+            if isinstance(raw_place_ids, list)
+            else []
+        )
 
         return {
             "id": str(grant_id),
@@ -298,7 +304,7 @@ class GrantStore:
             "awarded_on": award_date,
             "purpose": GrantStore._str_or_none(data.get("description") or data.get("title")),
             "programme": GrantStore._programme(data.get("grantProgramme")),
-            "beneficiary_place_ids": [],
+            "beneficiary_place_ids": list(dict.fromkeys(beneficiary_place_ids)),
             "source_id": SOURCE_ID,
             "retrieved_at": retrieved_at,
             "raw": raw,
