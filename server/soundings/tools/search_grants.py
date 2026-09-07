@@ -41,8 +41,7 @@ class SearchGrantsInput(BaseModel):
     recipient: str | None = Field(
         default=None,
         description=(
-            "Optional recipient Org ID, Soundings organisation ID, or part of "
-            "a recipient name."
+            "Optional recipient Org ID, Soundings organisation ID, or part of a recipient name."
         ),
     )
     place_id: str | None = Field(
