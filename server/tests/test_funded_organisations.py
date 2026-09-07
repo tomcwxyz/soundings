@@ -38,7 +38,10 @@ async def _clean() -> None:
         )
         await conn.execute(text("DELETE FROM data.organisation_operates_in"))
         await conn.execute(text("DELETE FROM data.organisation"))
+        await conn.execute(text("DELETE FROM data.indicator_value"))
+        await conn.execute(text("DELETE FROM data.trend_point"))
         await conn.execute(text("DELETE FROM cache.source_cache"))
+        await conn.execute(text("DELETE FROM geography.postcode"))
         await conn.execute(text("DELETE FROM geography.place_hierarchy"))
         await conn.execute(text("DELETE FROM geography.place"))
 
