@@ -24,6 +24,8 @@ elsewhere in the system prompt:
   funder as evidence that it is absent from the full 360Giving corpus.
 - The local grant index is an evidence layer, not a recommendation engine. Base
   claims about funding patterns on returned grants or deterministic aggregates.
-- Do not use find_organisations_in_place with funded_only until the full-corpus
-  index is wired into that filter.
+- find_organisations_in_place(funded_only=true) is authoritative only when the
+  result is not partial. Before full GrantNav coverage, or for currently
+  unsupported Find That Charity-backed geographies, respect the returned caveat
+  rather than treating the organisation list as a complete funded-only result.
 """

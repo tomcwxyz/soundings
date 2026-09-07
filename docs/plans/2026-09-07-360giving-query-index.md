@@ -12,12 +12,15 @@ query layer.
 ## Why now
 
 Soundings already has an official 360Giving API client and a passthrough adapter,
-but the API is organisation-centric. Place queries currently fan out across many
-Charity Commission organisations, which is slow enough that per-organisation
-grant enrichment was disabled in `find_organisations_in_place`.
+but the API is organisation-centric. Place queries originally fanned out across
+many Charity Commission organisations, which was slow enough that
+per-organisation grant enrichment had to be disabled in
+`find_organisations_in_place`.
 
-The existing `data.grant_record` table was designed for this eventuality but has
-not previously been populated. It becomes the canonical local grants index.
+`data.grant_record` is now the canonical local grants index. Once a successful
+full GrantNav import has been recorded, normal place, recipient and organisation
+funding reads use this local corpus; the official API remains a bootstrap and
+targeted-hydration path.
 
 ## Access pattern
 
@@ -25,13 +28,15 @@ Use two complementary paths:
 
 1. **Targeted hydration** — the official 360Giving API for exact organisation or
    funder lookups. These calls write through into `data.grant_record`.
-2. **Corpus indexing** — GrantNav full-dataset CSV/JSON or 360Giving Datastore
-   access for broad search and analysis. Do not fan out the official API to try
-   to reconstruct the corpus.
+2. **Corpus indexing** — GrantNav's documented whole-dataset CSV export for broad
+   search and analysis. Do not fan out the official API to try to reconstruct
+   the corpus.
 
-The first implementation includes a safe local GrantNav CSV importer. Automated
-retrieval is deliberately separate so we can use a documented/stable bulk route
-rather than scrape the GrantNav UI.
+Soundings streams the documented GrantNav full export to disk, validates it,
+imports it in bounded batches and only removes stale rows after a successful
+full import. Production refresh is weekly by default and configurable through
+`SOUNDINGS_GRANT_INDEX_REFRESH_CRON`; `make refresh-grants` provides the explicit
+operational bootstrap/refresh command.
 
 ## Increment 1 — query/index foundation
 
@@ -52,25 +57,29 @@ rather than scrape the GrantNav UI.
 - [x] Make index coverage explicit (`partial-write-through` vs
       `full-grantnav-export`) so an agent cannot mistake a partial index for the
       full 360Giving corpus.
-- [ ] Wire grant tools into the in-process `/ask` dispatcher after CI confirms
-      the base contracts.
+- [x] Wire grant tools into the in-process `/ask` dispatcher and add explicit
+      grant-query guidance for the agent.
 
 ## Increment 2 — complete corpus and geography
 
-- [ ] Choose the production bulk route:
-  - preferred: 360Giving Datastore read-only access if credentials are available;
-  - otherwise: documented GrantNav full-dataset export with a stable retrieval
-    contract.
-- [ ] Schedule daily refresh after the bulk route is proven.
-- [ ] Resolve Grant Location / Beneficiary Location geographic codes to the
-      Soundings geography spine during import.
+- [x] Choose the production bulk route: GrantNav's documented whole-dataset CSV
+      export, streamed and validated before import.
+- [x] Schedule recurring refresh after the bulk route is proven: weekly by
+      default to avoid unnecessary full-corpus bandwidth/DB churn, configurable
+      for deployments that need a tighter cadence.
+- [x] Resolve Grant Location / Beneficiary Location geographic codes to the
+      Soundings geography spine during import, including known ONS code changes.
 - [ ] Record publisher/dataset provenance sufficiently to support data
-      corrections and removals.
-- [ ] Rework place-level 360Giving indicators to query `data.grant_record`
-      instead of live fan-out when the index is complete.
-- [ ] Re-enable fast per-organisation recent-grant enrichment in
-      `find_organisations_in_place` from the local index.
-- [ ] Make `funded_only` use the local index once coverage is complete.
+      corrections and removals beyond full-export replacement semantics.
+- [x] Rework place-level 360Giving indicators to query `data.grant_record`
+      instead of live fan-out when the index is complete, retaining live API
+      fallback before bootstrap.
+- [x] Re-enable fast per-organisation recent-grant enrichment in
+      `find_organisations_in_place` from the local index when coverage is
+      complete.
+- [x] Make `funded_only` use the local index once coverage is complete, while
+      returning explicit partial/caveat semantics where coverage or identity
+      joins are not authoritative.
 
 ## Increment 3 — grants intelligence
 
