@@ -65,12 +65,8 @@ def _grant(
             "currency": "GBP",
             "amountAwarded": amount,
             "awardDate": award_date,
-            "fundingOrganization": [
-                {"id": "GB-CHC-999999", "name": "Example Foundation"}
-            ],
-            "recipientOrganization": [
-                {"id": "GB-CHC-1001", "name": "Stockton Community Charity"}
-            ],
+            "fundingOrganization": [{"id": "GB-CHC-999999", "name": "Example Foundation"}],
+            "recipientOrganization": [{"id": "GB-CHC-1001", "name": "Stockton Community Charity"}],
         },
     }
 
