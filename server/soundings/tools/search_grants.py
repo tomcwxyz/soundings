@@ -5,6 +5,7 @@ from datetime import date
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from soundings.grants.status import get_grant_index_status
 from soundings.grants.store import GrantStore
 
 
@@ -28,8 +29,9 @@ class SearchGrantsInput(BaseModel):
     query: str | None = Field(
         default=None,
         description=(
-            "Optional natural-language/keyword search across grant title, purpose, programme, "
-            "funder and recipient. Uses PostgreSQL web-style full-text search."
+            "Optional natural-language/keyword search across grant title, "
+            "purpose, programme, funder and recipient. Uses PostgreSQL "
+            "web-style full-text search."
         ),
     )
     funder: str | None = Field(
@@ -38,13 +40,16 @@ class SearchGrantsInput(BaseModel):
     )
     recipient: str | None = Field(
         default=None,
-        description="Optional recipient Org ID, Soundings organisation ID, or part of a recipient name.",
+        description=(
+            "Optional recipient Org ID, Soundings organisation ID, or part of "
+            "a recipient name."
+        ),
     )
     place_id: str | None = Field(
         default=None,
         description=(
-            "Optional canonical Soundings place ID. Matches indexed beneficiary places or "
-            "recipients known to operate in the place."
+            "Optional canonical Soundings place ID. Matches indexed beneficiary "
+            "places or recipients known to operate in the place."
         ),
     )
     awarded_from: date | None = None
@@ -67,10 +72,9 @@ class SearchGrantsOutput(BaseModel):
 
 TOOL_NAME = "search_grants"
 TOOL_DESCRIPTION = (
-    "Search indexed 360Giving grants by topic, funder, recipient, place, date or amount. "
-    "Results are evidence records, not generated recommendations. Check index_complete: "
-    "until the bulk corpus loader is enabled, the local index contains only grants Soundings "
-    "has encountered through targeted 360Giving calls."
+    "Search indexed 360Giving grants by topic, funder, recipient, place, date "
+    "or amount. Results are evidence records, not generated recommendations. "
+    "Check index_complete before treating the results as full-corpus coverage."
 )
 
 
@@ -83,7 +87,10 @@ def tool_spec() -> dict[str, object]:
     }
 
 
-async def search_grants(input: SearchGrantsInput, engine: AsyncEngine) -> SearchGrantsOutput:
+async def search_grants(
+    input: SearchGrantsInput,
+    engine: AsyncEngine,
+) -> SearchGrantsOutput:
     store = GrantStore(engine)
     result = await store.search(
         query=input.query,
@@ -97,12 +104,13 @@ async def search_grants(input: SearchGrantsInput, engine: AsyncEngine) -> Search
         limit=input.limit,
         offset=input.offset,
     )
-    status = await store.index_status()
+    status = await get_grant_index_status(engine)
     caveats: list[str] = []
     if not status["complete"]:
         caveats.append(
-            "360Giving index coverage is currently partial (write-through from targeted API calls); "
-            "absence from these results must not be interpreted as absence from the full 360Giving corpus."
+            "360Giving index coverage is currently partial (write-through from "
+            "targeted API calls); absence from these results must not be "
+            "interpreted as absence from the full 360Giving corpus."
         )
     return SearchGrantsOutput(
         grants=[GrantSearchResult.model_validate(row) for row in result["grants"]],
