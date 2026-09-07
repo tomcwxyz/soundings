@@ -237,7 +237,7 @@ class GrantStore:
             f"""
             SELECT COUNT(*) AS grants, COALESCE(SUM(g.amount), 0) AS total_gbp
             FROM data.grant_record g
-            WHERE {' AND '.join(where)}
+            WHERE {" AND ".join(where)}
             """
         )
         async with self._engine.connect() as conn:
@@ -283,7 +283,7 @@ class GrantStore:
                    g.amount, g.currency, g.awarded_on, g.purpose, g.programme,
                    g.beneficiary_place_ids
             FROM data.grant_record g
-            WHERE {' AND '.join(where)}
+            WHERE {" AND ".join(where)}
             ORDER BY g.awarded_on DESC, g.amount DESC, g.id
             {limit_sql}
             """
@@ -325,16 +325,20 @@ class GrantStore:
         )
         async with self._engine.connect() as conn:
             rows = (
-                await conn.execute(
-                    sql,
-                    {
-                        "source_id": SOURCE_ID,
-                        "external_id": external_id,
-                        "local_id": local_id,
-                        "limit": max(1, min(limit, 100)),
-                    },
+                (
+                    await conn.execute(
+                        sql,
+                        {
+                            "source_id": SOURCE_ID,
+                            "external_id": external_id,
+                            "local_id": local_id,
+                            "limit": max(1, min(limit, 100)),
+                        },
+                    )
                 )
-            ).mappings().all()
+                .mappings()
+                .all()
+            )
         return [self._serialise_row(dict(row)) for row in rows]
 
     async def funder_profile(self, funder: str, *, top_n: int = 10) -> dict[str, Any]:
