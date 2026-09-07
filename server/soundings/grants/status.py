@@ -1,4 +1,4 @@
-"""Coverage metadata for the local grant index."""
+"""Coverage and provenance metadata for the local grant index."""
 
 from typing import Any
 
@@ -44,10 +44,24 @@ async def get_grant_index_status(engine: AsyncEngine) -> dict[str, Any]:
         WHERE source_id = :source_id
         """
     )
+    snapshot_sql = text(
+        """
+        SELECT id, started_at, finished_at, rows_written, provenance
+        FROM data.loader_run
+        WHERE source_id = :source_id
+          AND status = 'ok'
+          AND notes LIKE '%grant_index_scope=full%'
+        ORDER BY finished_at DESC NULLS LAST
+        LIMIT 1
+        """
+    )
     async with engine.connect() as conn:
         row = (await conn.execute(stats_sql, {"source_id": SOURCE_ID})).mappings().one()
+        snapshot = (
+            await conn.execute(snapshot_sql, {"source_id": SOURCE_ID})
+        ).mappings().first()
 
-    complete = await has_complete_grant_index(engine)
+    complete = snapshot is not None
 
     def iso(value: Any) -> str | None:
         if value is None:
@@ -55,6 +69,16 @@ async def get_grant_index_status(engine: AsyncEngine) -> dict[str, Any]:
         if hasattr(value, "isoformat"):
             return str(value.isoformat())
         return str(value)
+
+    snapshot_data: dict[str, Any] | None = None
+    if snapshot is not None:
+        snapshot_data = {
+            "run_id": str(snapshot["id"]),
+            "started_at": iso(snapshot["started_at"]),
+            "finished_at": iso(snapshot["finished_at"]),
+            "rows_written": int(snapshot["rows_written"] or 0),
+            "provenance": dict(snapshot["provenance"] or {}),
+        }
 
     return {
         "grants": int(row["grants"] or 0),
@@ -65,4 +89,5 @@ async def get_grant_index_status(engine: AsyncEngine) -> dict[str, Any]:
         "last_indexed_at": iso(row["last_indexed_at"]),
         "coverage": "full-grantnav-export" if complete else "partial-write-through",
         "complete": complete,
+        "snapshot": snapshot_data,
     }
