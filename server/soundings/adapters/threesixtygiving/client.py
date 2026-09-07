@@ -111,9 +111,7 @@ class ThreeSixtyGivingClient:
         page_size: int,
     ) -> AsyncIterator[dict[str, Any]]:
         page_size = max(1, min(page_size, DEFAULT_PAGE_SIZE))
-        url: str | None = (
-            f"{THREESIXTYGIVING_BASE}/org/{org_id}/{endpoint}/?limit={page_size}"
-        )
+        url: str | None = f"{THREESIXTYGIVING_BASE}/org/{org_id}/{endpoint}/?limit={page_size}"
         while url is not None:
             response = await self._get(url)
             if response.status_code == 404:
