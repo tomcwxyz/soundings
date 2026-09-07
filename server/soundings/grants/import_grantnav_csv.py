@@ -148,8 +148,7 @@ async def _resolve_place_codes(
         return {}
 
     direct_stmt = text(
-        "SELECT code, id FROM geography.place "
-        "WHERE type = 'ltla24' AND code IN :codes"
+        "SELECT code, id FROM geography.place WHERE type = 'ltla24' AND code IN :codes"
     ).bindparams(bindparam("codes", expanding=True))
     changed_stmt = text(
         """
@@ -187,12 +186,7 @@ async def _attach_soundings_places(
     engine: AsyncEngine,
     batch: list[dict[str, Any]],
 ) -> None:
-    codes = {
-        str(code)
-        for raw in batch
-        for code in raw.get("soundings_place_codes", [])
-        if code
-    }
+    codes = {str(code) for raw in batch for code in raw.get("soundings_place_codes", []) if code}
     resolved = await _resolve_place_codes(engine, codes)
     for raw in batch:
         place_ids = {
