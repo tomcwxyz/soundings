@@ -4,7 +4,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.threesixtygiving.client import ThreeSixtyGivingClient
+from soundings.grants.status import get_grant_index_status
 from soundings.grants.store import GrantStore
+
+ORG_ID_PREFIXES = ("GB-CHC-", "GB-COH-", "GB-GOR-", "GB-SC-", "GB-NIC-", "360G-")
 
 
 class RankedFundingItem(BaseModel):
@@ -21,8 +24,9 @@ class GetFunderProfileInput(BaseModel):
     refresh: bool = Field(
         default=True,
         description=(
-            "When funder is an exact 360Giving Org ID, refresh that funder's grants from "
-            "the official API before profiling. Ignored for name-only lookups."
+            "When funder is an exact 360Giving Org ID, refresh that funder's "
+            "grants from the official API before profiling. Ignored for "
+            "name-only lookups."
         ),
     )
 
@@ -45,9 +49,10 @@ class GetFunderProfileOutput(BaseModel):
 
 TOOL_NAME = "get_funder_profile"
 TOOL_DESCRIPTION = (
-    "Profile a funder using 360Giving grants: grant count, GBP total/average, award date range, "
-    "top recipients and programmes. Exact 360Giving Org IDs can be refreshed from the official "
-    "API before analysis; name-only lookups use the local index."
+    "Profile a funder using 360Giving grants: grant count, GBP total/average, "
+    "award date range, top recipients and programmes. Exact 360Giving Org IDs "
+    "can be refreshed from the official API before analysis; name-only lookups "
+    "use the local index."
 )
 
 
@@ -61,7 +66,7 @@ def tool_spec() -> dict[str, object]:
 
 
 def _looks_like_org_id(value: str) -> bool:
-    return "-" in value and value.upper() == value and " " not in value
+    return value.startswith(ORG_ID_PREFIXES) and " " not in value
 
 
 async def get_funder_profile(
@@ -79,18 +84,21 @@ async def get_funder_profile(
         refreshed = True
     elif input.refresh:
         caveats.append(
-            "Funder was supplied as a name rather than a 360Giving Org ID, so no targeted API refresh was attempted."
+            "Funder was supplied as a name rather than a 360Giving Org ID, so "
+            "no targeted API refresh was attempted."
         )
 
     profile = await store.funder_profile(input.funder, top_n=input.top_n)
-    status = await store.index_status()
+    status = await get_grant_index_status(engine)
     if not status["complete"] and not refreshed:
         caveats.append(
-            "Profile is based on the currently indexed subset of 360Giving data, not yet the full corpus."
+            "Profile is based on the currently indexed subset of 360Giving "
+            "data, not yet the full corpus."
         )
     elif not status["complete"] and refreshed:
         caveats.append(
-            "This funder's API records were refreshed, but the wider local grant index is not yet full-corpus."
+            "This funder's API records were refreshed, but the wider local "
+            "grant index is not yet full-corpus."
         )
 
     recipients = [
