@@ -79,6 +79,13 @@ from soundings.tools.get_place_profile import (
 from soundings.tools.get_place_profile import (
     tool_spec as get_place_profile_spec,
 )
+from soundings.tools.get_recipient_profile import (
+    GetRecipientProfileInput,
+    get_recipient_profile,
+)
+from soundings.tools.get_recipient_profile import (
+    tool_spec as get_recipient_profile_spec,
+)
 from soundings.tools.get_sub_areas import (
     GetSubAreasInput,
     get_sub_areas,
@@ -158,6 +165,7 @@ class ToolDispatcher:
             get_csp_spec(),
             search_grants_spec(),
             get_funder_profile_spec(),
+            get_recipient_profile_spec(),
             detect_insights_spec(),
             get_peer_dist_spec(),
             get_sub_areas_spec(),
@@ -265,6 +273,7 @@ class ToolDispatcher:
             "get_civil_society_profile": self._handle_get_csp,
             "search_grants": self._handle_search_grants,
             "get_funder_profile": self._handle_get_funder_profile,
+            "get_recipient_profile": self._handle_get_recipient_profile,
             "detect_insights": self._handle_detect_insights,
             "get_peer_distribution": self._handle_get_peer_distribution,
             "get_sub_areas": self._handle_get_sub_areas,
@@ -315,6 +324,11 @@ class ToolDispatcher:
     async def _handle_get_funder_profile(self, args: dict[str, Any]) -> dict[str, Any]:
         model = GetFunderProfileInput.model_validate(args)
         result = await get_funder_profile(model, self._state.engine)
+        return result.model_dump(mode="json")
+
+    async def _handle_get_recipient_profile(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetRecipientProfileInput.model_validate(args)
+        result = await get_recipient_profile(model, self._state.engine)
         return result.model_dump(mode="json")
 
     async def _handle_detect_insights(self, args: dict[str, Any]) -> dict[str, Any]:
