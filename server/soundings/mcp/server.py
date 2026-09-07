@@ -24,6 +24,10 @@ from soundings.tools.get_funder_profile import (
 )
 from soundings.tools.get_indicators import GetIndicatorsInput, get_indicators
 from soundings.tools.get_place_profile import GetPlaceProfileInput, get_place_profile
+from soundings.tools.get_recipient_profile import (
+    GetRecipientProfileInput,
+    get_recipient_profile,
+)
 from soundings.tools.get_trend import GetTrendInput, get_trend
 from soundings.tools.search_grants import SearchGrantsInput, search_grants
 
@@ -193,6 +197,26 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
             raise RuntimeError("MCP get_funder_profile invoked without app state")
         result = await get_funder_profile(
             GetFunderProfileInput(funder=funder, top_n=top_n, refresh=refresh),
+            state.engine,
+        )
+        return result.model_dump(mode="json")
+
+    @mcp.tool(name="get_recipient_profile")
+    async def _get_recipient_profile(
+        recipient: str,
+        top_n: int = 10,
+        recent_limit: int = 5,
+        refresh: bool = True,
+    ) -> dict[str, Any]:
+        if state is None:
+            raise RuntimeError("MCP get_recipient_profile invoked without app state")
+        result = await get_recipient_profile(
+            GetRecipientProfileInput(
+                recipient=recipient,
+                top_n=top_n,
+                recent_limit=recent_limit,
+                refresh=refresh,
+            ),
             state.engine,
         )
         return result.model_dump(mode="json")
