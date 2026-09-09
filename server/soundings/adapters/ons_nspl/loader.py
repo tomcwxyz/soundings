@@ -5,8 +5,8 @@ prefixed place IDs (`E06000047` -> `ltla24:E06000047`), nulls any code not
 present in geography.place (an FK guard, so a boundary-vintage mismatch or
 an unseeded ward degrades to NULL rather than an FK violation), and upserts
 in batches. After the upsert, utla24 — which NSPL has no field for — is
-derived by joining each postcode's ltla24 to its parent UTLA in
-geography.place_hierarchy.
+derived by joining each postcode's ltla24 to its current parent UTLA via
+geography.current_place_hierarchy.
 
 See docs/superpowers/specs/2026-07-07-nspl-loader-design.md.
 """
@@ -55,11 +55,11 @@ _UPSERT_SQL = text(
 )
 
 # Derive utla24 in two passes:
-# 1. Two-tier districts (E07) sit under a county UTLA (E10) in the hierarchy.
+# 1. Two-tier districts (E07) sit under a county UTLA (E10) in the current hierarchy.
 _DERIVE_UTLA_HIERARCHY_SQL = text(
     "UPDATE geography.postcode p "
     "SET utla24 = h.parent_id "
-    "FROM geography.place_hierarchy h "
+    "FROM geography.current_place_hierarchy h "
     "WHERE h.child_id = p.ltla24 "
     "  AND h.parent_id LIKE 'utla24:%' "
     "  AND p.ltla24 IS NOT NULL"
@@ -113,7 +113,7 @@ class NsplLoader(LoaderAdapter):
         derived = await self._derive_utla()
         return LoaderResult(
             rows_written=total,
-            notes=f"{derived} postcodes assigned a utla24 via place_hierarchy",
+            notes=f"{derived} postcodes assigned a utla24 via current place hierarchy",
         )
 
     async def _valid_place_ids(self) -> set[str]:
