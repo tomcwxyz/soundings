@@ -70,6 +70,31 @@ async def test_code_change_loader_inserts_rows() -> None:
     assert rows[2].change_type == "Reorganisation"
 
 
+async def test_code_change_loader_normalises_history_headers() -> None:
+    engine = get_engine()
+    mixed_case = b""" old_code ,New_Code,change_type, oper_date , note
+E07000004,E06000060,Replacement,01/04/2020,Boundary change
+"""
+    async with engine.begin() as conn:
+        await conn.execute(text("DELETE FROM geography.code_change"))
+
+    loader = OnsGeographyCodeChangeLoader(engine)
+    result = await loader.load_from_bytes(mixed_case)
+
+    assert result.rows_written == 1
+    async with engine.connect() as conn:
+        row = (
+            await conn.execute(
+                select(CodeChange.old_code, CodeChange.new_code, CodeChange.effective_date)
+            )
+        ).one()
+    assert (row.old_code, row.new_code, row.effective_date) == (
+        "E07000004",
+        "E06000060",
+        date(2020, 4, 1),
+    )
+
+
 async def test_code_change_loader_is_idempotent() -> None:
     engine = get_engine()
     async with engine.begin() as conn:
