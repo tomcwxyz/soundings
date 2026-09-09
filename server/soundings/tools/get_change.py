@@ -103,9 +103,7 @@ async def get_change(
     start_value = float(first.value)
     end_value = float(last.value)
     absolute_change = end_value - start_value
-    percentage_change = (
-        (absolute_change / start_value) * 100.0 if start_value != 0 else None
-    )
+    percentage_change = (absolute_change / start_value) * 100.0 if start_value != 0 else None
     direction: ChangeDirection
     if absolute_change > 0:
         direction = "increase"
