@@ -109,7 +109,10 @@ class OnsGeographyHistoricalHierarchyLoader(LoaderAdapter):
         inventory = inspect_chd_archive(blob, sample_size=0)
         if not inventory.change_history_tables:
             names = ", ".join(table.name for table in inventory.tables) or "none"
-            raise ValueError(f"CHD archive contained no recognised ChangeHistory table; CSV files: {names}")
+            raise ValueError(
+                "CHD archive contained no recognised ChangeHistory table; "
+                f"CSV files: {names}"
+            )
 
         place_ids_by_code = await self._place_ids_by_code()
         source_rows = 0
