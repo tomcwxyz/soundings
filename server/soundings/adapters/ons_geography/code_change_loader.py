@@ -9,6 +9,8 @@ produce any history rows rather than silently retaining stale lineage.
 
 import csv
 import io
+import zipfile
+from collections.abc import Iterable
 from datetime import date, datetime
 from typing import Any
 
@@ -17,6 +19,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.base import LoaderAdapter, LoaderResult
+from soundings.adapters.ons_geography.chd_archive import (
+    inspect_chd_archive,
+    normalise_chd_header,
+)
 
 CHD_URL = (
     "https://www.ons.gov.uk/file"
@@ -69,7 +75,10 @@ class OnsGeographyCodeChangeLoader(LoaderAdapter):
 
     async def load(self, run_id: str | None = None) -> LoaderResult:
         owns_client = self._client is None
-        client = self._client or httpx.AsyncClient(timeout=120.0, follow_redirects=True)
+        client = self._client or httpx.AsyncClient(
+            timeout=120.0,
+            follow_redirects=True,
+        )
         try:
             response = await client.get(CHD_URL)
             response.raise_for_status()
@@ -79,42 +88,45 @@ class OnsGeographyCodeChangeLoader(LoaderAdapter):
                 await client.aclose()
 
     async def load_from_zip_bytes(self, blob: bytes) -> LoaderResult:
-        import zipfile
-
+        inventory = inspect_chd_archive(blob, sample_size=0)
         rows: list[dict[str, Any]] = []
-        candidate_files: list[str] = []
         with zipfile.ZipFile(io.BytesIO(blob)) as zf:
-            for name in zf.namelist():
-                lowered = name.lower()
-                if not lowered.endswith(".csv"):
-                    continue
-                if "change" not in lowered and "history" not in lowered:
-                    continue
-                candidate_files.append(name)
-                rows.extend(self._parse_csv(zf.read(name)))
+            for table in inventory.history_tables:
+                with zf.open(table.name) as member:
+                    with io.TextIOWrapper(
+                        member,
+                        encoding="utf-8-sig",
+                        errors="replace",
+                        newline="",
+                    ) as stream:
+                        rows.extend(self._parse_rows(stream))
 
         if not rows:
-            names = ", ".join(candidate_files) if candidate_files else "none"
+            names = ", ".join(table.name for table in inventory.tables) or "none"
             raise ValueError(
-                "CHD archive contained no parseable Geography History rows; "
-                f"candidate CSV files: {names}"
+                f"CHD archive contained no parseable Geography History rows; CSV files: {names}"
             )
         return await self._upsert(rows)
 
     async def load_from_bytes(self, blob: bytes) -> LoaderResult:
-        rows = self._parse_csv(blob)
+        text_stream = io.StringIO(blob.decode("utf-8-sig"))
+        rows = self._parse_rows(text_stream)
         return await self._upsert(rows)
 
     @staticmethod
-    def _parse_csv(blob: bytes) -> list[dict[str, Any]]:
-        text_stream = io.StringIO(blob.decode("utf-8-sig"))
-        reader = csv.DictReader(text_stream)
+    def _parse_rows(stream: Iterable[str]) -> list[dict[str, Any]]:
+        reader = csv.DictReader(stream)
         out: list[dict[str, Any]] = []
         for row in reader:
-            old = _pick(row, OLD_CODE_FIELDS)
-            new = _pick(row, NEW_CODE_FIELDS)
-            ctype = _pick(row, TYPE_FIELDS)
-            eff = _parse_date(_pick(row, DATE_FIELDS))
+            normalised = {
+                normalise_chd_header(str(key)): ("" if value is None else str(value).strip())
+                for key, value in row.items()
+                if key is not None
+            }
+            old = _pick(normalised, OLD_CODE_FIELDS)
+            new = _pick(normalised, NEW_CODE_FIELDS)
+            ctype = _pick(normalised, TYPE_FIELDS)
+            eff = _parse_date(_pick(normalised, DATE_FIELDS))
             if not (old and new and ctype and eff):
                 continue
             out.append(
@@ -123,7 +135,7 @@ class OnsGeographyCodeChangeLoader(LoaderAdapter):
                     "new_code": new,
                     "change_type": ctype,
                     "effective_date": eff,
-                    "notes": _pick(row, NOTES_FIELDS),
+                    "notes": _pick(normalised, NOTES_FIELDS),
                 }
             )
         return out
