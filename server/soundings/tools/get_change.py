@@ -1,12 +1,15 @@
 """get_change tool — deterministic change between two observations."""
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, Field
 
 from soundings.contracts.source_ref import SourceRef
 from soundings.contracts.temporal import TemporalExtent
 from soundings.tools.get_trend import GetTrendInput, get_trend
+
+if TYPE_CHECKING:
+    from soundings.orchestration.orchestrator import IndicatorOrchestrator
 
 ChangeDirection = Literal["increase", "decrease", "unchanged"]
 
@@ -62,7 +65,10 @@ def tool_spec() -> dict[str, object]:
     }
 
 
-async def get_change(input: GetChangeInput, orchestrator: object) -> GetChangeOutput:
+async def get_change(
+    input: GetChangeInput,
+    orchestrator: "IndicatorOrchestrator",
+) -> GetChangeOutput:
     trend_result = await get_trend(
         GetTrendInput(
             place_id=input.place_id,
@@ -70,7 +76,7 @@ async def get_change(input: GetChangeInput, orchestrator: object) -> GetChangeOu
             period_from=input.period_from,
             period_to=input.period_to,
         ),
-        orchestrator,  # type: ignore[arg-type]
+        orchestrator,
     )
     if trend_result.trend is None:
         return GetChangeOutput(
@@ -113,7 +119,8 @@ async def get_change(input: GetChangeInput, orchestrator: object) -> GetChangeOu
         caveats.append("Percentage change is undefined because the starting value is zero")
     if trend_result.trend.breaks_in_series:
         caveats.append(
-            "The requested interval contains a documented series break; interpret the change cautiously"
+            "The requested interval contains a documented series break; "
+            "interpret the change cautiously"
         )
 
     change = IndicatorChange(
