@@ -9,6 +9,7 @@ produce any history rows rather than silently retaining stale lineage.
 
 import csv
 import io
+import zipfile
 from datetime import date, datetime
 from typing import Any
 
@@ -17,6 +18,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.base import LoaderAdapter, LoaderResult
+from soundings.adapters.ons_geography.chd_archive import inspect_chd_archive
 
 CHD_URL = (
     "https://www.ons.gov.uk/file"
@@ -79,25 +81,17 @@ class OnsGeographyCodeChangeLoader(LoaderAdapter):
                 await client.aclose()
 
     async def load_from_zip_bytes(self, blob: bytes) -> LoaderResult:
-        import zipfile
-
+        inventory = inspect_chd_archive(blob, sample_size=0)
         rows: list[dict[str, Any]] = []
-        candidate_files: list[str] = []
         with zipfile.ZipFile(io.BytesIO(blob)) as zf:
-            for name in zf.namelist():
-                lowered = name.lower()
-                if not lowered.endswith(".csv"):
-                    continue
-                if "change" not in lowered and "history" not in lowered:
-                    continue
-                candidate_files.append(name)
-                rows.extend(self._parse_csv(zf.read(name)))
+            for table in inventory.history_tables:
+                rows.extend(self._parse_csv(zf.read(table.name)))
 
         if not rows:
-            names = ", ".join(candidate_files) if candidate_files else "none"
+            names = ", ".join(table.name for table in inventory.tables) or "none"
             raise ValueError(
                 "CHD archive contained no parseable Geography History rows; "
-                f"candidate CSV files: {names}"
+                f"CSV files: {names}"
             )
         return await self._upsert(rows)
 
