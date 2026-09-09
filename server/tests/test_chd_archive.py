@@ -3,7 +3,7 @@ import zipfile
 
 import pytest
 
-from soundings.adapters.ons_geography.chd_archive import inspect_chd_archive
+from soundings.adapters.ons_geography.chd_archive import _inspect_csv, inspect_chd_archive
 
 
 def _archive(files: dict[str, bytes]) -> bytes:
@@ -12,6 +12,22 @@ def _archive(files: dict[str, bytes]) -> bytes:
         for name, content in files.items():
             zf.writestr(name, content)
     return buffer.getvalue()
+
+
+class _HeaderThenExplodes:
+    """CSV iterable proving sample_size=0 never requests a data row."""
+
+    def __init__(self) -> None:
+        self._first = True
+
+    def __iter__(self) -> "_HeaderThenExplodes":
+        return self
+
+    def __next__(self) -> str:
+        if self._first:
+            self._first = False
+            return "A,B\n"
+        raise AssertionError("inspector requested a row beyond the configured sample")
 
 
 def test_inspector_classifies_history_from_headers_not_filename() -> None:
@@ -70,6 +86,13 @@ def test_inspector_allows_header_only_inventory() -> None:
     inventory = inspect_chd_archive(blob, sample_size=0)
 
     assert inventory.history_tables[0].sample_rows == ()
+
+
+def test_header_only_inspection_does_not_consume_first_data_row() -> None:
+    headers, samples = _inspect_csv(_HeaderThenExplodes(), sample_size=0)
+
+    assert headers == ("A", "B")
+    assert samples == ()
 
 
 def test_inspector_rejects_negative_sample_size() -> None:
