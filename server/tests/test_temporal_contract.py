@@ -44,8 +44,18 @@ def test_unknown_period_keeps_label_without_false_dates() -> None:
     assert extent.reference_end is None
 
 
+def test_invalid_calendar_years_become_unknown() -> None:
+    assert parse_period("0000").granularity == "unknown"
+    assert parse_period("0000-Q1").granularity == "unknown"
+    assert parse_period("FY 9999/00").granularity == "unknown"
+
+
 def test_period_window_and_sort_use_structured_time() -> None:
     labels = ["2024-Q4", "2023-Q4", "2024-Q1"]
     assert sorted(labels, key=period_sort_key) == ["2023-Q4", "2024-Q1", "2024-Q4"]
     assert period_in_window("2024-Q2", "2024-Q1", "2024-Q3") is True
     assert period_in_window("2023-Q4", "2024-Q1", "2024-Q3") is False
+
+
+def test_period_window_refuses_unknown_chronology() -> None:
+    assert period_in_window("Baseline 2019", "2020", "2024") is False
