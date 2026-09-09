@@ -21,18 +21,14 @@ def test_inspector_classifies_history_from_headers_not_filename() -> None:
                 b"OLD_CODE,NEW_CODE,CHANGE_TYPE,OPER_DATE,NOTE\n"
                 b"E07000004,E06000060,Replacement,01/04/2020,Buckinghamshire\n"
             ),
-            "tables/Geography_Hierarchies.csv": (
-                b"CHILD,PARENT,AS_AT\nA,B,2020-01-01\n"
-            ),
+            "tables/Geography_Hierarchies.csv": (b"CHILD,PARENT,AS_AT\nA,B,2020-01-01\n"),
             "tables/Information.csv": b"KEY,VALUE\nrelease,June 2026\n",
         }
     )
 
     inventory = inspect_chd_archive(blob)
 
-    assert [table.name for table in inventory.history_tables] == [
-        "tables/table_01.csv"
-    ]
+    assert [table.name for table in inventory.history_tables] == ["tables/table_01.csv"]
     assert [table.name for table in inventory.hierarchy_tables] == [
         "tables/Geography_Hierarchies.csv"
     ]
@@ -68,12 +64,7 @@ def test_inspector_exposes_headers_and_bounded_samples() -> None:
 
 def test_inspector_allows_header_only_inventory() -> None:
     blob = _archive(
-        {
-            "History.csv": (
-                b"GEOGCDO,GEOGCDN,CHGTYPE,EFFDATE\n"
-                b"A,B,Replacement,20200101\n"
-            )
-        }
+        {"History.csv": (b"GEOGCDO,GEOGCDN,CHGTYPE,EFFDATE\nA,B,Replacement,20200101\n")}
     )
 
     inventory = inspect_chd_archive(blob, sample_size=0)
