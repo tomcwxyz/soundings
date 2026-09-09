@@ -2,7 +2,7 @@
 
 TEMPORAL_GUIDANCE = """\
 Temporal-query guidance — use deterministic temporal tools rather than asking
- the language model to infer chronology or calculate change itself:
+the language model to infer chronology or calculate change itself:
 
 - get_trend returns the ordered observations for one indicator at one place.
   Use it when the user wants the shape of a series or a trend chart.
