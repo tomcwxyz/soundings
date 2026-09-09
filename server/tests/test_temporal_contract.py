@@ -22,8 +22,15 @@ def test_parse_month_and_quarter_periods() -> None:
     assert quarter.reference_end == date(2024, 6, 30)
 
 
-def test_parse_financial_year() -> None:
+def test_bare_year_range_does_not_claim_financial_year_dates() -> None:
     extent = parse_period("2024/25")
+    assert extent.granularity == "range"
+    assert extent.reference_start is None
+    assert extent.reference_end is None
+
+
+def test_parse_explicit_financial_year() -> None:
+    extent = parse_period("FY 2024/25")
     assert extent.granularity == "financial_year"
     assert extent.reference_start == date(2024, 4, 1)
     assert extent.reference_end == date(2025, 3, 31)
