@@ -41,7 +41,7 @@ AGGREGATE_SQL = text(
              ELSE '["IMD aggregated to LTLA via unweighted average."]'::jsonb
         END AS caveats
     FROM data.indicator_value imd
-    JOIN geography.place_hierarchy ph ON ph.child_id = imd.place_id
+    JOIN geography.current_place_hierarchy ph ON ph.child_id = imd.place_id
     LEFT JOIN data.indicator_value pop
         ON pop.place_id = imd.place_id
         AND pop.indicator_key = 'population.total'
