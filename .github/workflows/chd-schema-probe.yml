@@ -38,7 +38,7 @@ jobs:
                       try:
                           response = await client.get(url)
                           response.raise_for_status()
-                          inventory = inspect_chd_archive(response.content, sample_size=2)
+                          inventory = inspect_chd_archive(response.content, sample_size=3)
                       except Exception as exc:
                           failures.append(f"{url}: {exc.__class__.__name__}: {exc}")
                           continue
@@ -47,21 +47,14 @@ jobs:
                           "source_url": url,
                           "bytes": len(response.content),
                           "table_count": len(inventory.tables),
-                          "history_tables": [
+                          "tables": [
                               {
                                   "name": table.name,
+                                  "kind": table.kind,
                                   "headers": list(table.headers),
                                   "sample_rows": list(table.sample_rows),
                               }
-                              for table in inventory.history_tables
-                          ],
-                          "hierarchy_tables": [
-                              {
-                                  "name": table.name,
-                                  "headers": list(table.headers),
-                                  "sample_rows": list(table.sample_rows),
-                              }
-                              for table in inventory.hierarchy_tables
+                              for table in inventory.tables
                           ],
                       }
                       print("CHD_SCHEMA_PROBE_BEGIN")
