@@ -90,13 +90,14 @@ async def test_historical_mode_never_substitutes_undated_current_edge() -> None:
     service = await _seed_temporal_hierarchy()
 
     result = await service.find_containing_places_context(
-        "region:CURRENT",
+        "lsoa21:CHILD",
         boundary_mode="historical",
-        as_of=date(2015, 6, 1),
+        as_of=date(2005, 6, 1),
     )
 
     assert result.places == ()
     assert result.partial is True
+    assert any("undated" in caveat for caveat in result.caveats)
     assert any("No dated hierarchy edges" in caveat for caveat in result.caveats)
 
 
