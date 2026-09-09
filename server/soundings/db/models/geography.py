@@ -28,10 +28,17 @@ class Place(Base):
 
 class PlaceHierarchy(Base):
     __tablename__ = "place_hierarchy"
-    __table_args__ = ({"schema": "geography"},)
+    __table_args__ = (
+        Index("ix_place_hierarchy_child_validity", "child_id", "valid_from", "valid_to"),
+        {"schema": "geography"},
+    )
 
     child_id: Mapped[str] = mapped_column(ForeignKey("geography.place.id"), primary_key=True)
     parent_id: Mapped[str] = mapped_column(ForeignKey("geography.place.id"), primary_key=True)
+    # Half-open validity interval [valid_from, valid_to). Null/null means the
+    # edge is an undated current snapshot, not evidence of historical validity.
+    valid_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    valid_to: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
 class Postcode(Base):
