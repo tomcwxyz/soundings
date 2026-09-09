@@ -98,6 +98,24 @@ async def get_change(
             partial=True,
         )
 
+    unorderable = [
+        point.period
+        for point in usable
+        if point.temporal is None or point.temporal.reference_start is None
+    ]
+    if unorderable:
+        return GetChangeOutput(
+            change=None,
+            sources=trend_result.sources,
+            caveats=[
+                *trend_result.caveats,
+                "Cannot calculate change safely because one or more observation "
+                "periods have no comparable chronological extent: "
+                + ", ".join(unorderable),
+            ],
+            partial=True,
+        )
+
     first = usable[0]
     last = usable[-1]
     assert first.value is not None
