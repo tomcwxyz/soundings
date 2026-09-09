@@ -52,6 +52,35 @@ def test_inspector_classifies_history_from_headers_not_filename() -> None:
     assert kinds["tables/Information.csv"] == "other"
 
 
+def test_inspector_recognises_live_2026_chd_shapes() -> None:
+    blob = _archive(
+        {
+            "ChangeHistory.csv": (
+                b"GEOGCD,GEOGNM,OPER_DATE,TERM_DATE,PARENTCD,ENTITYCD,STATUS\n"
+                b"E01000001,City of London 001A,01/02/2004 00:00,,E02000001,E01,live\n"
+            ),
+            "Changes.csv": (
+                b"GEOGCD,GEOGCD_P,OPER_DATE,ENTITYCD,YEAR\n"
+                b"00GG01,E05006654,01/04/2009 00:00,00G,2009\n"
+            ),
+            "Equivalents.csv": (
+                b"GEOGCD,GEOGCDH,OPER_DATE,TERM_DATE,ENTITYCD,YEAR,STATUS\n"
+                b"E38000007,99E,01/04/2026 00:00,,E38,2026,live\n"
+            ),
+        }
+    )
+
+    inventory = inspect_chd_archive(blob)
+    kinds = {table.name: table.kind for table in inventory.tables}
+
+    assert kinds == {
+        "ChangeHistory.csv": "change_history",
+        "Changes.csv": "changes",
+        "Equivalents.csv": "equivalents",
+    }
+    assert [table.name for table in inventory.change_history_tables] == ["ChangeHistory.csv"]
+
+
 def test_inspector_exposes_headers_and_bounded_samples() -> None:
     blob = _archive(
         {
