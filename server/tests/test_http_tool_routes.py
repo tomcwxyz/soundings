@@ -109,6 +109,7 @@ async def test_get_v1_tools_lists_specs() -> None:
         "get_place_profile",
         "compare_places",
         "get_trend",
+        "get_change",
         "find_organisations_in_place",
         "get_civil_society_profile",
         "get_peer_distribution",

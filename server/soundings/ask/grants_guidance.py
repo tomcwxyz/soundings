@@ -1,11 +1,13 @@
-"""Ask guidance for Soundings' indexed 360Giving grant tools.
+"""Specialised Ask guidance appended to the broad place-analysis prompt.
 
-Kept separate from the broad place-analysis prompt so the grants capability has
-an explicit boundary that can move with ``soundings.grants`` if it is later
-extracted into a dedicated service.
+Grant guidance remains isolated so that capability can move with
+``soundings.grants`` if it is later extracted. Temporal guidance is composed
+alongside it because both are appended to every Ask run after the core prompt.
 """
 
-GRANTS_GUIDANCE = """\
+from soundings.ask.temporal_guidance import TEMPORAL_GUIDANCE
+
+_GRANTS_GUIDANCE = """\
 Grant-query guidance — this takes precedence over older generic grant guidance
 elsewhere in the system prompt:
 
@@ -29,3 +31,6 @@ elsewhere in the system prompt:
   unsupported Find That Charity-backed geographies, respect the returned caveat
   rather than treating the organisation list as a complete funded-only result.
 """
+
+# Compatibility name used by AskOrchestrator for the specialised guidance suffix.
+GRANTS_GUIDANCE = _GRANTS_GUIDANCE + "\n\n" + TEMPORAL_GUIDANCE

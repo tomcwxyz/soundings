@@ -44,6 +44,13 @@ from soundings.tools.find_place import (
 from soundings.tools.find_place import (
     tool_spec as find_place_spec,
 )
+from soundings.tools.get_change import (
+    GetChangeInput,
+    get_change,
+)
+from soundings.tools.get_change import (
+    tool_spec as get_change_spec,
+)
 from soundings.tools.get_civil_society_profile import (
     GetCivilSocietyProfileInput,
     get_civil_society_profile,
@@ -154,6 +161,7 @@ class ToolDispatcher:
             get_place_profile_spec(),
             compare_places_spec(),
             get_trend_spec(),
+            get_change_spec(),
             find_orgs_spec(),
             get_csp_spec(),
             search_grants_spec(),
@@ -261,6 +269,7 @@ class ToolDispatcher:
             "get_place_profile": self._handle_get_place_profile,
             "compare_places": self._handle_compare_places,
             "get_trend": self._handle_get_trend,
+            "get_change": self._handle_get_change,
             "find_organisations_in_place": self._handle_find_organisations,
             "get_civil_society_profile": self._handle_get_csp,
             "search_grants": self._handle_search_grants,
@@ -295,6 +304,11 @@ class ToolDispatcher:
     async def _handle_get_trend(self, args: dict[str, Any]) -> dict[str, Any]:
         model = GetTrendInput.model_validate(args)
         result = await get_trend(model, self._state.orchestrator)
+        return result.model_dump(mode="json")
+
+    async def _handle_get_change(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetChangeInput.model_validate(args)
+        result = await get_change(model, self._state.orchestrator)
         return result.model_dump(mode="json")
 
     async def _handle_find_organisations(self, args: dict[str, Any]) -> dict[str, Any]:

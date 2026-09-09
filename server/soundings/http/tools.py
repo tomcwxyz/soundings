@@ -26,6 +26,12 @@ from soundings.tools.find_place import (
     find_place,
 )
 from soundings.tools.find_place import tool_spec as find_place_spec
+from soundings.tools.get_change import (
+    GetChangeInput,
+    GetChangeOutput,
+    get_change,
+)
+from soundings.tools.get_change import tool_spec as get_change_spec
 from soundings.tools.get_civil_society_profile import (
     GetCivilSocietyProfileInput,
     get_civil_society_profile,
@@ -84,6 +90,7 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
             get_place_profile_spec(),
             compare_places_spec(),
             get_trend_spec(),
+            get_change_spec(),
             find_orgs_spec(),
             get_civil_society_profile_spec(),
             get_peer_distribution_spec(),
@@ -122,6 +129,11 @@ async def http_compare_places(input: ComparePlacesInput, request: Request) -> Co
 @router.post("/get_trend", response_model=GetTrendOutput)
 async def http_get_trend(input: GetTrendInput, request: Request) -> GetTrendOutput:
     return await get_trend(input, request.app.state.orchestrator)
+
+
+@router.post("/get_change", response_model=GetChangeOutput)
+async def http_get_change(input: GetChangeInput, request: Request) -> GetChangeOutput:
+    return await get_change(input, request.app.state.orchestrator)
 
 
 @router.post("/find_organisations_in_place", response_model=FindOrganisationsInPlaceOutput)

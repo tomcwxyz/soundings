@@ -14,6 +14,7 @@ from soundings.tools.find_organisations_in_place import (
     find_organisations_in_place,
 )
 from soundings.tools.find_place import FindPlaceInput, find_place
+from soundings.tools.get_change import GetChangeInput, get_change
 from soundings.tools.get_civil_society_profile import (
     GetCivilSocietyProfileInput,
     get_civil_society_profile,
@@ -110,6 +111,26 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
             raise RuntimeError("MCP get_trend invoked without app state")
         result = await get_trend(
             GetTrendInput(
+                place_id=place_id,
+                indicator=indicator,
+                period_from=period_from,
+                period_to=period_to,
+            ),
+            state.orchestrator,
+        )
+        return result.model_dump(mode="json")
+
+    @mcp.tool(name="get_change")
+    async def _get_change(
+        place_id: str,
+        indicator: str,
+        period_from: str | None = None,
+        period_to: str | None = None,
+    ) -> dict[str, Any]:
+        if state is None:
+            raise RuntimeError("MCP get_change invoked without app state")
+        result = await get_change(
+            GetChangeInput(
                 place_id=place_id,
                 indicator=indicator,
                 period_from=period_from,

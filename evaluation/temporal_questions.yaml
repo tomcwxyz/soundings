@@ -1,0 +1,64 @@
+version: 1
+
+# Temporal cases are kept as a focused slice because time semantics cut across
+# sources and domains. They exercise deterministic change calculations as well
+# as ordinary trend retrieval.
+questions:
+  - id: Q33
+    question: "How much has Newcastle's population changed since 2020?"
+    places: ["Newcastle upon Tyne"]
+    intent: change
+    expected: supported
+    tags: [population, trend, change]
+    required_tools: [find_place, get_change, get_trend]
+    required_indicators: [population.total]
+    candidate_indicator_keys: []
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "Uses deterministic first-to-last change rather than model arithmetic."
+      - "Names the actual start and end observation periods used."
+      - "Keeps the underlying population trend visible alongside the change summary."
+
+  - id: Q34
+    question: "By how much has the Universal Credit claimant count changed in Stockton-on-Tees?"
+    places: ["Stockton-on-Tees"]
+    intent: change
+    expected: supported
+    tags: [economy, welfare, trend, change]
+    required_tools: [find_place, get_change]
+    required_indicators: [economy.universal_credit_claimants]
+    candidate_indicator_keys: []
+    expected_blocks: [text]
+    success_criteria:
+      - "Reports the start and end claimant counts and their periods."
+      - "Reports absolute change and percentage change when the starting value is non-zero."
+      - "Does not relabel a claimant count as a claimant rate."
+
+  - id: Q35
+    question: "How did Middlesbrough's deprivation score change between 2019 and 2025?"
+    places: ["Middlesbrough"]
+    intent: change
+    expected: supported
+    tags: [deprivation, trend, change, edition]
+    required_tools: [find_place, get_change]
+    required_indicators: [deprivation.imd.score]
+    candidate_indicator_keys: []
+    expected_blocks: [text]
+    success_criteria:
+      - "Compares the 2019 and 2025 editions explicitly."
+      - "Surfaces any documented series break or cross-edition comparability caveat."
+      - "Does not imply that a lower or higher score is a boundary-stable comparison when caveats say otherwise."
+
+  - id: Q36
+    question: "What periods does the population trend for Sunderland actually cover?"
+    places: ["Sunderland"]
+    intent: temporal-coverage
+    expected: supported
+    tags: [population, trend, provenance]
+    required_tools: [find_place, get_trend]
+    required_indicators: [population.total]
+    candidate_indicator_keys: []
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "States the first and last observation periods rather than saying only 'over time'."
+      - "Preserves source period labels while using their structured temporal semantics."
