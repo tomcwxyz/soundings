@@ -11,7 +11,9 @@ from __future__ import annotations
 import csv
 import io
 import zipfile
+from collections.abc import Iterable
 from dataclasses import dataclass
+from itertools import islice
 from typing import Literal
 
 ChdTableKind = Literal["history", "hierarchy", "other"]
@@ -57,6 +59,11 @@ class ChdArchiveInventory:
         ]
 
 
+def normalise_chd_header(value: str) -> str:
+    """Canonicalise CHD field names for tolerant cross-edition matching."""
+    return value.strip().upper()
+
+
 def inspect_chd_archive(blob: bytes, *, sample_size: int = 2) -> ChdArchiveInventory:
     """Inventory CSV tables in a CHD zip without interpreting hierarchy rows.
 
@@ -64,6 +71,10 @@ def inspect_chd_archive(blob: bytes, *, sample_size: int = 2) -> ChdArchiveInven
     its filename alone. Hierarchy tables remain intentionally conservative: we
     flag files whose names advertise hierarchy content and expose their real
     headers/sample rows for a later schema-specific parser.
+
+    CSV members are streamed from the zip. Inspection reads only the header and
+    the requested number of sample rows, so a header-only inventory does not
+    decompress large table bodies.
     """
     if sample_size < 0:
         raise ValueError("sample_size must be non-negative")
@@ -73,7 +84,9 @@ def inspect_chd_archive(blob: bytes, *, sample_size: int = 2) -> ChdArchiveInven
         for name in sorted(zf.namelist()):
             if not name.lower().endswith(".csv"):
                 continue
-            headers, samples = _inspect_csv(zf.read(name), sample_size=sample_size)
+            with zf.open(name) as member:
+                with io.TextIOWrapper(member, encoding="utf-8-sig", errors="replace", newline="") as stream:
+                    headers, samples = _inspect_csv(stream, sample_size=sample_size)
             tables.append(
                 ChdCsvTable(
                     name=name,
@@ -86,20 +99,17 @@ def inspect_chd_archive(blob: bytes, *, sample_size: int = 2) -> ChdArchiveInven
 
 
 def _inspect_csv(
-    blob: bytes,
+    stream: Iterable[str],
     *,
     sample_size: int,
 ) -> tuple[tuple[str, ...], tuple[dict[str, str], ...]]:
-    stream = io.StringIO(blob.decode("utf-8-sig", errors="replace"))
     reader = csv.DictReader(stream)
     headers = tuple(header.strip() for header in (reader.fieldnames or ()) if header)
     samples: list[dict[str, str]] = []
-    for row in reader:
-        if len(samples) >= sample_size:
-            break
+    for row in islice(reader, sample_size):
         samples.append(
             {
-                str(key).strip(): (value or "").strip()
+                str(key).strip(): "" if value is None else str(value).strip()
                 for key, value in row.items()
                 if key is not None
             }
@@ -108,7 +118,7 @@ def _inspect_csv(
 
 
 def _classify_table(name: str, headers: tuple[str, ...]) -> ChdTableKind:
-    normalised_headers = {header.upper() for header in headers}
+    normalised_headers = {normalise_chd_header(header) for header in headers}
     if all(normalised_headers & group for group in _HISTORY_HEADER_GROUPS):
         return "history"
 
