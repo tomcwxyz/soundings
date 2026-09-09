@@ -13,56 +13,62 @@ jobs:
         with:
           version: "0.11.12"
       - run: cd server && uv sync --frozen
-      - name: Inspect live CHD hierarchy schema
+      - name: Inspect live CHD relationship samples
         run: |
           cd server
           uv run python - <<'PY'
           import asyncio
+          import csv
+          import io
           import json
+          import zipfile
 
           import httpx
 
-          from soundings.adapters.ons_geography.chd_archive import inspect_chd_archive
-          from soundings.adapters.ons_geography.code_change_loader import CHD_URL
-
-          CANDIDATES = [
-              "https://www.arcgis.com/sharing/rest/content/items/e0bc41722b1a4b76a6ecfff14f91cbb4/data",
-              CHD_URL,
-          ]
+          URL = "https://www.arcgis.com/sharing/rest/content/items/e0bc41722b1a4b76a6ecfff14f91cbb4/data"
+          TARGETS = {"E01", "E02", "E05", "E06", "E07", "E08", "E09", "E10", "E12", "E92"}
 
 
           async def main() -> None:
               async with httpx.AsyncClient(timeout=180.0, follow_redirects=True) as client:
-                  failures: list[str] = []
-                  for url in CANDIDATES:
-                      try:
-                          response = await client.get(url)
-                          response.raise_for_status()
-                          inventory = inspect_chd_archive(response.content, sample_size=3)
-                      except Exception as exc:
-                          failures.append(f"{url}: {exc.__class__.__name__}: {exc}")
-                          continue
+                  response = await client.get(URL)
+                  response.raise_for_status()
 
-                      report = {
-                          "source_url": url,
-                          "bytes": len(response.content),
-                          "table_count": len(inventory.tables),
-                          "tables": [
-                              {
-                                  "name": table.name,
-                                  "kind": table.kind,
-                                  "headers": list(table.headers),
-                                  "sample_rows": list(table.sample_rows),
-                              }
-                              for table in inventory.tables
-                          ],
-                      }
-                      print("CHD_SCHEMA_PROBE_BEGIN")
-                      print(json.dumps(report, indent=2, sort_keys=True))
-                      print("CHD_SCHEMA_PROBE_END")
-                      return
+              samples = {entity: [] for entity in sorted(TARGETS)}
+              terminated = []
+              with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+                  with zf.open("ChangeHistory.csv") as member:
+                      stream = io.TextIOWrapper(member, encoding="utf-8-sig", errors="replace", newline="")
+                      for row in csv.DictReader(stream):
+                          entity = (row.get("ENTITYCD") or "").strip()
+                          if entity in samples and len(samples[entity]) < 3:
+                              samples[entity].append(
+                                  {
+                                      "GEOGCD": row.get("GEOGCD"),
+                                      "GEOGNM": row.get("GEOGNM"),
+                                      "PARENTCD": row.get("PARENTCD"),
+                                      "OPER_DATE": row.get("OPER_DATE"),
+                                      "TERM_DATE": row.get("TERM_DATE"),
+                                      "STATUS": row.get("STATUS"),
+                                  }
+                              )
+                          if row.get("TERM_DATE") and len(terminated) < 10:
+                              terminated.append(
+                                  {
+                                      "ENTITYCD": entity,
+                                      "GEOGCD": row.get("GEOGCD"),
+                                      "PARENTCD": row.get("PARENTCD"),
+                                      "OPER_DATE": row.get("OPER_DATE"),
+                                      "TERM_DATE": row.get("TERM_DATE"),
+                                      "STATUS": row.get("STATUS"),
+                                  }
+                              )
+                          if all(len(values) >= 3 for values in samples.values()) and len(terminated) >= 10:
+                              break
 
-                  raise RuntimeError("; ".join(failures))
+              print("CHD_RELATIONSHIP_PROBE_BEGIN")
+              print(json.dumps({"samples": samples, "terminated": terminated}, indent=2, sort_keys=True))
+              print("CHD_RELATIONSHIP_PROBE_END")
 
 
           asyncio.run(main())
