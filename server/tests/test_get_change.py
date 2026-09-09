@@ -92,3 +92,33 @@ async def test_get_change_does_not_divide_by_zero(monkeypatch: pytest.MonkeyPatc
     assert result.change is not None
     assert result.change.percentage_change is None
     assert any("starting value is zero" in caveat for caveat in result.caveats)
+
+
+@pytest.mark.asyncio
+async def test_get_change_refuses_unorderable_periods(monkeypatch: pytest.MonkeyPatch) -> None:
+    source = _source()
+
+    async def fake_get_trend(input: Any, orchestrator: Any) -> GetTrendOutput:
+        return GetTrendOutput(
+            trend=Trend(
+                place_id=input.place_id,
+                indicator=input.indicator,
+                unit="count",
+                points=[
+                    TrendPoint(period="2024", value=120.0),
+                    TrendPoint(period="Baseline 2019", value=100.0),
+                ],
+                source=source,
+            ),
+            sources=[source],
+        )
+
+    monkeypatch.setattr(change_module, "get_trend", fake_get_trend)
+    result = await get_change(
+        GetChangeInput(place_id="ltla24:E00000001", indicator="test.metric"),
+        object(),
+    )
+
+    assert result.change is None
+    assert result.partial is True
+    assert any("no comparable chronological extent" in caveat for caveat in result.caveats)
