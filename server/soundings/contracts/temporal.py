@@ -38,7 +38,8 @@ _MONTH = re.compile(r"^(\d{4})-(\d{2})$")
 _DAY = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 _QUARTER = re.compile(r"^(\d{4})-Q([1-4])$", re.IGNORECASE)
 _QUARTER_ALT = re.compile(r"^Q([1-4])\s+(\d{4})$", re.IGNORECASE)
-_FINANCIAL_YEAR = re.compile(r"^(\d{4})/(\d{2}|\d{4})$")
+_YEAR_RANGE = re.compile(r"^(\d{4})/(\d{2}|\d{4})$")
+_FINANCIAL_YEAR = re.compile(r"^FY\s*(\d{4})/(\d{2}|\d{4})$", re.IGNORECASE)
 
 
 def parse_period(label: str) -> TemporalExtent:
@@ -90,10 +91,7 @@ def parse_period(label: str) -> TemporalExtent:
 
     if match := _FINANCIAL_YEAR.fullmatch(value):
         start_year = int(match[1])
-        end_text = match[2]
-        end_year = int(end_text) if len(end_text) == 4 else (start_year // 100 * 100) + int(end_text)
-        if end_year < start_year:
-            end_year += 100
+        end_year = _resolve_two_or_four_digit_year(start_year, match[2])
         if end_year != start_year + 1:
             return _unknown(value)
         return TemporalExtent(
@@ -102,6 +100,15 @@ def parse_period(label: str) -> TemporalExtent:
             reference_start=date(start_year, 4, 1),
             reference_end=date(end_year, 3, 31),
         )
+
+    if match := _YEAR_RANGE.fullmatch(value):
+        start_year = int(match[1])
+        end_year = _resolve_two_or_four_digit_year(start_year, match[2])
+        if end_year != start_year + 1:
+            return _unknown(value)
+        # A bare 2024/25 label might be an academic, financial or other
+        # reporting year. Preserve it as a range rather than claiming dates.
+        return TemporalExtent(label=value, granularity="range")
 
     return _unknown(value)
 
@@ -131,6 +138,13 @@ def _compare_periods(left: str, right: str) -> int:
         right_date = right_extent.reference_start
         return (left_date > right_date) - (left_date < right_date)
     return (left > right) - (left < right)
+
+
+def _resolve_two_or_four_digit_year(start_year: int, end_text: str) -> int:
+    if len(end_text) == 4:
+        return int(end_text)
+    end_year = (start_year // 100 * 100) + int(end_text)
+    return end_year + 100 if end_year < start_year else end_year
 
 
 def _quarter_extent(label: str, year: int, quarter: int) -> TemporalExtent:
