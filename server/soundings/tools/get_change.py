@@ -104,15 +104,15 @@ async def get_change(
         if point.temporal is None or point.temporal.reference_start is None
     ]
     if unorderable:
+        labels = ", ".join(unorderable)
+        caveat = (
+            "Cannot calculate change safely because one or more observation periods "
+            f"have no comparable chronological extent: {labels}"
+        )
         return GetChangeOutput(
             change=None,
             sources=trend_result.sources,
-            caveats=[
-                *trend_result.caveats,
-                "Cannot calculate change safely because one or more observation "
-                "periods have no comparable chronological extent: "
-                + ", ".join(unorderable),
-            ],
+            caveats=[*trend_result.caveats, caveat],
             partial=True,
         )
 
@@ -123,7 +123,10 @@ async def get_change(
     start_value = float(first.value)
     end_value = float(last.value)
     absolute_change = end_value - start_value
-    percentage_change = (absolute_change / start_value) * 100.0 if start_value != 0 else None
+    percentage_change: float | None = None
+    if start_value != 0:
+        percentage_change = (absolute_change / start_value) * 100.0
+
     direction: ChangeDirection
     if absolute_change > 0:
         direction = "increase"
@@ -145,8 +148,16 @@ async def get_change(
         place_id=input.place_id,
         indicator=input.indicator,
         unit=trend_result.trend.unit,
-        start=ChangePoint(period=first.period, value=start_value, temporal=first.temporal),
-        end=ChangePoint(period=last.period, value=end_value, temporal=last.temporal),
+        start=ChangePoint(
+            period=first.period,
+            value=start_value,
+            temporal=first.temporal,
+        ),
+        end=ChangePoint(
+            period=last.period,
+            value=end_value,
+            temporal=last.temporal,
+        ),
         absolute_change=absolute_change,
         percentage_change=percentage_change,
         direction=direction,
