@@ -121,11 +121,9 @@ class OnsGeographyHierarchyLoader(LoaderAdapter):
         async with self._engine.begin() as conn:
             for i in range(0, len(rows), batch_size):
                 batch = rows[i : i + batch_size]
-                stmt = (
-                    insert(PlaceHierarchy)
-                    .values(batch)
-                    .on_conflict_do_nothing(
-                        index_elements=[PlaceHierarchy.child_id, PlaceHierarchy.parent_id]
-                    )
-                )
+                # The temporal schema allows dated CHD evidence to coexist with
+                # this undated current snapshot. A targetless conflict handler
+                # lets the partial unique current-snapshot index enforce one
+                # undated row per pair without colliding with dated intervals.
+                stmt = insert(PlaceHierarchy).values(batch).on_conflict_do_nothing()
                 await conn.execute(stmt)
