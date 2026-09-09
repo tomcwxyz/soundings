@@ -85,7 +85,12 @@ def inspect_chd_archive(blob: bytes, *, sample_size: int = 2) -> ChdArchiveInven
             if not name.lower().endswith(".csv"):
                 continue
             with zf.open(name) as member:
-                with io.TextIOWrapper(member, encoding="utf-8-sig", errors="replace", newline="") as stream:
+                with io.TextIOWrapper(
+                    member,
+                    encoding="utf-8-sig",
+                    errors="replace",
+                    newline="",
+                ) as stream:
                     headers, samples = _inspect_csv(stream, sample_size=sample_size)
             tables.append(
                 ChdCsvTable(
