@@ -143,12 +143,7 @@ async def test_loader_refresh_updates_revised_termination_date() -> None:
         _history_zip(["L1,Neighbourhood,01/01/2020 00:00,,M1,E01,live\n"])
     )
     await loader.load_from_zip_bytes(
-        _history_zip(
-            [
-                "L1,Neighbourhood,01/01/2020 00:00,"
-                "31/12/2024 00:00,M1,E01,terminated\n"
-            ]
-        )
+        _history_zip(["L1,Neighbourhood,01/01/2020 00:00,31/12/2024 00:00,M1,E01,terminated\n"])
     )
 
     async with engine.connect() as conn:
