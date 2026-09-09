@@ -1,7 +1,18 @@
 from datetime import date, datetime
 
 from geoalchemy2 import Geometry
-from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from soundings.db.models import Base
@@ -35,7 +46,7 @@ class PlaceHierarchy(Base):
             "child_id",
             "parent_id",
             unique=True,
-            postgresql_where="valid_from IS NULL AND valid_to IS NULL",
+            postgresql_where=text("valid_from IS NULL AND valid_to IS NULL"),
         ),
         Index(
             "uq_place_hierarchy_dated_start",
@@ -43,7 +54,7 @@ class PlaceHierarchy(Base):
             "parent_id",
             "valid_from",
             unique=True,
-            postgresql_where="valid_from IS NOT NULL",
+            postgresql_where=text("valid_from IS NOT NULL"),
         ),
         {"schema": "geography"},
     )
