@@ -93,8 +93,7 @@ class OnsGeographyCodeChangeLoader(LoaderAdapter):
         if not rows:
             names = ", ".join(table.name for table in inventory.tables) or "none"
             raise ValueError(
-                "CHD archive contained no parseable Geography History rows; "
-                f"CSV files: {names}"
+                f"CHD archive contained no parseable Geography History rows; CSV files: {names}"
             )
         return await self._upsert(rows)
 
