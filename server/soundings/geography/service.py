@@ -6,21 +6,35 @@ adapter.
 """
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from typing import Literal
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from soundings.adapters.postcodes_io.adapter import PostcodesIoAdapter
 from soundings.db.models.geography import Place, PlaceHierarchy, Postcode
 
 POSTCODE_FRESHNESS = timedelta(days=30)
+BoundaryMode = Literal["current_boundary", "historical"]
 
 
 @dataclass(frozen=True)
 class PlaceMatch:
     place: Place
     confidence: float
+
+
+@dataclass(frozen=True)
+class ContainmentResult:
+    """Containing places plus the boundary semantics used to select them."""
+
+    places: tuple[Place, ...]
+    boundary_mode: BoundaryMode
+    boundary_date: date
+    as_of: date | None = None
+    partial: bool = False
+    caveats: tuple[str, ...] = ()
 
 
 def _normalise_postcode(postcode: str) -> str:
@@ -88,14 +102,102 @@ class GeographyService:
         return [PlaceMatch(place=r.Place, confidence=float(r.score)) for r in rows]
 
     async def find_containing_places(self, place_id: str) -> list[Place]:
-        """All ancestor Places of a given place_id, via the hierarchy table."""
+        """Current-boundary ancestors of a place.
+
+        This preserves the original API while filtering out hierarchy edges
+        whose dated validity has ended. Undated edges are treated as current
+        snapshots, never as proof of historical containment.
+        """
+        result = await self.find_containing_places_context(
+            place_id,
+            boundary_mode="current_boundary",
+        )
+        return list(result.places)
+
+    async def find_containing_places_context(
+        self,
+        place_id: str,
+        *,
+        boundary_mode: BoundaryMode = "current_boundary",
+        as_of: date | None = None,
+    ) -> ContainmentResult:
+        """Resolve ancestors using explicit current or historical boundaries.
+
+        Hierarchy validity is half-open: ``[valid_from, valid_to)``. In
+        ``historical`` mode, an ``as_of`` date is required and completely
+        undated edges are excluded because they are current snapshots rather
+        than historical evidence. The method reports that gap as ``partial``
+        instead of silently substituting today's hierarchy.
+        """
+        if boundary_mode == "historical" and as_of is None:
+            raise ValueError("historical boundary mode requires as_of")
+
+        boundary_date = date.today() if boundary_mode == "current_boundary" else as_of
+        assert boundary_date is not None
+
+        validity = (
+            or_(PlaceHierarchy.valid_from.is_(None), PlaceHierarchy.valid_from <= boundary_date),
+            or_(PlaceHierarchy.valid_to.is_(None), PlaceHierarchy.valid_to > boundary_date),
+        )
         stmt = (
             select(Place)
             .join(PlaceHierarchy, Place.id == PlaceHierarchy.parent_id)
-            .where(PlaceHierarchy.child_id == place_id)
+            .where(PlaceHierarchy.child_id == place_id, *validity)
         )
+        if boundary_mode == "historical":
+            stmt = stmt.where(
+                or_(
+                    PlaceHierarchy.valid_from.is_not(None),
+                    PlaceHierarchy.valid_to.is_not(None),
+                )
+            )
+
         async with AsyncSession(self._engine) as session:
-            return list((await session.scalars(stmt)).all())
+            places = tuple((await session.scalars(stmt)).all())
+            undated_count = 0
+            if boundary_mode == "historical":
+                undated_count = int(
+                    (
+                        await session.scalar(
+                            select(func.count())
+                            .select_from(PlaceHierarchy)
+                            .where(
+                                PlaceHierarchy.child_id == place_id,
+                                PlaceHierarchy.valid_from.is_(None),
+                                PlaceHierarchy.valid_to.is_(None),
+                            )
+                        )
+                    )
+                    or 0
+                )
+
+        caveats: list[str] = []
+        partial = False
+        if boundary_mode == "current_boundary" and as_of is not None:
+            caveats.append(
+                "Current-boundary mode uses boundaries valid today; as_of is "
+                "observation context only."
+            )
+        if boundary_mode == "historical" and undated_count:
+            partial = True
+            caveats.append(
+                f"{undated_count} current hierarchy edge(s) for {place_id} are undated and "
+                "were excluded from the historical result."
+            )
+        if boundary_mode == "historical" and not places:
+            partial = True
+            caveats.append(
+                f"No dated hierarchy edges for {place_id} cover {boundary_date.isoformat()}."
+            )
+
+        return ContainmentResult(
+            places=places,
+            boundary_mode=boundary_mode,
+            boundary_date=boundary_date,
+            as_of=as_of,
+            partial=partial,
+            caveats=tuple(caveats),
+        )
 
     async def find_containing_places_by_point(
         self,
