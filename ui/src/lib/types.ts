@@ -17,6 +17,24 @@ export type CacheStatus = "live" | "cached" | "stale";
 
 export type Confidence = "official" | "modelled" | "experimental";
 
+export type TemporalGranularity =
+  | "day"
+  | "month"
+  | "quarter"
+  | "year"
+  | "financial_year"
+  | "range"
+  | "edition"
+  | "unknown";
+
+export interface TemporalExtent {
+  label: string;
+  granularity: TemporalGranularity;
+  reference_start?: string | null;
+  reference_end?: string | null;
+  edition?: string | null;
+}
+
 export interface SourceRef {
   source_id: string;
   source_label: string;
@@ -34,6 +52,7 @@ export interface IndicatorValue {
   value: number | null;
   unit: string;
   period: string;
+  temporal?: TemporalExtent | null;
   source: SourceRef;
   methodology_note?: string | null;
   caveats: string[];
@@ -107,6 +126,7 @@ export interface TrendPoint {
   period: string;
   value: number | null;
   revised?: boolean;
+  temporal?: TemporalExtent | null;
 }
 
 export interface Trend {
@@ -120,6 +140,34 @@ export interface Trend {
 
 export interface GetTrendResponse {
   trend: Trend | null;
+  sources?: SourceRef[];
+  caveats?: string[];
+  partial?: boolean;
+}
+
+// get_change ---------------------------------------------------------------
+
+export interface ChangePoint {
+  period: string;
+  value: number;
+  temporal?: TemporalExtent | null;
+}
+
+export interface IndicatorChange {
+  place_id: string;
+  indicator: string;
+  unit: string;
+  start: ChangePoint;
+  end: ChangePoint;
+  absolute_change: number;
+  percentage_change?: number | null;
+  direction: "increase" | "decrease" | "unchanged";
+  breaks_in_series: string[];
+  source: SourceRef;
+}
+
+export interface GetChangeResponse {
+  change: IndicatorChange | null;
   sources?: SourceRef[];
   caveats?: string[];
   partial?: boolean;
