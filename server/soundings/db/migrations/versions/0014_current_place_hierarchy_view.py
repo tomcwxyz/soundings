@@ -1,6 +1,6 @@
 """add canonical current place hierarchy view
 
-Revision ID: 0014_current_place_hierarchy_view
+Revision ID: 0014_current_hierarchy_view
 Revises: 0013_temporal_place_hierarchy
 Create Date: 2026-09-09
 """
@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "0014_current_place_hierarchy_view"
+revision: str = "0014_current_hierarchy_view"
 down_revision: str | Sequence[str] | None = "0013_temporal_place_hierarchy"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
