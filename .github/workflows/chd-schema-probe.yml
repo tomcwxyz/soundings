@@ -1,0 +1,76 @@
+name: chd-schema-probe
+
+on:
+  push:
+    branches: [feat/chd-historical-hierarchy]
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.12"
+      - run: cd server && uv sync --frozen
+      - name: Inspect live CHD hierarchy schema
+        run: |
+          cd server
+          uv run python - <<'PY'
+          import asyncio
+          import json
+
+          import httpx
+
+          from soundings.adapters.ons_geography.chd_archive import inspect_chd_archive
+          from soundings.adapters.ons_geography.code_change_loader import CHD_URL
+
+          CANDIDATES = [
+              "https://www.arcgis.com/sharing/rest/content/items/e0bc41722b1a4b76a6ecfff14f91cbb4/data",
+              CHD_URL,
+          ]
+
+
+          async def main() -> None:
+              async with httpx.AsyncClient(timeout=180.0, follow_redirects=True) as client:
+                  failures: list[str] = []
+                  for url in CANDIDATES:
+                      try:
+                          response = await client.get(url)
+                          response.raise_for_status()
+                          inventory = inspect_chd_archive(response.content, sample_size=2)
+                      except Exception as exc:
+                          failures.append(f"{url}: {exc.__class__.__name__}: {exc}")
+                          continue
+
+                      report = {
+                          "source_url": url,
+                          "bytes": len(response.content),
+                          "table_count": len(inventory.tables),
+                          "history_tables": [
+                              {
+                                  "name": table.name,
+                                  "headers": list(table.headers),
+                                  "sample_rows": list(table.sample_rows),
+                              }
+                              for table in inventory.history_tables
+                          ],
+                          "hierarchy_tables": [
+                              {
+                                  "name": table.name,
+                                  "headers": list(table.headers),
+                                  "sample_rows": list(table.sample_rows),
+                              }
+                              for table in inventory.hierarchy_tables
+                          ],
+                      }
+                      print("CHD_SCHEMA_PROBE_BEGIN")
+                      print(json.dumps(report, indent=2, sort_keys=True))
+                      print("CHD_SCHEMA_PROBE_END")
+                      return
+
+                  raise RuntimeError("; ".join(failures))
+
+
+          asyncio.run(main())
+          PY
