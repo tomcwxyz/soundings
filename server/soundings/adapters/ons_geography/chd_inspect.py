@@ -11,7 +11,7 @@ from typing import Any
 import httpx
 
 from soundings.adapters.ons_geography.chd_archive import inspect_chd_archive
-from soundings.adapters.ons_geography.code_change_loader import CHD_URL
+from soundings.adapters.ons_geography.chd_hierarchy_loader import CHD_CURRENT_ARCGIS_URL
 
 
 def _non_negative_int(value: str) -> int:
@@ -42,6 +42,7 @@ async def inspect_remote_chd(
         "source_url": url,
         "table_count": len(inventory.tables),
         "history_table_count": len(inventory.history_tables),
+        "change_history_table_count": len(inventory.change_history_tables),
         "hierarchy_table_count": len(inventory.hierarchy_tables),
         "tables": inventory.summary(),
     }
@@ -65,8 +66,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--url",
-        default=CHD_URL,
-        help="CHD zip URL (defaults to the current ONS Code History Database URL)",
+        default=CHD_CURRENT_ARCGIS_URL,
+        help="CHD zip URL (defaults to the current ONS ArcGIS CSV collection)",
     )
     parser.add_argument(
         "--sample-size",
