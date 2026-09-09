@@ -1,8 +1,9 @@
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from soundings.contracts.source_ref import SourceRef
+from soundings.contracts.temporal import TemporalExtent, parse_period
 
 # v1 reserves "experiential" for v3 contributed observations. Loader-mode
 # adapters return "official" or "modelled"; passthrough adapters serving
@@ -13,8 +14,9 @@ Confidence = Literal["official", "modelled", "experimental"]
 class IndicatorValue(BaseModel):
     """A single indicator value at a single place at a single period.
 
-    Per spec §4.3 / design §3. The shape returned by every adapter's
-    `fetch_indicator` and by every tool that yields indicator data.
+    ``period`` remains the source-facing label. ``temporal`` adds structured
+    semantics for consumers that need to reason about when the observation
+    applies without parsing labels themselves.
     """
 
     place_id: str
@@ -22,6 +24,7 @@ class IndicatorValue(BaseModel):
     value: float | None
     unit: str
     period: str
+    temporal: TemporalExtent | None = None
     source: SourceRef
     methodology_note: str | None = None
     caveats: list[str] = Field(default_factory=list)
@@ -35,3 +38,9 @@ class IndicatorValue(BaseModel):
     # the full peer universe in data.indicator_value (loader-mode); None
     # when no peer data is loaded.
     benchmark_percentile: float | None = None
+
+    @model_validator(mode="after")
+    def _derive_temporal_extent(self) -> Self:
+        if self.temporal is None:
+            self.temporal = parse_period(self.period)
+        return self
