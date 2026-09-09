@@ -29,8 +29,7 @@ from soundings.adapters.ons_geography.chd_archive import (
 from soundings.db.models.geography import Place, PlaceHierarchy
 
 CHD_CURRENT_ARCGIS_URL = (
-    "https://www.arcgis.com/sharing/rest/content/items/"
-    "e0bc41722b1a4b76a6ecfff14f91cbb4/data"
+    "https://www.arcgis.com/sharing/rest/content/items/e0bc41722b1a4b76a6ecfff14f91cbb4/data"
 )
 
 _DATE_FORMATS = (
@@ -110,8 +109,7 @@ class OnsGeographyHistoricalHierarchyLoader(LoaderAdapter):
         if not inventory.change_history_tables:
             names = ", ".join(table.name for table in inventory.tables) or "none"
             raise ValueError(
-                "CHD archive contained no recognised ChangeHistory table; "
-                f"CSV files: {names}"
+                f"CHD archive contained no recognised ChangeHistory table; CSV files: {names}"
             )
 
         place_ids_by_code = await self._place_ids_by_code()
