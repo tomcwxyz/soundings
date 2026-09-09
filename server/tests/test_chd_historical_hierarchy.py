@@ -14,6 +14,14 @@ from soundings.db.engine import get_engine
 
 pytestmark = pytest.mark.integration
 
+_TEST_PLACE_IDS = (
+    "lsoa21:L1",
+    "msoa21:M1",
+    "ltla24:LA1",
+    "region:R1",
+    "country:C1",
+)
+
 
 def _history_zip(rows: list[str]) -> bytes:
     header = "GEOGCD,GEOGNM,OPER_DATE,TERM_DATE,PARENTCD,ENTITYCD,STATUS\n"
@@ -26,8 +34,17 @@ def _history_zip(rows: list[str]) -> bytes:
 async def _seed_places() -> None:
     engine = get_engine()
     async with engine.begin() as conn:
-        await conn.execute(text("DELETE FROM geography.place_hierarchy"))
-        await conn.execute(text("DELETE FROM geography.place"))
+        await conn.execute(
+            text(
+                "DELETE FROM geography.place_hierarchy "
+                "WHERE child_id = ANY(:ids) OR parent_id = ANY(:ids)"
+            ),
+            {"ids": list(_TEST_PLACE_IDS)},
+        )
+        await conn.execute(
+            text("DELETE FROM geography.place WHERE id = ANY(:ids)"),
+            {"ids": list(_TEST_PLACE_IDS)},
+        )
         await conn.execute(
             text(
                 "INSERT INTO geography.place (id, type, code, name) VALUES "
