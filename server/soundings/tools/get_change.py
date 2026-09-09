@@ -100,6 +100,8 @@ async def get_change(
 
     first = usable[0]
     last = usable[-1]
+    assert first.value is not None
+    assert last.value is not None
     start_value = float(first.value)
     end_value = float(last.value)
     absolute_change = end_value - start_value
