@@ -71,7 +71,10 @@ class OnsGeographyCodeChangeLoader(LoaderAdapter):
 
     async def load(self, run_id: str | None = None) -> LoaderResult:
         owns_client = self._client is None
-        client = self._client or httpx.AsyncClient(timeout=120.0, follow_redirects=True)
+        client = self._client or httpx.AsyncClient(
+            timeout=120.0,
+            follow_redirects=True,
+        )
         try:
             response = await client.get(CHD_URL)
             response.raise_for_status()
