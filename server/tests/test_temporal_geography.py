@@ -56,6 +56,25 @@ async def test_current_boundary_uses_current_and_undated_edges() -> None:
     assert result.partial is False
 
 
+async def test_current_boundary_deduplicates_parallel_dated_and_undated_evidence() -> None:
+    service = await _seed_temporal_hierarchy()
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO geography.place_hierarchy (child_id, parent_id) "
+                "VALUES ('lsoa21:CHILD', 'ltla24:NEW')"
+            )
+        )
+
+    result = await service.find_containing_places_context(
+        "lsoa21:CHILD",
+        boundary_mode="current_boundary",
+    )
+
+    assert [place.id for place in result.places].count("ltla24:NEW") == 1
+
+
 async def test_historical_boundary_selects_edge_valid_on_requested_date() -> None:
     service = await _seed_temporal_hierarchy()
 
@@ -68,8 +87,43 @@ async def test_historical_boundary_selects_edge_valid_on_requested_date() -> Non
     ids = {place.id for place in result.places}
     assert ids == {"ltla24:OLD"}
     assert result.boundary_date == date(2015, 6, 1)
-    assert result.partial is True
-    assert any("undated" in caveat for caveat in result.caveats)
+    # A parallel undated current snapshot does not make valid dated evidence partial.
+    assert result.partial is False
+    assert not any("undated" in caveat for caveat in result.caveats)
+
+
+async def test_historical_boundary_recursively_traverses_direct_dated_edges() -> None:
+    service = await _seed_temporal_hierarchy()
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO geography.place (id, type, code, name) VALUES "
+                "('region:HIST', 'region', 'HIST', 'Historic region'), "
+                "('country:HIST', 'country', 'COUNTRY', 'Historic country')"
+            )
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO geography.place_hierarchy "
+                "(child_id, parent_id, valid_from, valid_to) VALUES "
+                "('ltla24:OLD', 'region:HIST', '2010-01-01', '2020-01-01'), "
+                "('region:HIST', 'country:HIST', '2010-01-01', '2020-01-01')"
+            )
+        )
+
+    result = await service.find_containing_places_context(
+        "lsoa21:CHILD",
+        boundary_mode="historical",
+        as_of=date(2015, 6, 1),
+    )
+
+    assert {place.id for place in result.places} == {
+        "ltla24:OLD",
+        "region:HIST",
+        "country:HIST",
+    }
+    assert result.partial is False
 
 
 async def test_hierarchy_validity_is_half_open_at_boundary_change() -> None:
