@@ -185,11 +185,7 @@ class GeographyService:
                         ),
                     )
                 )
-                stmt = (
-                    select(Place)
-                    .join(ancestors, Place.id == ancestors.c.parent_id)
-                    .distinct()
-                )
+                stmt = select(Place).join(ancestors, Place.id == ancestors.c.parent_id).distinct()
                 places = tuple((await session.scalars(stmt)).all())
 
                 direct_dated_count = int(
