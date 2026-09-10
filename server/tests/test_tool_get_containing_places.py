@@ -74,6 +74,13 @@ class _FakeGeographyService:
             "boundary_mode": boundary_mode,
             "as_of": as_of,
         }
+        if boundary_mode == "current_boundary":
+            return ContainmentResult(
+                places=(),
+                boundary_mode="current_boundary",
+                boundary_date=date.today(),
+                as_of=as_of,
+            )
         return ContainmentResult(
             places=(
                 SimpleNamespace(
@@ -89,6 +96,23 @@ class _FakeGeographyService:
             partial=True,
             caveats=("Some historical evidence is incomplete.",),
         )
+
+
+async def test_tool_routes_current_context_by_default() -> None:
+    service = _FakeGeographyService()
+    result = await get_containing_places(
+        GetContainingPlacesInput(place_id="lsoa21:E01000001"),
+        service,  # type: ignore[arg-type]
+    )
+
+    assert service.call == {
+        "place_id": "lsoa21:E01000001",
+        "boundary_mode": "current_boundary",
+        "as_of": None,
+    }
+    assert result.boundary_mode == "current_boundary"
+    assert result.as_of is None
+    assert result.partial is False
 
 
 async def test_tool_routes_historical_context_and_preserves_caveats() -> None:
