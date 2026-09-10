@@ -159,14 +159,13 @@ class OnsGeographyHistoricalPlacesLoader(LoaderAdapter):
         live_codes = 0
         existing_codes = 0
         for aggregate in aggregates.values():
-            if aggregate.valid_to is None:
-                live_codes += 1
-                continue
-
             target_id = historical_place_id(aggregate.entity_code, aggregate.code)
             existing_ids = place_ids_by_code.get(aggregate.code, ())
             if any(place_id != target_id for place_id in existing_ids):
                 existing_codes += 1
+                continue
+            if aggregate.valid_to is None:
+                live_codes += 1
                 continue
 
             rows.append(
