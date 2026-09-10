@@ -13,7 +13,7 @@ import io
 import zipfile
 from collections import defaultdict
 from collections.abc import Iterable
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 import httpx
@@ -26,36 +26,14 @@ from soundings.adapters.ons_geography.chd_archive import (
     inspect_chd_archive,
     normalise_chd_header,
 )
+from soundings.adapters.ons_geography.chd_source import (
+    CHD_CURRENT_ARCGIS_URL,
+    fetch_chd_archive,
+    parse_chd_date,
+)
 from soundings.db.models.geography import Place, PlaceHierarchy
 
-CHD_CURRENT_ARCGIS_URL = (
-    "https://www.arcgis.com/sharing/rest/content/items/e0bc41722b1a4b76a6ecfff14f91cbb4/data"
-)
-
-_DATE_FORMATS = (
-    "%d/%m/%Y %H:%M:%S",
-    "%d/%m/%Y %H:%M",
-    "%Y-%m-%d %H:%M:%S",
-    "%Y-%m-%d",
-    "%d/%m/%Y",
-    "%Y%m%d",
-)
 _BATCH_SIZE = 5_000
-
-
-def parse_chd_date(value: str | None) -> date | None:
-    """Parse date/timestamp shapes observed across CHD editions."""
-    if not value:
-        return None
-    cleaned = value.strip()
-    if not cleaned:
-        return None
-    for fmt in _DATE_FORMATS:
-        try:
-            return datetime.strptime(cleaned, fmt).date()
-        except ValueError:
-            continue
-    return None
 
 
 def relationship_from_chd_row(row: dict[str, str]) -> tuple[str, str, date, date | None] | None:
@@ -98,15 +76,8 @@ class OnsGeographyHistoricalHierarchyLoader(LoaderAdapter):
         self._url = url
 
     async def load(self, run_id: str | None = None) -> LoaderResult:
-        owns_client = self._client is None
-        client = self._client or httpx.AsyncClient(timeout=180.0, follow_redirects=True)
-        try:
-            response = await client.get(self._url)
-            response.raise_for_status()
-            return await self.load_from_zip_bytes(response.content)
-        finally:
-            if owns_client:
-                await client.aclose()
+        blob = await fetch_chd_archive(self._url, http_client=self._client)
+        return await self.load_from_zip_bytes(blob)
 
     async def load_from_zip_bytes(self, blob: bytes) -> LoaderResult:
         inventory = inspect_chd_archive(blob, sample_size=0)
