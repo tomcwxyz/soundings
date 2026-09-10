@@ -67,7 +67,7 @@ class OrganisationLifecycle(Base):
     removed_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     postcode: Mapped[str | None] = mapped_column(String(16), nullable=True)
     registered_address_place_id: Mapped[str | None] = mapped_column(
-        ForeignKey("geography.place.id"), nullable=True
+        ForeignKey("geography.place.id", ondelete="SET NULL"), nullable=True
     )
     source_id: Mapped[str] = mapped_column(ForeignKey("catalogue.source.id"))
     retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
