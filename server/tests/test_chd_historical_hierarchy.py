@@ -81,6 +81,32 @@ def test_relationship_converts_inclusive_term_to_exclusive_end() -> None:
     )
 
 
+def test_relationship_keeps_blank_termination_open_ended() -> None:
+    relationship = relationship_from_chd_row(
+        {
+            "GEOGCD": "E07000001",
+            "PARENTCD": "E10000001",
+            "OPER_DATE": "01/01/2009 00:00",
+            "TERM_DATE": "",
+        }
+    )
+
+    assert relationship == ("E07000001", "E10000001", date(2009, 1, 1), None)
+
+
+def test_relationship_rejects_unparseable_non_blank_termination_date() -> None:
+    relationship = relationship_from_chd_row(
+        {
+            "GEOGCD": "E07000001",
+            "PARENTCD": "E10000001",
+            "OPER_DATE": "01/01/2009 00:00",
+            "TERM_DATE": "not-a-date",
+        }
+    )
+
+    assert relationship is None
+
+
 async def test_loader_writes_direct_dated_edges_and_skips_unknown_codes() -> None:
     await _seed_places()
     engine = get_engine()
