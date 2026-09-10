@@ -108,7 +108,8 @@ async def upsert_lifecycle_rows(
         return
     async with engine.begin() as conn:
         for start in range(0, len(rows), LIFECYCLE_INSERT_CHUNK):
-            stmt = insert(OrganisationLifecycle).values(rows[start : start + LIFECYCLE_INSERT_CHUNK])
+            batch = rows[start : start + LIFECYCLE_INSERT_CHUNK]
+            stmt = insert(OrganisationLifecycle).values(batch)
             stmt = stmt.on_conflict_do_update(
                 index_elements=[OrganisationLifecycle.organisation_id],
                 set_={
