@@ -1,7 +1,18 @@
 from datetime import date, datetime
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from soundings.db.models import Base
@@ -30,11 +41,27 @@ class PlaceHierarchy(Base):
     __tablename__ = "place_hierarchy"
     __table_args__ = (
         Index("ix_place_hierarchy_child_validity", "child_id", "valid_from", "valid_to"),
+        Index(
+            "uq_place_hierarchy_current_snapshot",
+            "child_id",
+            "parent_id",
+            unique=True,
+            postgresql_where=text("valid_from IS NULL AND valid_to IS NULL"),
+        ),
+        Index(
+            "uq_place_hierarchy_dated_start",
+            "child_id",
+            "parent_id",
+            "valid_from",
+            unique=True,
+            postgresql_where=text("valid_from IS NOT NULL"),
+        ),
         {"schema": "geography"},
     )
 
-    child_id: Mapped[str] = mapped_column(ForeignKey("geography.place.id"), primary_key=True)
-    parent_id: Mapped[str] = mapped_column(ForeignKey("geography.place.id"), primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    child_id: Mapped[str] = mapped_column(ForeignKey("geography.place.id"))
+    parent_id: Mapped[str] = mapped_column(ForeignKey("geography.place.id"))
     # Half-open validity interval [valid_from, valid_to). Null/null means the
     # edge is an undated current snapshot, not evidence of historical validity.
     valid_from: Mapped[date | None] = mapped_column(Date, nullable=True)

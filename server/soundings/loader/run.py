@@ -23,8 +23,8 @@ from soundings.adapters.mhclg_imd2025.aggregation import aggregate_imd_to_ltla
 from soundings.adapters.mhclg_imd2025.loader import MhclgImd2019Loader, MhclgImd2025Loader
 from soundings.adapters.ons_census2021.loader import OnsCensus2021Loader
 from soundings.adapters.ons_geography.chains import ALL_CHAINS
-from soundings.adapters.ons_geography.code_change_loader import (
-    OnsGeographyCodeChangeLoader,
+from soundings.adapters.ons_geography.chd_hierarchy_loader import (
+    OnsGeographyHistoricalHierarchyLoader,
 )
 from soundings.adapters.ons_geography.geometries_loader import (
     OnsGeographyGeometriesLoader,
@@ -51,8 +51,11 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     async def _geography() -> None:
         await OnsGeographyPlacesLoader(engine).load()
         await OnsGeographyHierarchyLoader(engine, chains=ALL_CHAINS).load()
+        await OnsGeographyHistoricalHierarchyLoader(engine).load()
         await OnsGeographyGeometriesLoader(engine).load()
-        await OnsGeographyCodeChangeLoader(engine).load()
+        # The legacy CodeChange loader is intentionally not part of the live
+        # refresh. June 2026 CHD `Changes.csv` does not expose the old/new/type
+        # semantics that model assumes; reinterpret it only once documented.
 
     async def _mye() -> None:
         await OnsMidYearEstimatesLoader(engine).load()

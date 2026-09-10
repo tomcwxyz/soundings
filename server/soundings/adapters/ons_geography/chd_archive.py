@@ -1,9 +1,9 @@
 """Structure-aware inspection of ONS Code History Database zip archives.
 
-CHD releases contain several CSV tables whose filenames have changed across
-editions. This module deliberately separates *discovering what is present*
-from interpreting hierarchy semantics: callers can inspect filenames,
-headers and small samples without hard-coding an unverified hierarchy schema.
+CHD releases contain several CSV tables whose filenames and schemas have
+changed across editions. This module separates discovering what is present from
+interpreting row semantics: callers inspect real headers/samples and then opt
+into a schema-specific parser.
 """
 
 from __future__ import annotations
@@ -16,13 +16,30 @@ from dataclasses import dataclass
 from itertools import islice
 from typing import Literal
 
-ChdTableKind = Literal["history", "hierarchy", "other"]
+ChdTableKind = Literal[
+    "history",
+    "change_history",
+    "changes",
+    "equivalents",
+    "hierarchy",
+    "other",
+]
 
+# Legacy old/new-code history shape used by earlier CHD editions/adapters.
 _HISTORY_HEADER_GROUPS: tuple[frozenset[str], ...] = (
     frozenset({"GEOGCD_O", "GEOGCDO", "OLD_CODE"}),
     frozenset({"GEOGCD_N", "GEOGCDN", "NEW_CODE"}),
     frozenset({"GEOGCHGTYPE", "CHGTYPE", "CHANGE_TYPE"}),
     frozenset({"EFFECTIVE_DATE", "EFFDATE", "OPER_DATE"}),
+)
+
+# Live June 2026 ArcGIS CSV collection signatures.
+_CHANGE_HISTORY_HEADERS = frozenset(
+    {"GEOGCD", "OPER_DATE", "TERM_DATE", "PARENTCD", "ENTITYCD", "STATUS"}
+)
+_CHANGES_HEADERS = frozenset({"GEOGCD", "GEOGCD_P", "OPER_DATE", "ENTITYCD", "YEAR"})
+_EQUIVALENTS_HEADERS = frozenset(
+    {"GEOGCD", "OPER_DATE", "TERM_DATE", "ENTITYCD", "YEAR", "STATUS", "GEOGCDH"}
 )
 
 
@@ -40,7 +57,13 @@ class ChdArchiveInventory:
 
     @property
     def history_tables(self) -> tuple[ChdCsvTable, ...]:
+        """Legacy old/new-code history tables."""
         return tuple(table for table in self.tables if table.kind == "history")
+
+    @property
+    def change_history_tables(self) -> tuple[ChdCsvTable, ...]:
+        """Live CHD place/parent validity tables (e.g. ChangeHistory.csv)."""
+        return tuple(table for table in self.tables if table.kind == "change_history")
 
     @property
     def hierarchy_tables(self) -> tuple[ChdCsvTable, ...]:
@@ -65,12 +88,11 @@ def normalise_chd_header(value: str) -> str:
 
 
 def inspect_chd_archive(blob: bytes, *, sample_size: int = 2) -> ChdArchiveInventory:
-    """Inventory CSV tables in a CHD zip without interpreting hierarchy rows.
+    """Inventory CSV tables in a CHD zip without over-interpreting rows.
 
-    Geography History is identified from the known field families rather than
-    its filename alone. Hierarchy tables remain intentionally conservative: we
-    flag files whose names advertise hierarchy content and expose their real
-    headers/sample rows for a later schema-specific parser.
+    Known table shapes are identified from headers rather than filenames. A
+    hierarchy filename remains as a conservative fallback for older packages
+    whose column semantics have not yet been pinned.
 
     CSV members are streamed from the zip. Inspection reads only the header and
     the requested number of sample rows, so a header-only inventory does not
@@ -124,6 +146,13 @@ def _inspect_csv(
 
 def _classify_table(name: str, headers: tuple[str, ...]) -> ChdTableKind:
     normalised_headers = {normalise_chd_header(header) for header in headers}
+
+    if _CHANGE_HISTORY_HEADERS <= normalised_headers:
+        return "change_history"
+    if _CHANGES_HEADERS <= normalised_headers:
+        return "changes"
+    if _EQUIVALENTS_HEADERS <= normalised_headers:
+        return "equivalents"
     if all(normalised_headers & group for group in _HISTORY_HEADER_GROUPS):
         return "history"
 

@@ -11,6 +11,7 @@ from typing import Literal
 
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import aliased
 
 from soundings.adapters.postcodes_io.adapter import PostcodesIoAdapter
 from soundings.db.models.geography import Place, PlaceHierarchy, Postcode
@@ -123,11 +124,10 @@ class GeographyService:
     ) -> ContainmentResult:
         """Resolve ancestors using explicit current or historical boundaries.
 
-        Hierarchy validity is half-open: ``[valid_from, valid_to)``. In
-        ``historical`` mode, an ``as_of`` date is required and completely
-        undated edges are excluded because they are current snapshots rather
-        than historical evidence. The method reports that gap as ``partial``
-        instead of silently substituting today's hierarchy.
+        Hierarchy validity is half-open: ``[valid_from, valid_to)``. Historical
+        mode requires ``as_of`` and recursively traverses only dated direct
+        edges valid on that date. Undated OGP snapshots are never substituted
+        for missing historical evidence.
         """
         if boundary_mode == "historical" and as_of is None:
             raise ValueError("historical boundary mode requires as_of")
@@ -135,41 +135,92 @@ class GeographyService:
         boundary_date = date.today() if boundary_mode == "current_boundary" else as_of
         assert boundary_date is not None
 
-        validity = (
-            or_(PlaceHierarchy.valid_from.is_(None), PlaceHierarchy.valid_from <= boundary_date),
-            or_(PlaceHierarchy.valid_to.is_(None), PlaceHierarchy.valid_to > boundary_date),
-        )
-        stmt = (
-            select(Place)
-            .join(PlaceHierarchy, Place.id == PlaceHierarchy.parent_id)
-            .where(PlaceHierarchy.child_id == place_id, *validity)
-        )
-        if boundary_mode == "historical":
-            stmt = stmt.where(
-                or_(
-                    PlaceHierarchy.valid_from.is_not(None),
-                    PlaceHierarchy.valid_to.is_not(None),
-                )
-            )
-
+        direct_dated_count = 0
+        undated_count = 0
         async with AsyncSession(self._engine) as session:
-            places = tuple((await session.scalars(stmt)).all())
-            undated_count = 0
-            if boundary_mode == "historical":
-                undated_count = int(
+            if boundary_mode == "current_boundary":
+                validity = (
+                    or_(
+                        PlaceHierarchy.valid_from.is_(None),
+                        PlaceHierarchy.valid_from <= boundary_date,
+                    ),
+                    or_(
+                        PlaceHierarchy.valid_to.is_(None),
+                        PlaceHierarchy.valid_to > boundary_date,
+                    ),
+                )
+                stmt = (
+                    select(Place)
+                    .join(PlaceHierarchy, Place.id == PlaceHierarchy.parent_id)
+                    .where(PlaceHierarchy.child_id == place_id, *validity)
+                    .distinct()
+                )
+                places = tuple((await session.scalars(stmt)).all())
+            else:
+                # CHD stores immediate parent relationships. Build the dated
+                # ancestor chain recursively at the requested boundary date.
+                ancestors = (
+                    select(PlaceHierarchy.parent_id.label("parent_id"))
+                    .where(
+                        PlaceHierarchy.child_id == place_id,
+                        PlaceHierarchy.valid_from.is_not(None),
+                        PlaceHierarchy.valid_from <= boundary_date,
+                        or_(
+                            PlaceHierarchy.valid_to.is_(None),
+                            PlaceHierarchy.valid_to > boundary_date,
+                        ),
+                    )
+                    .cte("historical_ancestors", recursive=True)
+                )
+                parent_edge = aliased(PlaceHierarchy)
+                ancestors = ancestors.union(
+                    select(parent_edge.parent_id.label("parent_id"))
+                    .join(ancestors, parent_edge.child_id == ancestors.c.parent_id)
+                    .where(
+                        parent_edge.valid_from.is_not(None),
+                        parent_edge.valid_from <= boundary_date,
+                        or_(
+                            parent_edge.valid_to.is_(None),
+                            parent_edge.valid_to > boundary_date,
+                        ),
+                    )
+                )
+                stmt = select(Place).join(ancestors, Place.id == ancestors.c.parent_id).distinct()
+                places = tuple((await session.scalars(stmt)).all())
+
+                direct_dated_count = int(
                     (
                         await session.scalar(
                             select(func.count())
                             .select_from(PlaceHierarchy)
                             .where(
                                 PlaceHierarchy.child_id == place_id,
-                                PlaceHierarchy.valid_from.is_(None),
-                                PlaceHierarchy.valid_to.is_(None),
+                                PlaceHierarchy.valid_from.is_not(None),
+                                PlaceHierarchy.valid_from <= boundary_date,
+                                or_(
+                                    PlaceHierarchy.valid_to.is_(None),
+                                    PlaceHierarchy.valid_to > boundary_date,
+                                ),
                             )
                         )
                     )
                     or 0
                 )
+                if direct_dated_count == 0:
+                    undated_count = int(
+                        (
+                            await session.scalar(
+                                select(func.count())
+                                .select_from(PlaceHierarchy)
+                                .where(
+                                    PlaceHierarchy.child_id == place_id,
+                                    PlaceHierarchy.valid_from.is_(None),
+                                    PlaceHierarchy.valid_to.is_(None),
+                                )
+                            )
+                        )
+                        or 0
+                    )
 
         caveats: list[str] = []
         partial = False
@@ -178,14 +229,13 @@ class GeographyService:
                 "Current-boundary mode uses boundaries valid today; as_of is "
                 "observation context only."
             )
-        if boundary_mode == "historical" and undated_count:
+        if boundary_mode == "historical" and direct_dated_count == 0:
             partial = True
-            caveats.append(
-                f"{undated_count} current hierarchy edge(s) for {place_id} are undated and "
-                "were excluded from the historical result."
-            )
-        if boundary_mode == "historical" and not places:
-            partial = True
+            if undated_count:
+                caveats.append(
+                    f"{undated_count} current hierarchy edge(s) for {place_id} are undated and "
+                    "were excluded from the historical result."
+                )
             caveats.append(
                 f"No dated hierarchy edges for {place_id} cover {boundary_date.isoformat()}."
             )
