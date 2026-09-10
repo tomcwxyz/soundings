@@ -68,12 +68,16 @@ def relationship_from_chd_row(row: dict[str, str]) -> tuple[str, str, date, date
     child_code = normalised.get("GEOGCD", "")
     parent_code = normalised.get("PARENTCD", "")
     valid_from = parse_chd_date(normalised.get("OPER_DATE"))
-    term_date = parse_chd_date(normalised.get("TERM_DATE"))
+    term_value = normalised.get("TERM_DATE", "")
+    term_date = parse_chd_date(term_value)
     if not child_code or not parent_code or valid_from is None:
+        return None
+    if term_value and term_date is None:
         return None
 
     # CHD termination dates are the final valid day. Soundings uses half-open
-    # intervals, so the exclusive end is the following day.
+    # intervals, so the exclusive end is the following day. Only a genuinely
+    # blank TERM_DATE represents an open-ended relationship.
     valid_to = term_date + timedelta(days=1) if term_date is not None else None
     return child_code, parent_code, valid_from, valid_to
 
@@ -114,7 +118,7 @@ class OnsGeographyHistoricalHierarchyLoader(LoaderAdapter):
 
         place_ids_by_code = await self._place_ids_by_code()
         source_rows = 0
-        rows_without_parent_or_date = 0
+        invalid_relationship_rows = 0
         unresolved_rows = 0
         canonical_edges = 0
         buffer: dict[tuple[str, str, date], dict[str, Any]] = {}
@@ -132,7 +136,7 @@ class OnsGeographyHistoricalHierarchyLoader(LoaderAdapter):
                             source_rows += 1
                             relationship = relationship_from_chd_row(row)
                             if relationship is None:
-                                rows_without_parent_or_date += 1
+                                invalid_relationship_rows += 1
                                 continue
                             child_code, parent_code, valid_from, valid_to = relationship
                             child_ids = place_ids_by_code.get(child_code, ())
@@ -162,7 +166,7 @@ class OnsGeographyHistoricalHierarchyLoader(LoaderAdapter):
         notes = (
             f"source_rows={source_rows}; canonical_edges={canonical_edges}; "
             f"unresolved_rows={unresolved_rows}; "
-            f"rows_without_parent_or_date={rows_without_parent_or_date}"
+            f"invalid_relationship_rows={invalid_relationship_rows}"
         )
         return LoaderResult(rows_written=canonical_edges, notes=notes)
 
