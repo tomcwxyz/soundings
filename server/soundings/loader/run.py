@@ -26,6 +26,10 @@ from soundings.adapters.ons_geography.chains import ALL_CHAINS
 from soundings.adapters.ons_geography.chd_hierarchy_loader import (
     OnsGeographyHistoricalHierarchyLoader,
 )
+from soundings.adapters.ons_geography.chd_places_loader import (
+    OnsGeographyHistoricalPlacesLoader,
+)
+from soundings.adapters.ons_geography.chd_source import fetch_chd_archive
 from soundings.adapters.ons_geography.geometries_loader import (
     OnsGeographyGeometriesLoader,
 )
@@ -51,8 +55,15 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     async def _geography() -> None:
         await OnsGeographyPlacesLoader(engine).load()
         await OnsGeographyHierarchyLoader(engine, chains=ALL_CHAINS).load()
-        await OnsGeographyHistoricalHierarchyLoader(engine).load()
         await OnsGeographyGeometriesLoader(engine).load()
+
+        # CHD is ~36 MB. Fetch it once per combined geography refresh, create
+        # terminated historical place identities first, then resolve hierarchy
+        # edges against the expanded place spine using the same source bytes.
+        chd_blob = await fetch_chd_archive()
+        await OnsGeographyHistoricalPlacesLoader(engine).load_from_zip_bytes(chd_blob)
+        await OnsGeographyHistoricalHierarchyLoader(engine).load_from_zip_bytes(chd_blob)
+
         # The legacy CodeChange loader is intentionally not part of the live
         # refresh. June 2026 CHD `Changes.csv` does not expose the old/new/type
         # semantics that model assumes; reinterpret it only once documented.
