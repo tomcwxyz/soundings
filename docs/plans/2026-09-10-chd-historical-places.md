@@ -28,21 +28,35 @@ Keep all existing current IDs unchanged:
 - `country:<code>`
 - `westminster_constituency_24:<code>`
 
-For CHD codes that do **not** already have a canonical Soundings place, create a
-source-faithful historical identity:
+For terminated CHD codes that do **not** already have a canonical Soundings
+place, create a source-faithful historical identity:
 
 - `type = "gss_<entity-code-lower>"`, for example `gss_e07`
 - `id = "gss_e07:<gss-code>"`
 - `code = <gss-code>`
 - `name = GEOGNM`
 - `valid_from = earliest OPER_DATE observed for the code`
-- `valid_to = exclusive end derived from the latest valid TERM_DATE`, or null if
-  the code has a genuinely open-ended CHD record
+- `valid_to = exclusive end derived from the latest valid TERM_DATE`
 
 This preserves the source entity code without claiming that an E01 record is
 specifically a 2001, 2011 or 2021 Soundings LSOA type. ONS/GSS entity codes are
 geography-type identities; Soundings' existing `lsoa21` etc. remain the
 user-facing/current-vintage types.
+
+## Terminated codes only
+
+`ChangeHistory.csv` contains many live GSS geography types that Soundings does
+not currently support, including geographies unrelated to the present
+question-led surface. Creating every missing live code would unexpectedly widen
+normal place search and the canonical place spine.
+
+This slice therefore creates a historical identity only when the aggregate CHD
+lifetime for a code has a real termination date. If any valid CHD record for the
+code is open-ended, the code is treated as live and is **not** created by this
+loader.
+
+Live unsupported GSS geographies can be added later when real questions require
+them, with an explicit product decision about how they should appear in search.
 
 ## No duplicate shadow rows for current places
 
@@ -51,7 +65,7 @@ not create a `gss_*` shadow row when `geography.place.code` already contains the
 GSS code.
 
 This keeps `code -> place` resolution unambiguous for the hierarchy loader and
-avoids duplicate current/historical IDs for the same live geography.
+avoids duplicate current/historical IDs for the same geography.
 
 If a later current OGP refresh introduces a code that was previously present
 only as `gss_*`, reconciliation should be handled explicitly in a later migration
@@ -71,10 +85,11 @@ The loader will:
 4. require `GEOGCD`, `GEOGNM`, `ENTITYCD` and a valid `OPER_DATE`;
 5. aggregate repeated rows for the same code into one place lifetime;
 6. retain the latest name by operative date;
-7. preserve a null `valid_to` if any valid record for the code is open-ended;
+7. treat a code as live if any valid record is open-ended and skip it;
 8. skip codes already represented in the canonical place spine;
-9. upsert missing `gss_*` place rows idempotently;
-10. report source rows, invalid rows, existing-code skips and rows written.
+9. upsert missing **terminated** `gss_*` place rows idempotently;
+10. report source rows, invalid rows, live-code skips, existing-code skips and
+    rows written.
 
 ## CHD download efficiency
 
@@ -122,6 +137,7 @@ Add coverage for:
 - aggregation of repeated CHD rows for one code;
 - inclusive termination date to exclusive `valid_to` conversion;
 - malformed non-empty termination dates being rejected;
+- live unsupported codes being skipped;
 - existing canonical codes not receiving `gss_*` shadows;
 - idempotent historical-place upsert;
 - historical hierarchy resolving through newly-created extinct places;
@@ -139,6 +155,7 @@ Add coverage for:
 - interpretation of CHD `Changes.csv` lineage semantics;
 - 2011↔2021 LSOA correspondence/remapping;
 - UI labels for every GSS entity code;
+- adding live unsupported GSS geography types;
 - automatic migration from an existing `gss_*` identity to a later current OGP
   identity.
 
@@ -147,6 +164,7 @@ Add coverage for:
 - Existing current place IDs and current search results keep their meaning.
 - Extinct CHD codes can exist as dated `geography.place` rows without guessed
   modern vintages.
+- Live unsupported GSS codes do not leak into the canonical place spine.
 - The historical hierarchy loader can resolve and persist edges involving those
   extinct places.
 - Default name search does not surface expired places.
