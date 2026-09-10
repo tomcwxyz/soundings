@@ -87,12 +87,18 @@ class GeographyService:
         query: str,
         geography_types: list[str] | None = None,
         limit: int = 5,
+        as_of: date | None = None,
     ) -> list[PlaceMatch]:
-        """Fuzzy place-name search via pg_trgm similarity."""
+        """Fuzzy place-name search constrained to places valid on one date."""
+        boundary_date = as_of or date.today()
         similarity = func.similarity(Place.name, query).label("score")
         stmt = (
             select(Place, similarity)
-            .where(similarity > 0.1)
+            .where(
+                similarity > 0.1,
+                or_(Place.valid_from.is_(None), Place.valid_from <= boundary_date),
+                or_(Place.valid_to.is_(None), Place.valid_to > boundary_date),
+            )
             .order_by(similarity.desc())
             .limit(limit)
         )
