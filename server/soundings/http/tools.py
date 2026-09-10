@@ -39,6 +39,12 @@ from soundings.tools.get_civil_society_profile import (
 from soundings.tools.get_civil_society_profile import (
     tool_spec as get_civil_society_profile_spec,
 )
+from soundings.tools.get_containing_places import (
+    GetContainingPlacesInput,
+    GetContainingPlacesOutput,
+    get_containing_places,
+)
+from soundings.tools.get_containing_places import tool_spec as get_containing_places_spec
 from soundings.tools.get_funder_profile import (
     GetFunderProfileInput,
     GetFunderProfileOutput,
@@ -86,6 +92,7 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
     return {
         "tools": [
             find_place_spec(),
+            get_containing_places_spec(),
             get_indicators_spec(),
             get_place_profile_spec(),
             compare_places_spec(),
@@ -103,6 +110,14 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
 @router.post("/find_place", response_model=FindPlaceOutput)
 async def http_find_place(input: FindPlaceInput, request: Request) -> FindPlaceOutput:
     return await find_place(input, request.app.state.geography_service)
+
+
+@router.post("/get_containing_places", response_model=GetContainingPlacesOutput)
+async def http_get_containing_places(
+    input: GetContainingPlacesInput,
+    request: Request,
+) -> GetContainingPlacesOutput:
+    return await get_containing_places(input, request.app.state.geography_service)
 
 
 @router.post("/get_indicators", response_model=GetIndicatorsOutput)
