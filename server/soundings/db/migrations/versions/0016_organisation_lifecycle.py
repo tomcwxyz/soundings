@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column(
             "registered_address_place_id",
             sa.String(),
-            sa.ForeignKey("geography.place.id"),
+            sa.ForeignKey("geography.place.id", ondelete="SET NULL"),
             nullable=True,
         ),
         sa.Column(
