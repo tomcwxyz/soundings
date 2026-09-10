@@ -7,6 +7,7 @@ search with similarity score as confidence, ranked by hierarchy depth on ties.
 """
 
 import re
+from datetime import date
 
 from pydantic import BaseModel, Field
 
@@ -32,6 +33,13 @@ class FindPlaceInput(BaseModel):
     query: str
     geography_types: list[str] | None = None
     limit: int = 10
+    as_of: date | None = Field(
+        default=None,
+        description=(
+            "For name queries, resolve places valid on this date. Postcode queries remain "
+            "current-vintage only."
+        ),
+    )
 
 
 class PlaceMatch(BaseModel):
@@ -48,8 +56,9 @@ class FindPlaceOutput(BaseModel):
 
 TOOL_NAME = "find_place"
 TOOL_DESCRIPTION = (
-    "Resolve a place reference (UK postcode or natural-language name) to "
-    "one or more canonical Soundings geography IDs with confidence scores."
+    "Resolve a place reference (UK postcode or natural-language name) to one or more canonical "
+    "Soundings geography IDs with confidence scores. Name queries can optionally resolve places "
+    "valid on a historical as_of date; postcode resolution is current-vintage only."
 )
 
 
@@ -93,6 +102,7 @@ async def _find_by_name(input: FindPlaceInput, service: GeographyService) -> Fin
         input.query,
         geography_types=input.geography_types,
         limit=input.limit,
+        as_of=input.as_of,
     )
     enriched = sorted(
         raw,
