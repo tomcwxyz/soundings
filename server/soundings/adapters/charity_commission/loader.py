@@ -1,16 +1,16 @@
-"""CharityCommissionLoader — writes the monthly CC bulk register into
-`data.organisation` + `data.organisation_operates_in`.
+"""CharityCommissionLoader — current organisations + lifecycle facts.
 
-The bulk client streams active charities (status='Registered'); we
-batch-resolve their postcodes via the postcodes.io bulk endpoint
-(`charity_commission.mapping.resolve_postcodes_to_ltlas`), build
-organisation rows, and upsert in chunks. Idempotent: re-running
-against the same bulk pull updates `retrieved_at` but doesn't
-duplicate rows.
+The main Charity Commission extract is downloaded once. Registered rows follow
+the existing current-state path into `data.organisation` and
+`data.organisation_operates_in`; every main-entry row also contributes durable
+registration/removal facts to `data.organisation_lifecycle`.
 
-Task 7 layers on top of this to write the
-`civil_society.active_charities_count` + `_per_10k` indicator
-aggregates at the end of each load.
+Active postcodes may use the normal local-cache → postcodes.io resolution path.
+Lifecycle-only/removed postcodes are resolved from Soundings' local postcode
+spine only, so historical rows cannot trigger a large upstream postcode crawl.
+
+End-of-load aggregation writes both the existing monthly active-charity
+indicators and annual registration/removal/net observations.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -23,6 +23,12 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from soundings.adapters.base import LoaderAdapter, LoaderResult
 from soundings.adapters.charity_commission.area_mapping import build_area_name_to_place_id_map
 from soundings.adapters.charity_commission.client import CharityCommissionBulkClient
+from soundings.adapters.charity_commission.lifecycle import (
+    build_lifecycle_rows,
+    rebuild_lifecycle_indicators,
+    resolve_lifecycle_places_locally,
+    upsert_lifecycle_rows,
+)
 from soundings.adapters.charity_commission.mapping import resolve_postcodes_to_ltlas
 from soundings.adapters.postcodes_io.adapter import PostcodesIoAdapter
 from soundings.db.models.data import (
@@ -53,23 +59,38 @@ class CharityCommissionLoader(LoaderAdapter):
         )
 
     async def load(self, run_id: str | None = None) -> LoaderResult:
-        # Pass 1: collect all rows + postcodes. ~50MB in memory at 220k
-        # rows — acceptable for v1. Future optimisation could two-pass
-        # the bulk download to avoid the in-memory list.
-        rows: list[dict[str, Any]] = []
-        async for charity in self._bulk_client.iter_active_charities():
-            rows.append(charity)
+        # Pass 1: collect the complete main-entry extract once. Older test
+        # doubles may expose only iter_active_charities(); retain that fallback
+        # while the real client uses iter_main_charities().
+        main_rows: list[dict[str, Any]] = []
+        iter_main = getattr(self._bulk_client, "iter_main_charities", None)
+        if iter_main is None:
+            async for charity in self._bulk_client.iter_active_charities():
+                main_rows.append(charity)
+        else:
+            async for charity in iter_main():
+                main_rows.append(charity)
 
-        # Pass 2: batch-resolve postcodes (the resolver short-circuits
-        # any postcode already cached in geography.postcode, so monthly
-        # re-loads against a warm cache hit postcodes.io zero times).
+        rows = [row for row in main_rows if row.get("status") == "Registered"]
+
+        # Pass 2: current active charities retain the established resolver. It
+        # checks geography.postcode first, then uses postcodes.io only for cache
+        # misses. Removed-only rows never enter this list.
         postcodes = [r["postcode"] for r in rows if r.get("postcode")]
         resolved = await resolve_postcodes_to_ltlas(self._postcodes_io, postcodes)
 
-        # Pass 3: materialise + chunked upsert.
-        retrieved_at = datetime.now(tz=UTC)
-        org_rows = self._build_org_rows(rows, resolved, retrieved_at)
+        # Lifecycle geography is local-only. Run this after active resolution so
+        # any cache rows just populated for active charities are immediately
+        # available to lifecycle facts too.
+        lifecycle_resolved = await resolve_lifecycle_places_locally(self._engine, main_rows)
+        lifecycle_resolved.update(resolved)
 
+        # Pass 3: persist lifecycle facts and current active organisations.
+        retrieved_at = datetime.now(tz=UTC)
+        lifecycle_rows = build_lifecycle_rows(main_rows, lifecycle_resolved, retrieved_at)
+        await upsert_lifecycle_rows(self._engine, lifecycle_rows)
+
+        org_rows = self._build_org_rows(rows, resolved, retrieved_at)
         await self._upsert_organisations(org_rows)
 
         # Pass 4: build operates_in from area-of-operation data.
@@ -97,18 +118,26 @@ class CharityCommissionLoader(LoaderAdapter):
         # proper structured codes for clean GROUP BY aggregation.
         classification_count = await self._load_classifications()
 
-        # Phase 4 Task 7: end-of-load aggregates into data.indicator_value.
-        # Period = YYYY-MM (CC publishes monthly); UPSERT so re-runs in the
-        # same calendar month overwrite the latest count.
+        # Existing monthly current-state aggregates.
         period = retrieved_at.strftime("%Y-%m")
         aggregate_notes = await self._aggregate_indicators(period, retrieved_at)
+
+        # Annual lifecycle observations are rebuilt from canonical facts so a
+        # corrected registration/removal date cannot leave a stale old period.
+        lifecycle_notes = await rebuild_lifecycle_indicators(self._engine, retrieved_at)
 
         unresolved = sum(1 for r in rows if not resolved.get(r.get("postcode", "")))
         note_pieces: list[str] = []
         if unresolved:
             note_pieces.append(
-                f"{unresolved} charities with unresolved postcodes — "
+                f"{unresolved} active charities with unresolved postcodes — "
                 "registered_address_place_id null"
+            )
+        if lifecycle_notes:
+            note_pieces.append(lifecycle_notes)
+        if len(lifecycle_rows) != len(org_rows):
+            note_pieces.append(
+                f"{len(lifecycle_rows)} lifecycle rows retained ({len(org_rows)} active)"
             )
         if aggregate_notes:
             note_pieces.append(aggregate_notes)
