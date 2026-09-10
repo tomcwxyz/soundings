@@ -11,7 +11,7 @@ from typing import Any
 import httpx
 
 from soundings.adapters.ons_geography.chd_archive import inspect_chd_archive
-from soundings.adapters.ons_geography.chd_hierarchy_loader import CHD_CURRENT_ARCGIS_URL
+from soundings.adapters.ons_geography.chd_source import CHD_CURRENT_ARCGIS_URL
 
 
 def _non_negative_int(value: str) -> int:
