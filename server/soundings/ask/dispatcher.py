@@ -58,6 +58,13 @@ from soundings.tools.get_civil_society_profile import (
 from soundings.tools.get_civil_society_profile import (
     tool_spec as get_csp_spec,
 )
+from soundings.tools.get_containing_places import (
+    GetContainingPlacesInput,
+    get_containing_places,
+)
+from soundings.tools.get_containing_places import (
+    tool_spec as get_containing_places_spec,
+)
 from soundings.tools.get_funder_profile import (
     GetFunderProfileInput,
     get_funder_profile,
@@ -157,6 +164,7 @@ class ToolDispatcher:
         """
         specs: list[dict[str, object]] = [
             find_place_spec(),
+            get_containing_places_spec(),
             get_indicators_spec(),
             get_place_profile_spec(),
             compare_places_spec(),
@@ -265,6 +273,7 @@ class ToolDispatcher:
     def _handlers(self) -> dict[str, Any]:
         return {
             "find_place": self._handle_find_place,
+            "get_containing_places": self._handle_get_containing_places,
             "get_indicators": self._handle_get_indicators,
             "get_place_profile": self._handle_get_place_profile,
             "compare_places": self._handle_compare_places,
@@ -284,6 +293,11 @@ class ToolDispatcher:
     async def _handle_find_place(self, args: dict[str, Any]) -> dict[str, Any]:
         model = FindPlaceInput.model_validate(args)
         result = await find_place(model, self._state.geography_service)
+        return result.model_dump(mode="json")
+
+    async def _handle_get_containing_places(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetContainingPlacesInput.model_validate(args)
+        result = await get_containing_places(model, self._state.geography_service)
         return result.model_dump(mode="json")
 
     async def _handle_get_indicators(self, args: dict[str, Any]) -> dict[str, Any]:

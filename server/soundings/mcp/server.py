@@ -4,6 +4,7 @@ Uses ``FastMCP`` from the MCP Python SDK. The same implementations from
 ``soundings.tools.*`` back HTTP, MCP and the in-process Ask dispatcher.
 """
 
+from datetime import date
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -18,6 +19,11 @@ from soundings.tools.get_change import GetChangeInput, get_change
 from soundings.tools.get_civil_society_profile import (
     GetCivilSocietyProfileInput,
     get_civil_society_profile,
+)
+from soundings.tools.get_containing_places import (
+    BoundaryMode,
+    GetContainingPlacesInput,
+    get_containing_places,
 )
 from soundings.tools.get_funder_profile import (
     GetFunderProfileInput,
@@ -40,11 +46,35 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
     mcp = FastMCP(name="soundings")
 
     @mcp.tool(name="find_place")
-    async def _find_place(query: str, geography_types: list[str] | None = None) -> dict[str, Any]:
+    async def _find_place(
+        query: str,
+        geography_types: list[str] | None = None,
+        as_of: date | None = None,
+    ) -> dict[str, Any]:
         if state is None:
             raise RuntimeError("MCP find_place invoked without app state")
         result = await find_place(
-            FindPlaceInput(query=query, geography_types=geography_types),
+            FindPlaceInput(query=query, geography_types=geography_types, as_of=as_of),
+            state.geography_service,
+        )
+        return result.model_dump(mode="json")
+
+    @mcp.tool(name="get_containing_places")
+    async def _get_containing_places(
+        place_id: str,
+        boundary_mode: BoundaryMode = "current_boundary",
+        as_of: date | None = None,
+    ) -> dict[str, Any]:
+        if state is None:
+            raise RuntimeError("MCP get_containing_places invoked without app state")
+        result = await get_containing_places(
+            GetContainingPlacesInput.model_validate(
+                {
+                    "place_id": place_id,
+                    "boundary_mode": boundary_mode,
+                    "as_of": as_of,
+                }
+            ),
             state.geography_service,
         )
         return result.model_dump(mode="json")
