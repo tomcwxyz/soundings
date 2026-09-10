@@ -20,6 +20,7 @@ pytestmark = pytest.mark.integration
 _TEST_IDS = (
     "gss_e07:OLD000001",
     "gss_e07:BAD000001",
+    "gss_e07:LIVEONLY1",
     "ltla24:LIVE00001",
     "region:REG000001",
 )
@@ -70,15 +71,19 @@ async def test_loader_creates_extinct_places_without_shadowing_current_codes() -
             "OLD000001,Old district,01/01/2009 00:00,31/03/2023 00:00,,E07,terminated\n",
             "OLD000001,Old district renamed,01/04/2012 00:00,31/03/2023 00:00,,E07,terminated\n",
             "LIVE00001,Live district,01/01/2009 00:00,,,E07,live\n",
+            "LIVEONLY1,Unsupported live district,01/01/2009 00:00,,,E07,live\n",
             "BAD000001,Bad date district,01/01/2009 00:00,not-a-date,,E07,terminated\n",
         ]
     )
 
-    result = await OnsGeographyHistoricalPlacesLoader(engine).load_from_zip_bytes(blob)
+    loader = OnsGeographyHistoricalPlacesLoader(engine)
+    result = await loader.load_from_zip_bytes(blob)
+    await loader.load_from_zip_bytes(blob)
 
     assert result.rows_written == 1
     assert result.notes is not None
     assert "existing_codes=1" in result.notes
+    assert "live_codes=1" in result.notes
     assert "invalid_rows=1" in result.notes
 
     async with engine.connect() as conn:
@@ -90,9 +95,19 @@ async def test_loader_creates_extinct_places_without_shadowing_current_codes() -
                 )
             )
         ).one()
+        historical_count = (
+            await conn.execute(
+                text("SELECT count(*) FROM geography.place WHERE code='OLD000001'")
+            )
+        ).scalar_one()
         shadow_count = (
             await conn.execute(
                 text("SELECT count(*) FROM geography.place WHERE code='LIVE00001'")
+            )
+        ).scalar_one()
+        live_only_count = (
+            await conn.execute(
+                text("SELECT count(*) FROM geography.place WHERE code='LIVEONLY1'")
             )
         ).scalar_one()
         bad_count = (
@@ -106,7 +121,9 @@ async def test_loader_creates_extinct_places_without_shadowing_current_codes() -
     assert historical.name == "Old district renamed"
     assert historical.valid_from == date(2009, 1, 1)
     assert historical.valid_to == date(2023, 4, 1)
+    assert historical_count == 1
     assert shadow_count == 1
+    assert live_only_count == 0
     assert bad_count == 0
 
 
