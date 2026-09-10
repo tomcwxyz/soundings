@@ -62,3 +62,19 @@ questions:
     success_criteria:
       - "States the first and last observation periods rather than saying only 'over time'."
       - "Preserves source period labels while using their structured temporal semantics."
+
+  - id: Q37
+    question: "Which region contained the former Borough of Corby in 2020?"
+    places: ["Corby"]
+    intent: temporal-geography
+    expected: partial
+    tags: [geography, historical, boundaries]
+    required_tools: [find_place, get_containing_places]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text]
+    success_criteria:
+      - "Resolves Corby for the requested historical date rather than assuming today's place identity."
+      - "Uses historical boundary mode and states the 2020 boundary date used."
+      - "Does not substitute current hierarchy evidence if dated CHD evidence is missing."
+    known_gap: "Historical containment depends on CHD code coverage and does not yet include historical postcode membership or boundary geometries."
