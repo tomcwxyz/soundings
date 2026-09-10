@@ -96,24 +96,16 @@ async def test_loader_creates_extinct_places_without_shadowing_current_codes() -
             )
         ).one()
         historical_count = (
-            await conn.execute(
-                text("SELECT count(*) FROM geography.place WHERE code='OLD000001'")
-            )
+            await conn.execute(text("SELECT count(*) FROM geography.place WHERE code='OLD000001'"))
         ).scalar_one()
         shadow_count = (
-            await conn.execute(
-                text("SELECT count(*) FROM geography.place WHERE code='LIVE00001'")
-            )
+            await conn.execute(text("SELECT count(*) FROM geography.place WHERE code='LIVE00001'"))
         ).scalar_one()
         live_only_count = (
-            await conn.execute(
-                text("SELECT count(*) FROM geography.place WHERE code='LIVEONLY1'")
-            )
+            await conn.execute(text("SELECT count(*) FROM geography.place WHERE code='LIVEONLY1'"))
         ).scalar_one()
         bad_count = (
-            await conn.execute(
-                text("SELECT count(*) FROM geography.place WHERE code='BAD000001'")
-            )
+            await conn.execute(text("SELECT count(*) FROM geography.place WHERE code='BAD000001'"))
         ).scalar_one()
 
     assert historical.type == "gss_e07"
