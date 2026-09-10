@@ -21,6 +21,7 @@ from soundings.tools.get_civil_society_profile import (
     get_civil_society_profile,
 )
 from soundings.tools.get_containing_places import (
+    BoundaryMode,
     GetContainingPlacesInput,
     get_containing_places,
 )
@@ -61,7 +62,7 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
     @mcp.tool(name="get_containing_places")
     async def _get_containing_places(
         place_id: str,
-        boundary_mode: str = "current_boundary",
+        boundary_mode: BoundaryMode = "current_boundary",
         as_of: date | None = None,
     ) -> dict[str, Any]:
         if state is None:
