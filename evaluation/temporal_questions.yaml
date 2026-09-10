@@ -78,3 +78,22 @@ questions:
       - "Uses historical boundary mode and states the 2020 boundary date used."
       - "Does not substitute current hierarchy evidence if dated CHD evidence is missing."
     known_gap: "Historical containment depends on CHD code coverage and does not yet include historical postcode membership or boundary geometries."
+
+  - id: Q38
+    question: "Are more charities being registered or removed in Gateshead over the last five years?"
+    places: ["Gateshead"]
+    intent: lifecycle-trend
+    expected: partial
+    tags: [civil-society, organisations, trend, lifecycle]
+    required_tools: [find_place, get_trend]
+    required_indicators:
+      - civil_society.charities_registered_count
+      - civil_society.charities_removed_count
+    candidate_indicator_keys: []
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "Compares Charity Commission registration and register-removal events over named calendar years."
+      - "Does not describe register removal as the exact date an organisation closed or ceased operating."
+      - "States that place attribution uses current or last-known registered-address postcode rather than historical operating geography."
+      - "Makes clear that unresolved historical postcodes can make place totals incomplete."
+    known_gap: "Lifecycle event geography uses current or last-known registered-address postcodes resolved through the local postcode spine; historical address and operating-area membership are not yet retained."
