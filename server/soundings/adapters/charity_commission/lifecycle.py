@@ -133,9 +133,22 @@ async def rebuild_lifecycle_indicators(
 
     Full replacement matters when the Commission corrects a registration or
     removal date: the old period must disappear rather than survive beside the
-    corrected one.
+    corrected one. Raw lifecycle ingestion remains usable before catalogue
+    bootstrap; in that case materialisation is skipped rather than failing the
+    whole loader.
     """
     async with engine.begin() as conn:
+        catalogue_rows = (
+            await conn.execute(
+                text("SELECT key FROM catalogue.indicator WHERE key = ANY(:keys)"),
+                {"keys": list(LIFECYCLE_INDICATORS)},
+            )
+        ).all()
+        available = {str(row.key) for row in catalogue_rows}
+        missing = sorted(set(LIFECYCLE_INDICATORS) - available)
+        if missing:
+            return "lifecycle observations skipped; catalogue missing: " + ", ".join(missing)
+
         await conn.execute(
             text(
                 "DELETE FROM data.indicator_value "
