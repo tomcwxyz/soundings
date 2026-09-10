@@ -98,12 +98,19 @@ async def _find_by_postcode(input: FindPlaceInput, service: GeographyService) ->
 
 
 async def _find_by_name(input: FindPlaceInput, service: GeographyService) -> FindPlaceOutput:
-    raw = await service.find_place_by_name(
-        input.query,
-        geography_types=input.geography_types,
-        limit=input.limit,
-        as_of=input.as_of,
-    )
+    if input.as_of is None:
+        raw = await service.find_place_by_name(
+            input.query,
+            geography_types=input.geography_types,
+            limit=input.limit,
+        )
+    else:
+        raw = await service.find_place_by_name(
+            input.query,
+            geography_types=input.geography_types,
+            limit=input.limit,
+            as_of=input.as_of,
+        )
     enriched = sorted(
         raw,
         key=lambda m: (-m.confidence, -DEPTH_BY_TYPE.get(m.place.type, 99)),
