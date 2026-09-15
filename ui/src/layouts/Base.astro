@@ -4,9 +4,113 @@ import "../styles/global.css";
 
 interface Props {
   title?: string;
+  description?: string;
+  image?: string;
+  noindex?: boolean;
 }
 
-const { title = "Soundings" } = Astro.props;
+const {
+  title = "Soundings",
+  description,
+  image = "/social/soundings-og.jpg",
+  noindex = false,
+} = Astro.props;
+
+const defaultDescription =
+  "Soundings is an open insight commons for understanding what is happening in places across the UK, grounded in named open data sources.";
+
+const descriptionsByPath: Record<string, string> = {
+  "/":
+    "Explore place-based data and ask questions through Soundings, an open insight commons grounded in named UK data sources.",
+  "/explore":
+    "Explore place-based data on an interactive map, with indicators spanning deprivation, health, economy, environment, housing and more.",
+  "/compare":
+    "Compare local places across Soundings indicators, using consistent geography and named open data sources.",
+  "/ask":
+    "Ask Soundings a question about a place and get a coherent answer grounded in named open data sources.",
+  "/corpus":
+    "Browse the public Soundings question corpus and see what people are asking about places.",
+  "/about":
+    "Learn how Soundings brings open data, place-based indicators and public questions together as shared insight infrastructure.",
+};
+
+const pathname = Astro.url.pathname;
+const isPlacePage = pathname.startsWith("/place/");
+const metaDescription =
+  description ??
+  descriptionsByPath[pathname] ??
+  (isPlacePage
+    ? `Explore local data and indicators for ${title}, grounded in named open data sources on Soundings.`
+    : defaultDescription);
+
+const seoTitle =
+  pathname === "/"
+    ? "Soundings — Open local data and insights for UK places"
+    : title.toLowerCase().includes("soundings")
+      ? title
+      : `${title} — Soundings`;
+
+const siteOrigin = Astro.url.origin;
+const siteRoot = new URL("/", siteOrigin).toString();
+const canonicalUrl = new URL(pathname, siteOrigin).toString();
+const socialImageUrl = new URL(image, siteOrigin).toString();
+const shouldNoindex = noindex || Astro.url.search.length > 0;
+const robots = shouldNoindex
+  ? "noindex, follow"
+  : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+
+const publisherId = `${siteRoot}#publisher`;
+const websiteId = `${siteRoot}#website`;
+const appId = `${siteRoot}#app`;
+const pageId = `${canonicalUrl}#webpage`;
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": publisherId,
+      name: "The Good Ship",
+      url: "https://good-ship.co.uk/",
+    },
+    {
+      "@type": "WebSite",
+      "@id": websiteId,
+      name: "Soundings",
+      url: siteRoot,
+      description: defaultDescription,
+      inLanguage: "en-GB",
+      publisher: { "@id": publisherId },
+    },
+    {
+      "@type": "WebApplication",
+      "@id": appId,
+      name: "Soundings",
+      url: siteRoot,
+      description: defaultDescription,
+      applicationCategory: "DataApplication",
+      operatingSystem: "Web",
+      inLanguage: "en-GB",
+      isAccessibleForFree: true,
+      publisher: { "@id": publisherId },
+    },
+    {
+      "@type": "WebPage",
+      "@id": pageId,
+      name: seoTitle,
+      url: canonicalUrl,
+      description: metaDescription,
+      inLanguage: "en-GB",
+      isPartOf: { "@id": websiteId },
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: socialImageUrl,
+        width: 1200,
+        height: 630,
+      },
+    },
+  ],
+};
 ---
 
 <!doctype html>
@@ -14,7 +118,43 @@ const { title = "Soundings" } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
+
+    <title>{seoTitle}</title>
+    <meta name="description" content={metaDescription} />
+    <meta name="application-name" content="Soundings" />
+    <meta name="author" content="The Good Ship" />
+    <meta name="robots" content={robots} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" hreflang="en-GB" href={canonicalUrl} />
+    <link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Soundings" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:secure_url" content={socialImageUrl} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Soundings — open local data and insights for places across the UK"
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={seoTitle} />
+    <meta name="twitter:description" content={metaDescription} />
+    <meta name="twitter:image" content={socialImageUrl} />
+    <meta
+      name="twitter:image:alt"
+      content="Soundings — open local data and insights for places across the UK"
+    />
+
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>
+
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
     <!-- Shared Good Ship Plausible tracker; active only on good-ship.co.uk hostnames. -->
     <script is:inline async src="https://good-ship.co.uk/analytics/browser.js"></script>
