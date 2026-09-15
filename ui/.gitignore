@@ -4,3 +4,4 @@ dist/
 .env
 .env.*
 *.log
+public/social/soundings-og.jpg
