@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "social-assets": "node ./scripts/materialise-social-assets.mjs",
+    "predev": "npm run social-assets",
     "dev": "astro dev",
+    "prebuild": "npm run social-assets",
     "build": "astro build",
     "preview": "astro preview",
     "start": "node ./dist/server/entry.mjs",
