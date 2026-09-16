@@ -1,0 +1,36 @@
+version: 1
+
+# Grant-specific cases are kept separate so this evaluation slice can move with
+# the grants capability if it is later extracted from Soundings.
+questions:
+  - id: Q31
+    question: "Which grants in Middlesbrough have supported food poverty work in the last three years?"
+    places: ["Middlesbrough"]
+    intent: grants-search
+    expected: partial
+    tags: [civil-society, grants, funding, topic]
+    required_tools: [find_place, search_grants]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text]
+    success_criteria:
+      - "Uses indexed grant records as evidence rather than inferring funding from charity profiles."
+      - "Makes index coverage explicit and does not treat missing results as proof of no funding."
+      - "Keeps the requested topic and date window visible in the answer."
+    known_gap: "Grant-index coverage is partial until the full GrantNav corpus refresh is automated."
+
+  - id: Q32
+    question: "What does the National Lottery Community Fund's recent grantmaking look like?"
+    places: []
+    intent: funder-profile
+    expected: partial
+    tags: [civil-society, grants, funder]
+    required_tools: [get_funder_profile]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text]
+    success_criteria:
+      - "Uses deterministic funder aggregates and supporting indexed grant records."
+      - "Surfaces leading recipients or programmes only when supported by the indexed data."
+      - "Qualifies the answer when the local index is not yet full-corpus."
+    known_gap: "Named-funder coverage may be partial until the full GrantNav corpus refresh is automated."

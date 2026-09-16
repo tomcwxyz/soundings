@@ -23,11 +23,16 @@ async def test_mcp_sse_endpoint_is_mounted() -> None:
     assert response.status_code in (200, 405, 406, 421)
 
 
-async def test_mcp_server_lists_three_tools() -> None:
+async def test_mcp_server_lists_core_and_temporal_tools() -> None:
     from soundings.mcp.server import build_mcp_server
 
     server = build_mcp_server()
     # FastMCP exposes registered tools via list_tools().
     tools = await server.list_tools()
     names = {t.name for t in tools}
-    assert {"find_place", "get_indicators", "get_place_profile"} <= names
+    assert {
+        "find_place",
+        "get_containing_places",
+        "get_indicators",
+        "get_place_profile",
+    } <= names

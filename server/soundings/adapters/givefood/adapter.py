@@ -62,8 +62,8 @@ class GiveFoodAdapter(PassthroughAdapter):
         """Dump rows whose coordinates fall inside the place polygon.
 
         Coordinate-bearing rows are matched by ST_Within; rows lacking
-        coordinates but carrying an LSOA code fall back to a place_hierarchy
-        membership check.
+        coordinates but carrying an LSOA code fall back to current hierarchy
+        membership.
         """
         rows = await self._cached_dump()
         coord_rows = [r for r in rows if r["lat"] is not None and r["lng"] is not None]
@@ -98,7 +98,8 @@ class GiveFoodAdapter(PassthroughAdapter):
                     await conn.execute(
                         text(
                             """
-                            SELECT h.child_id AS id FROM geography.place_hierarchy h
+                            SELECT h.child_id AS id
+                            FROM geography.current_place_hierarchy h
                             WHERE h.parent_id = :pid AND h.child_id = ANY(:ids)
                             UNION
                             SELECT g.id AS id FROM geography.place g

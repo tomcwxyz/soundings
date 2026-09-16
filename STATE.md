@@ -1,8 +1,8 @@
 # Soundings — current state
 
-> Last updated: **29 August 2026**
+> Last updated: **16 September 2026**
 >
-> Current position: **Phase 6.5 started — questions before sources — and Phase 7 (Observations MVP) shipped**, merged in from `feat/observations-mvp`.
+> Current position: **Phase 6.5 started — questions before sources**. Phase 7 (Observations MVP) is complete on `feat/observations-mvp` (PR #43, open) and now carries `main` merged in; it is not yet on `main`.
 
 This file is the canonical short-form statement of what is actually implemented. Older phase plans in `docs/plans/` are useful design history, but should not be read as the current status.
 
@@ -93,7 +93,7 @@ Shipped on `feat/observations-mvp`, merged into this baseline on 29 August 2026.
 
 A hybrid contribution layer sitting alongside the read-only indicator stack: organisations record short, attributed observations (quantitative or qualitative) against a place, a theme and optionally an existing indicator.
 
-- New `catalogue.theme`, `data.observation` and `contribution.contributor_session` tables (migration `0011_observation_schema`, renumbered during the 29 August integration to chain after the Phase 6.5 migrations `0009`/`0010`). 12 initial themes seeded.
+- New `catalogue.theme`, `data.observation` and `contribution.contributor_session` tables (migration `0016_observation_schema`, renumbered during the 16 September integration to chain after the 360Giving/temporal migrations `0011`–`0015`). 12 initial themes seeded.
 - **Hybrid sign-up:** organisations already in `data.organisation` (Charity Commission, FindThatCharity) self-identify via magic-link auth; organisations not in any register get a lightweight profile created on sign-up (`source_id = 'ctx.manual_signup'`). Both paths produce a `data.organisation.id` that observations reference.
 - Append-only, auto-accept, public attribution for the MVP — no moderation queue yet.
 - `POST /v1/observations` submission endpoint, and `get_observations` surfaced through HTTP, MCP, and the `/v1/ask` dispatcher.

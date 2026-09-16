@@ -1,7 +1,7 @@
 """observation schema
 
-Revision ID: 0011_observation_schema
-Revises: 0010_retire_statxplore_rates
+Revision ID: 0016_observation_schema
+Revises: 0015_hierarchy_edge_identity
 Create Date: 2026-08-24
 
 Adds three new tables for the observations MVP (see
@@ -22,8 +22,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = "0011_observation_schema"
-down_revision: str | Sequence[str] | None = "0010_retire_statxplore_rates"
+revision: str = "0016_observation_schema"
+down_revision: str | Sequence[str] | None = "0015_hierarchy_edge_identity"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

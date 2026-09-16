@@ -45,12 +45,33 @@ from soundings.tools.find_place import (
 from soundings.tools.find_place import (
     tool_spec as find_place_spec,
 )
+from soundings.tools.get_change import (
+    GetChangeInput,
+    get_change,
+)
+from soundings.tools.get_change import (
+    tool_spec as get_change_spec,
+)
 from soundings.tools.get_civil_society_profile import (
     GetCivilSocietyProfileInput,
     get_civil_society_profile,
 )
 from soundings.tools.get_civil_society_profile import (
     tool_spec as get_csp_spec,
+)
+from soundings.tools.get_containing_places import (
+    GetContainingPlacesInput,
+    get_containing_places,
+)
+from soundings.tools.get_containing_places import (
+    tool_spec as get_containing_places_spec,
+)
+from soundings.tools.get_funder_profile import (
+    GetFunderProfileInput,
+    get_funder_profile,
+)
+from soundings.tools.get_funder_profile import (
+    tool_spec as get_funder_profile_spec,
 )
 from soundings.tools.get_indicators import (
     GetIndicatorsInput,
@@ -90,6 +111,13 @@ from soundings.tools.get_trend import (
 )
 from soundings.tools.get_trend import (
     tool_spec as get_trend_spec,
+)
+from soundings.tools.search_grants import (
+    SearchGrantsInput,
+    search_grants,
+)
+from soundings.tools.search_grants import (
+    tool_spec as search_grants_spec,
 )
 
 logger = logging.getLogger(__name__)
@@ -141,12 +169,16 @@ class ToolDispatcher:
         """
         specs: list[dict[str, object]] = [
             find_place_spec(),
+            get_containing_places_spec(),
             get_indicators_spec(),
             get_place_profile_spec(),
             compare_places_spec(),
             get_trend_spec(),
+            get_change_spec(),
             find_orgs_spec(),
             get_csp_spec(),
+            search_grants_spec(),
+            get_funder_profile_spec(),
             detect_insights_spec(),
             get_peer_dist_spec(),
             get_sub_areas_spec(),
@@ -247,12 +279,16 @@ class ToolDispatcher:
     def _handlers(self) -> dict[str, Any]:
         return {
             "find_place": self._handle_find_place,
+            "get_containing_places": self._handle_get_containing_places,
             "get_indicators": self._handle_get_indicators,
             "get_place_profile": self._handle_get_place_profile,
             "compare_places": self._handle_compare_places,
             "get_trend": self._handle_get_trend,
+            "get_change": self._handle_get_change,
             "find_organisations_in_place": self._handle_find_organisations,
             "get_civil_society_profile": self._handle_get_csp,
+            "search_grants": self._handle_search_grants,
+            "get_funder_profile": self._handle_get_funder_profile,
             "detect_insights": self._handle_detect_insights,
             "get_peer_distribution": self._handle_get_peer_distribution,
             "get_sub_areas": self._handle_get_sub_areas,
@@ -264,6 +300,11 @@ class ToolDispatcher:
     async def _handle_find_place(self, args: dict[str, Any]) -> dict[str, Any]:
         model = FindPlaceInput.model_validate(args)
         result = await find_place(model, self._state.geography_service)
+        return result.model_dump(mode="json")
+
+    async def _handle_get_containing_places(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetContainingPlacesInput.model_validate(args)
+        result = await get_containing_places(model, self._state.geography_service)
         return result.model_dump(mode="json")
 
     async def _handle_get_indicators(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -286,6 +327,11 @@ class ToolDispatcher:
         result = await get_trend(model, self._state.orchestrator)
         return result.model_dump(mode="json")
 
+    async def _handle_get_change(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetChangeInput.model_validate(args)
+        result = await get_change(model, self._state.orchestrator)
+        return result.model_dump(mode="json")
+
     async def _handle_find_organisations(self, args: dict[str, Any]) -> dict[str, Any]:
         model = FindOrganisationsInPlaceInput.model_validate(args)
         result = await find_organisations_in_place(model, self._state.orchestrator)
@@ -294,6 +340,16 @@ class ToolDispatcher:
     async def _handle_get_csp(self, args: dict[str, Any]) -> dict[str, Any]:
         model = GetCivilSocietyProfileInput.model_validate(args)
         result = await get_civil_society_profile(model, self._state.orchestrator)
+        return result.model_dump(mode="json")
+
+    async def _handle_search_grants(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = SearchGrantsInput.model_validate(args)
+        result = await search_grants(model, self._state.engine)
+        return result.model_dump(mode="json")
+
+    async def _handle_get_funder_profile(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = GetFunderProfileInput.model_validate(args)
+        result = await get_funder_profile(model, self._state.engine)
         return result.model_dump(mode="json")
 
     async def _handle_detect_insights(self, args: dict[str, Any]) -> dict[str, Any]:

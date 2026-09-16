@@ -171,10 +171,10 @@ async def get_children_geometry(
     period: str | None = Query(default=None),
     child_type: str = Query(default="lsoa21"),
 ) -> dict[str, object]:
-    """FeatureCollection of a place's sub-areas (default LSOAs) coloured by an
-    indicator. A LATERAL join picks the latest period per child when `period`
-    is omitted. Children without a value are excluded so the caller can detect
-    'no sub-area data' (empty collection) and fall back to peer mode."""
+    """FeatureCollection of a place's current sub-areas (default LSOAs)
+    coloured by an indicator. A LATERAL join picks the latest period per child
+    when `period` is omitted. Children without a value are excluded so the
+    caller can detect 'no sub-area data' and fall back to peer mode."""
     engine = request.app.state.engine
     async with engine.connect() as conn:
         rows = (
@@ -184,7 +184,7 @@ async def get_children_geometry(
                     SELECT c.id, c.name,
                            ST_AsGeoJSON(ST_Simplify(c.geom, 0.005)) AS geojson,
                            iv.value
-                    FROM geography.place_hierarchy h
+                    FROM geography.current_place_hierarchy h
                     JOIN geography.place c ON c.id = h.child_id
                     LEFT JOIN LATERAL (
                         SELECT v.value

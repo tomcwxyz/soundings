@@ -72,14 +72,14 @@ async def get_sub_areas(
     orchestrator: Any,  # IndicatorOrchestrator
     engine: AsyncEngine,
 ) -> GetSubAreasOutput:
-    # 1. Get child place IDs via hierarchy
+    # 1. Get current child place IDs via the canonical current hierarchy view.
     async with engine.connect() as conn:
         child_rows = (
             await conn.execute(
                 text(
                     """
                     SELECT p.id, p.name
-                    FROM geography.place_hierarchy ph
+                    FROM geography.current_place_hierarchy ph
                     JOIN geography.place p ON p.id = ph.child_id
                     WHERE ph.parent_id = :parent_id
                       AND p.type = :child_type

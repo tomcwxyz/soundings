@@ -441,7 +441,7 @@ questions:
       - "Explains that a tested denominator/derivation is needed."
     known_gap: "The live CILIF_AHC dataset exposes a count measure; the former proportion-shaped mapping was retired."
 
-  - id: Q31
+  - id: Q38
     question: "Have any local organisations reported on food bank demand in Stockton-on-Tees recently?"
     places: ["Stockton-on-Tees"]
     intent: observation

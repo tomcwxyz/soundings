@@ -7,7 +7,14 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field
 
-DEFAULT_QUESTION_SET_PATH = Path(__file__).resolve().parents[3] / "evaluation" / "questions.yaml"
+EVALUATION_DIR = Path(__file__).resolve().parents[3] / "evaluation"
+DEFAULT_QUESTION_SET_PATH = EVALUATION_DIR / "questions.yaml"
+DEFAULT_GRANTS_QUESTION_SET_PATH = EVALUATION_DIR / "grants_questions.yaml"
+DEFAULT_TEMPORAL_QUESTION_SET_PATH = EVALUATION_DIR / "temporal_questions.yaml"
+DEFAULT_EXTRA_QUESTION_SET_PATHS = (
+    DEFAULT_GRANTS_QUESTION_SET_PATH,
+    DEFAULT_TEMPORAL_QUESTION_SET_PATH,
+)
 
 ANSWER_BLOCK_TYPES = frozenset(
     {
@@ -50,6 +57,20 @@ class QuestionSet(BaseModel):
 def load_question_set(path: Path | None = None) -> QuestionSet:
     target = path or DEFAULT_QUESTION_SET_PATH
     payload = yaml.safe_load(target.read_text())
+
+    if path is None:
+        # Capability-specific evaluation slices stay separate so they can move
+        # with their boundary if Soundings is later decomposed. The default
+        # evaluation composes every slice into one versioned contract.
+        for extra_path in DEFAULT_EXTRA_QUESTION_SET_PATHS:
+            extra_payload = yaml.safe_load(extra_path.read_text())
+            if extra_payload.get("version") != payload.get("version"):
+                raise ValueError(f"{extra_path.name} version does not match baseline")
+            payload["questions"] = [
+                *payload.get("questions", []),
+                *extra_payload.get("questions", []),
+            ]
+
     return QuestionSet.model_validate(payload)
 
 

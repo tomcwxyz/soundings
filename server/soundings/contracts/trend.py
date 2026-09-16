@@ -1,19 +1,28 @@
 """Trend + TrendPoint — time-series response shape for `get_trend`.
 
-Per spec §4.5. `breaks_in_series` is populated by the orchestrator
-from `catalogue.indicator.caveats` entries prefixed with
-`series_break:` (Phase 3 plan Task 2 convention).
+`period` remains the source label while each point also exposes a structured
+temporal extent. Series breaks continue to come from catalogue caveats.
 """
 
-from pydantic import BaseModel, Field
+from typing import Self
+
+from pydantic import BaseModel, Field, model_validator
 
 from soundings.contracts.source_ref import SourceRef
+from soundings.contracts.temporal import TemporalExtent, parse_period
 
 
 class TrendPoint(BaseModel):
     period: str
     value: float | None
     revised: bool = False
+    temporal: TemporalExtent | None = None
+
+    @model_validator(mode="after")
+    def _derive_temporal_extent(self) -> Self:
+        if self.temporal is None:
+            self.temporal = parse_period(self.period)
+        return self
 
 
 class Trend(BaseModel):

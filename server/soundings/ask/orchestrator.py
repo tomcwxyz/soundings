@@ -25,6 +25,7 @@ from anthropic import Anthropic
 from anthropic.types import ThinkingConfigAdaptiveParam
 
 from soundings.ask.dispatcher import ToolDispatcher
+from soundings.ask.grants_guidance import GRANTS_GUIDANCE
 from soundings.ask.prompts import SystemPromptBuilder
 from soundings.cache.answer_cache import AnswerCacheStore
 
@@ -125,7 +126,7 @@ class AskOrchestrator:
 
         # ── Cache miss — run the Claude loop ─────────────────────────
         client = get_anthropic_client(self._api_key)
-        system_prompt = self._prompt_builder.build()
+        system_prompt = self._prompt_builder.build() + "\n\n" + GRANTS_GUIDANCE
         tool_specs = self._dispatcher.tool_specs()
 
         # Start from prior messages (follow-up) or a fresh user turn.

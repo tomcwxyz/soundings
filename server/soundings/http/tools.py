@@ -1,4 +1,4 @@
-"""HTTP routes for the three Phase 1 tools.
+"""HTTP routes for Soundings tools.
 
 Mounted under `/v1/tools/...`. Each route validates input against the tool's
 Pydantic model and returns the tool's output Pydantic. The same tool
@@ -27,6 +27,12 @@ from soundings.tools.find_place import (
     find_place,
 )
 from soundings.tools.find_place import tool_spec as find_place_spec
+from soundings.tools.get_change import (
+    GetChangeInput,
+    GetChangeOutput,
+    get_change,
+)
+from soundings.tools.get_change import tool_spec as get_change_spec
 from soundings.tools.get_civil_society_profile import (
     GetCivilSocietyProfileInput,
     get_civil_society_profile,
@@ -34,6 +40,18 @@ from soundings.tools.get_civil_society_profile import (
 from soundings.tools.get_civil_society_profile import (
     tool_spec as get_civil_society_profile_spec,
 )
+from soundings.tools.get_containing_places import (
+    GetContainingPlacesInput,
+    GetContainingPlacesOutput,
+    get_containing_places,
+)
+from soundings.tools.get_containing_places import tool_spec as get_containing_places_spec
+from soundings.tools.get_funder_profile import (
+    GetFunderProfileInput,
+    GetFunderProfileOutput,
+    get_funder_profile,
+)
+from soundings.tools.get_funder_profile import tool_spec as get_funder_profile_spec
 from soundings.tools.get_indicators import (
     GetIndicatorsInput,
     GetIndicatorsOutput,
@@ -62,6 +80,12 @@ from soundings.tools.get_trend import (
     get_trend,
 )
 from soundings.tools.get_trend import tool_spec as get_trend_spec
+from soundings.tools.search_grants import (
+    SearchGrantsInput,
+    SearchGrantsOutput,
+    search_grants,
+)
+from soundings.tools.search_grants import tool_spec as search_grants_spec
 
 router = APIRouter(prefix="/v1/tools")
 
@@ -71,14 +95,18 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
     return {
         "tools": [
             find_place_spec(),
+            get_containing_places_spec(),
             get_indicators_spec(),
             get_observations_spec(),
             get_place_profile_spec(),
             compare_places_spec(),
             get_trend_spec(),
+            get_change_spec(),
             find_orgs_spec(),
             get_civil_society_profile_spec(),
             get_peer_distribution_spec(),
+            search_grants_spec(),
+            get_funder_profile_spec(),
         ]
     }
 
@@ -86,6 +114,14 @@ async def list_tools() -> dict[str, list[dict[str, object]]]:
 @router.post("/find_place", response_model=FindPlaceOutput)
 async def http_find_place(input: FindPlaceInput, request: Request) -> FindPlaceOutput:
     return await find_place(input, request.app.state.geography_service)
+
+
+@router.post("/get_containing_places", response_model=GetContainingPlacesOutput)
+async def http_get_containing_places(
+    input: GetContainingPlacesInput,
+    request: Request,
+) -> GetContainingPlacesOutput:
+    return await get_containing_places(input, request.app.state.geography_service)
 
 
 @router.post("/get_indicators", response_model=GetIndicatorsOutput)
@@ -121,6 +157,11 @@ async def http_get_trend(input: GetTrendInput, request: Request) -> GetTrendOutp
     return await get_trend(input, request.app.state.orchestrator)
 
 
+@router.post("/get_change", response_model=GetChangeOutput)
+async def http_get_change(input: GetChangeInput, request: Request) -> GetChangeOutput:
+    return await get_change(input, request.app.state.orchestrator)
+
+
 @router.post("/find_organisations_in_place", response_model=FindOrganisationsInPlaceOutput)
 async def http_find_organisations(
     input: FindOrganisationsInPlaceInput, request: Request
@@ -141,3 +182,15 @@ async def http_get_peer_distribution(
     input: GetPeerDistributionInput, request: Request
 ) -> GetPeerDistributionOutput:
     return await get_peer_distribution(input, request.app.state.orchestrator)
+
+
+@router.post("/search_grants", response_model=SearchGrantsOutput)
+async def http_search_grants(input: SearchGrantsInput, request: Request) -> SearchGrantsOutput:
+    return await search_grants(input, request.app.state.engine)
+
+
+@router.post("/get_funder_profile", response_model=GetFunderProfileOutput)
+async def http_get_funder_profile(
+    input: GetFunderProfileInput, request: Request
+) -> GetFunderProfileOutput:
+    return await get_funder_profile(input, request.app.state.engine)

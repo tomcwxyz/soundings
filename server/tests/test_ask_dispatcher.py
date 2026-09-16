@@ -93,6 +93,8 @@ def test_dispatcher_lists_tool_specs() -> None:
         "get_trend",
         "find_organisations_in_place",
         "get_civil_society_profile",
+        "search_grants",
+        "get_funder_profile",
         "get_peer_distribution",
         "compose_answer",
     ]
@@ -270,6 +272,14 @@ def test_dispatcher_has_get_sub_areas_handler() -> None:
     handlers = dispatcher._handlers
     assert "get_sub_areas" in handlers
     assert callable(handlers["get_sub_areas"])
+
+
+def test_dispatcher_has_grant_handlers() -> None:
+    """Grant query/profile tools are available to the in-process Ask agent."""
+    dispatcher = _make_dispatcher()
+    handlers = dispatcher._handlers
+    assert callable(handlers["search_grants"])
+    assert callable(handlers["get_funder_profile"])
 
 
 @pytest.mark.asyncio
