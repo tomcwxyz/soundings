@@ -18,7 +18,12 @@ def _read_config() -> tuple[str, str, str, str] | None:
     ingest_token = os.getenv("CRUX_INGEST_TOKEN")
     system_version_ref = os.getenv("CRUX_SYSTEM_VERSION_REF")
     producer_id = os.getenv("CRUX_PRODUCER_ID")
-    if not all((ingest_url, ingest_token, system_version_ref, producer_id)):
+    if (
+        ingest_url is None
+        or ingest_token is None
+        or system_version_ref is None
+        or producer_id is None
+    ):
         return None
     return ingest_url, ingest_token, system_version_ref, producer_id
 
