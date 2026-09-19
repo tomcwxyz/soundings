@@ -24,6 +24,7 @@ from typing import Any
 from anthropic import Anthropic
 from anthropic.types import ThinkingConfigAdaptiveParam
 
+from soundings.ask.crux_observe import emit_crux_ai_invocation
 from soundings.ask.dispatcher import ToolDispatcher
 from soundings.ask.grants_guidance import GRANTS_GUIDANCE
 from soundings.ask.prompts import SystemPromptBuilder
@@ -75,6 +76,7 @@ class AskOrchestrator:
         self._model = model
         self._max_iterations = max_iterations
         self._answer_cache = answer_cache
+        self._crux_observation_tasks: set[asyncio.Task[None]] = set()
 
     async def run(
         self,
@@ -223,6 +225,22 @@ class AskOrchestrator:
                     messages=messages,  # type: ignore[arg-type]
                 )
             )
+
+            usage = getattr(response, "usage", None)
+            observation_task = asyncio.create_task(
+                emit_crux_ai_invocation(
+                    workflow="ask",
+                    provider="anthropic",
+                    operation="messages.create",
+                    request_model=self._model,
+                    response_model=getattr(response, "model", None),
+                    finish_reason=getattr(response, "stop_reason", None),
+                    input_tokens=getattr(usage, "input_tokens", None),
+                    output_tokens=getattr(usage, "output_tokens", None),
+                )
+            )
+            self._crux_observation_tasks.add(observation_task)
+            observation_task.add_done_callback(self._crux_observation_tasks.discard)
 
             # A cybersecurity/safety classifier can decline a request: HTTP 200
             # with stop_reason "refusal" and (usually) empty content. Vanishingly
