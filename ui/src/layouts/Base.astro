@@ -1,5 +1,6 @@
 ---
 import ConsentBanner from "../components/ConsentBanner.astro";
+import { siteOrigin } from "../lib/site";
 import "../styles/global.css";
 
 interface Props {
@@ -50,10 +51,10 @@ const seoTitle =
       ? title
       : `${title} — Soundings`;
 
-const siteOrigin = Astro.url.origin;
-const siteRoot = new URL("/", siteOrigin).toString();
-const canonicalUrl = new URL(pathname, siteOrigin).toString();
-const socialImageUrl = new URL(image, siteOrigin).toString();
+const origin = siteOrigin(Astro.url.origin);
+const siteRoot = new URL("/", origin).toString();
+const canonicalUrl = new URL(pathname, origin).toString();
+const socialImageUrl = new URL(image, origin).toString();
 const shouldNoindex = noindex || Astro.url.search.length > 0;
 const robots = shouldNoindex
   ? "noindex, follow"
