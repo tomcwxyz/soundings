@@ -15,6 +15,9 @@ htmlcov/
 # Environment
 .env
 
+# Local DB backups (host-only, never committed)
+/backups/
+
 # Node / Vitest
 node_modules/
 .vite/

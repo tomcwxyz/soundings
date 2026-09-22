@@ -1,0 +1,201 @@
+---
+// Magic-link request form for existing organisations. Provides a place
+// autocomplete, an org autocomplete (scoped to that place), an email field,
+// and a submit button. On success, hides the form and shows a "check your
+// email" message. All client-side logic lives in scripts/contribute_page.ts.
+//
+// Props:
+//   idPrefix — namespace for element IDs so the component can be embedded
+//              multiple times (e.g. the pre-filled variant after sign-up).
+
+interface Props {
+  idPrefix?: string;
+  prefillOrgId?: string;
+  prefillOrgName?: string;
+  prefillEmail?: string;
+}
+
+const {
+  idPrefix = "existing",
+  prefillOrgId,
+  prefillOrgName,
+  prefillEmail,
+} = Astro.props;
+
+const isPrefill = idPrefix === "prefill";
+---
+
+{isPrefill ? (
+  <section id="prefill-magic-link-section" class="magic-link-auth" hidden>
+    <h3>Send a magic link</h3>
+    <p class="muted">
+      Your organisation has been created. Enter the email you signed up with
+      and we'll send a magic link so you can start contributing observations.
+    </p>
+    <form id="prefill-magic-link-form" class="auth-form">
+      <div class="form-row">
+        <label for="prefill-org-name">Organisation</label>
+        <input
+          type="text"
+          id="prefill-org-name"
+          value={prefillOrgName ?? ""}
+          readonly
+        />
+        <input type="hidden" id="prefill-org-id" value={prefillOrgId ?? ""} />
+      </div>
+      <div class="form-row">
+        <label for="prefill-email">Email</label>
+        <input
+          type="email"
+          id="prefill-email"
+          name="email"
+          value={prefillEmail ?? ""}
+          required
+          autocomplete="email"
+        />
+      </div>
+      <p id="prefill-error" class="error" hidden></p>
+      <button type="submit">Send magic link</button>
+    </form>
+    <div id="prefill-success" class="success-message" hidden>
+      <h4>Check your email</h4>
+      <p>
+        We've sent a magic link to your email address. Click the link to sign
+        in and start contributing observations.
+      </p>
+    </div>
+  </section>
+) : (
+  <section class="magic-link-auth">
+    <h3>Existing organisation</h3>
+    <p class="muted">
+      If your organisation is already in a public register (Charity
+      Commission, FindThatCharity), find it and request a magic link.
+    </p>
+    <form id="existing-org-form" class="auth-form">
+      <div class="form-row">
+        <label for="existing-place-search">Place</label>
+        <input
+          type="text"
+          id="existing-place-search"
+          placeholder="Search for a place (e.g. Hackney, E8 1AB)"
+          autocomplete="off"
+        />
+        <input type="hidden" id="existing-org-place-id" />
+        <ul id="existing-place-results" class="autocomplete-results" hidden></ul>
+      </div>
+      <div class="form-row">
+        <label for="existing-org-search">Organisation</label>
+        <input
+          type="text"
+          id="existing-org-search"
+          placeholder="Search for your organisation"
+          autocomplete="off"
+        />
+        <input type="hidden" id="existing-org-id" />
+        <ul id="existing-org-results" class="autocomplete-results" hidden></ul>
+      </div>
+      <div class="form-row">
+        <label for="existing-org-email">Email</label>
+        <input
+          type="email"
+          id="existing-org-email"
+          name="email"
+          placeholder="you@organisation.org.uk"
+          required
+          autocomplete="email"
+        />
+      </div>
+      <p id="existing-org-error" class="error" hidden></p>
+      <button type="submit">Send magic link</button>
+    </form>
+    <div id="existing-org-success" class="success-message" hidden>
+      <h4>Check your email</h4>
+      <p>
+        If an organisation matches the details you provided, we've sent a
+        magic link to your email. Click the link to sign in and start
+        contributing observations.
+      </p>
+    </div>
+  </section>
+)}
+
+<style>
+  .magic-link-auth {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .magic-link-auth h3 {
+    margin: 0 0 var(--space-sm);
+    font-size: var(--font-size-lg);
+  }
+  .muted {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin: 0 0 var(--space-md);
+  }
+  .auth-form .form-row {
+    margin-bottom: var(--space-md);
+  }
+  .auth-form label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+  .autocomplete-results {
+    list-style: none;
+    margin: var(--space-xs) 0 0;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    box-shadow: var(--shadow);
+    max-height: 12rem;
+    overflow-y: auto;
+  }
+  .autocomplete-item {
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    border-bottom: 1px solid var(--color-border-light);
+  }
+  .autocomplete-item:last-child {
+    border-bottom: none;
+  }
+  .autocomplete-item:hover {
+    background: var(--color-bg);
+  }
+  .autocomplete-hint {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+  .success-message {
+    padding: var(--space-md);
+    background: rgba(74, 124, 89, 0.08);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+  .success-message h4 {
+    margin: 0 0 var(--space-xs);
+    color: var(--color-primary);
+  }
+  .success-message p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-light);
+  }
+  .error {
+    padding: var(--space-sm) var(--space-md);
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-md);
+  }
+</style>

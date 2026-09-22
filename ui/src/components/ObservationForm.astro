@@ -1,0 +1,248 @@
+---
+// Observation submission form (authenticated state). All client-side logic
+// (autocomplete, quantitative/qualitative toggle, submit) lives in
+// scripts/contribute_page.ts. The form POSTs to /v1/observations via fetch.
+//
+// Props:
+//   organisationId — the authenticated org's ID (read-only hidden field)
+//   organisationName — display name of the org (read-only)
+//   initialPlaceId — optional pre-selected place (from ?place_id= query)
+
+interface Props {
+  organisationId: string;
+  organisationName: string;
+  initialPlaceId?: string;
+}
+
+const { organisationId, organisationName, initialPlaceId } = Astro.props;
+
+// The 12 initial themes from the observations MVP plan (D6).
+const THEMES = [
+  { key: "housing", label: "Housing" },
+  { key: "health", label: "Health" },
+  { key: "mental_health", label: "Mental Health" },
+  { key: "employment", label: "Employment" },
+  { key: "education", label: "Education" },
+  { key: "crime", label: "Crime & Safety" },
+  { key: "food_insecurity", label: "Food Insecurity" },
+  { key: "debt", label: "Debt & Financial Exclusion" },
+  { key: "immigration_asylum", label: "Immigration & Asylum" },
+  { key: "digital_exclusion", label: "Digital Exclusion" },
+  { key: "social_isolation", label: "Social Isolation" },
+  { key: "climate_environment", label: "Climate & Environment" },
+];
+---
+
+<form id="observation-form" class="observation-form">
+  <div class="form-row">
+    <label for="org-display">Organisation</label>
+    <input type="text" id="org-display" value={organisationName} readonly />
+  </div>
+
+  <div class="form-row">
+    <label for="obs-place-search">Place</label>
+    <input
+      type="text"
+      id="obs-place-search"
+      placeholder="Search for a place (e.g. Hackney, E8 1AB)"
+      autocomplete="off"
+      required
+    />
+    <input type="hidden" id="obs-place-id" name="place_id" value={initialPlaceId ?? ""} />
+    <ul id="obs-place-results" class="autocomplete-results" hidden></ul>
+  </div>
+
+  <div class="form-row">
+    <label for="theme">Theme</label>
+    <select id="theme" name="theme" required>
+      <option value="" disabled selected>— Select a theme —</option>
+      {THEMES.map((t) => (
+        <option value={t.key}>{t.label}</option>
+      ))}
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="statement">Statement</label>
+    <textarea
+      id="statement"
+      name="statement"
+      rows="4"
+      minlength="10"
+      maxlength="1000"
+      placeholder="Describe what you're observing (10–1000 characters)…"
+      required
+    ></textarea>
+    <span id="statement-charcount" class="charcount">0 / 1000</span>
+  </div>
+
+  <fieldset class="form-row">
+    <legend>Evidence type</legend>
+    <label class="radio-inline">
+      <input type="radio" name="evidence_type" value="quantitative" required />
+      Quantitative (value + unit)
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="evidence_type" value="qualitative" />
+      Qualitative (methodology note)
+    </label>
+  </fieldset>
+
+  <div id="quant-fields" class="evidence-sub" hidden>
+    <div class="form-row-inline">
+      <div class="form-row">
+        <label for="value">Value</label>
+        <input type="number" id="value" name="value" step="any" placeholder="42.5" />
+      </div>
+      <div class="form-row">
+        <label for="unit">Unit</label>
+        <input type="text" id="unit" name="unit" placeholder="e.g. households, %" />
+      </div>
+    </div>
+  </div>
+
+  <div id="qual-fields" class="evidence-sub" hidden>
+    <div class="form-row">
+      <label for="methodology_note">Methodology note</label>
+      <textarea
+        id="methodology_note"
+        name="methodology_note"
+        rows="3"
+        placeholder="How did you gather this evidence? (e.g. survey of 30 clients, casework notes)"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="form-row-inline">
+    <div class="form-row">
+      <label for="period_start">Period start</label>
+      <input type="date" id="period_start" name="period_start" required />
+    </div>
+    <div class="form-row">
+      <label for="period_end">Period end (optional)</label>
+      <input type="date" id="period_end" name="period_end" />
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label for="indicator_key">Indicator key (optional)</label>
+    <input
+      type="text"
+      id="indicator_key"
+      name="indicator_key"
+      placeholder="e.g. deprivation.imd.score"
+    />
+  </div>
+
+  <fieldset class="form-row">
+    <legend>Confidence</legend>
+    <label class="radio-inline">
+      <input type="radio" name="confidence" value="high" required />
+      High
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="confidence" value="medium" />
+      Medium
+    </label>
+    <label class="radio-inline">
+      <input type="radio" name="confidence" value="low" />
+      Low
+    </label>
+  </fieldset>
+
+  <p id="observation-error" class="error" hidden></p>
+  <button type="submit">Submit observation</button>
+</form>
+
+<style>
+  .observation-form {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .form-row {
+    margin-bottom: var(--space-md);
+  }
+  .form-row label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+  .form-row-inline {
+    display: flex;
+    gap: var(--space-md);
+  }
+  .form-row-inline .form-row {
+    flex: 1;
+  }
+  fieldset {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-sm) var(--space-md) var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+  legend {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    padding: 0 var(--space-sm);
+  }
+  .radio-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-right: var(--space-lg);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    margin-bottom: var(--space-xs);
+  }
+  .radio-inline input {
+    width: auto;
+  }
+  .charcount {
+    display: block;
+    text-align: right;
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin-top: var(--space-xs);
+  }
+  .autocomplete-results {
+    list-style: none;
+    margin: var(--space-xs) 0 0;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    box-shadow: var(--shadow);
+    max-height: 12rem;
+    overflow-y: auto;
+  }
+  .autocomplete-item {
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    border-bottom: 1px solid var(--color-border-light);
+  }
+  .autocomplete-item:last-child {
+    border-bottom: none;
+  }
+  .autocomplete-item:hover {
+    background: var(--color-bg);
+  }
+  .error {
+    padding: var(--space-sm) var(--space-md);
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-md);
+  }
+  @media (max-width: 540px) {
+    .form-row-inline {
+      flex-direction: column;
+      gap: 0;
+    }
+  }
+</style>

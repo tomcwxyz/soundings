@@ -21,7 +21,7 @@ target_metadata = metadata
 
 # Schemas Alembic should manage. Anything in `public` (postgis system tables,
 # pg_trgm, alembic_version) is left alone.
-MANAGED_SCHEMAS = {"geography", "catalogue", "data", "cache", "corpus"}
+MANAGED_SCHEMAS = {"geography", "catalogue", "data", "cache", "corpus", "contribution"}
 
 
 def include_object(

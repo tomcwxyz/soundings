@@ -16,3 +16,4 @@ from soundings.db.models import (  # noqa: E402, F401
     data,
     geography,
 )
+from soundings.db.models.observation import Observation  # noqa: E402, F401
