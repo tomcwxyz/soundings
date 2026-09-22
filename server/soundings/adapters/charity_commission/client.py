@@ -1,9 +1,9 @@
 """Charity Commission for England and Wales — bulk register client.
 
 Downloads the public monthly `publicextract.charity.zip` and yields
-one dict per active main-entry charity. Anonymous — no API key. CC
-publishes the per-table ZIPs on an Azure Blob Storage endpoint linked
-from the register-download landing page.
+main-entry charity rows. Anonymous — no API key. CC publishes the
+per-table ZIPs on an Azure Blob Storage endpoint linked from the
+register-download landing page.
 
 The API alternative is detail-lookup-only (no search-by-area
 endpoint), so for Phase 4 the bulk download is the documented
@@ -18,10 +18,10 @@ Archive structure: one ZIP per CC table; we use just
 `charity_registration_status`, `charity_contact_postcode`,
 `charity_activities`.
 
-Filtering at the source: we yield only main-entry rows
-(`linked_charity_number = '0'`) with status `'Registered'`. Linked
-subsidiaries inherit the same registered number with a non-zero
-suffix; we don't want them in the v1 active-count aggregate.
+`iter_main_charities()` yields every main-entry row regardless of status so
+registration/removal lifecycle facts are not discarded. `iter_active_charities()`
+remains the compatibility surface for current organisation search and filters
+that stream to status `Registered`.
 
 Streaming notes: ~43MB compressed lives in memory because ZIP's
 central-directory record is at the end of the archive. The extracted
@@ -79,11 +79,11 @@ class CharityCommissionBulkClient:
         self._owns_client = http_client is None
         self._url = url
 
-    async def iter_active_charities(self) -> AsyncIterator[dict[str, Any]]:
-        """Yield one dict per active main-entry charity.
+    async def iter_main_charities(self) -> AsyncIterator[dict[str, Any]]:
+        """Yield every main-entry charity, including Removed rows.
 
-        Each yielded dict has stable keys: `registration_number`,
-        `name`, `postcode`, `status`, `classification` (list[str]).
+        Each yielded dict has stable keys used by both current organisation
+        loading and lifecycle history. Linked/subsidiary entries are excluded.
         """
         client = self._client or httpx.AsyncClient(timeout=120.0)
         try:
@@ -97,8 +97,6 @@ class CharityCommissionBulkClient:
                 for row in reader:
                     if row.get("linked_charity_number", "").strip() != "0":
                         continue  # subsidiary entry
-                    if row.get("charity_registration_status", "").strip() != "Registered":
-                        continue
                     reg = row.get("registered_charity_number", "").strip()
                     if not reg:
                         continue
@@ -106,7 +104,7 @@ class CharityCommissionBulkClient:
                         "registration_number": reg,
                         "name": row.get("charity_name", "").strip(),
                         "postcode": row.get("charity_contact_postcode", "").strip(),
-                        "status": "Registered",
+                        "status": row.get("charity_registration_status", "").strip(),
                         "classification": _activities_to_classification(
                             row.get("charity_activities", "")
                         ),
@@ -117,6 +115,12 @@ class CharityCommissionBulkClient:
         finally:
             if self._owns_client:
                 await client.aclose()
+
+    async def iter_active_charities(self) -> AsyncIterator[dict[str, Any]]:
+        """Yield active main-entry charities for current-state callers."""
+        async for charity in self.iter_main_charities():
+            if charity.get("status") == "Registered":
+                yield charity
 
     async def iter_area_of_operation(self) -> AsyncIterator[dict[str, Any]]:
         """Yield one dict per Local-Authority area-of-operation row.

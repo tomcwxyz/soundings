@@ -578,7 +578,7 @@ indicators:
     label: "Overcrowded households (occupancy rating -1 or worse)"
     description: "Proportion of households whose occupancy rating indicates overcrowding (Census 2021 definition)."
     unit: "proportion"
-    higher_is: "worse"
+    higher_is: null
     source_id: "ons.census2021"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
     refresh_cadence: "decennial"
@@ -639,6 +639,43 @@ indicators:
     source_id: "charity_commission"
     available_at: ["ltla24", "utla24", "region", "country"]
     refresh_cadence: "monthly"
+
+  - key: civil_society.charities_registered_count
+    label: "Charity registrations by year"
+    description: "Charities grouped by their Charity Commission registration date and current or last-known registered-address LTLA."
+    unit: "charities"
+    higher_is: null
+    source_id: "charity_commission"
+    available_at: ["ltla24"]
+    refresh_cadence: "monthly"
+    caveats:
+      - "Registration year is the Charity Commission registration date; place attribution uses the current or last-known registered-address postcode, not necessarily the address held at registration."
+      - "Events with postcodes that cannot be resolved through Soundings' local postcode spine are excluded from place totals."
+
+  - key: civil_society.charities_removed_count
+    label: "Charities removed from the register by year"
+    description: "Charities grouped by Charity Commission register-removal date and current or last-known registered-address LTLA."
+    unit: "charities"
+    higher_is: null
+    source_id: "charity_commission"
+    available_at: ["ltla24"]
+    refresh_cadence: "monthly"
+    caveats:
+      - "Removal means removal from the Charity Commission register; it is not necessarily the exact date the organisation ceased operating."
+      - "Place attribution uses the current or last-known registered-address postcode, not historical operating geography."
+      - "Events with postcodes that cannot be resolved through Soundings' local postcode spine are excluded from place totals."
+
+  - key: civil_society.charities_net_change
+    label: "Net charity register change by year"
+    description: "Charity registrations minus Charity Commission register removals in each year, attributed by current or last-known registered-address LTLA."
+    unit: "charities"
+    higher_is: null
+    source_id: "charity_commission"
+    available_at: ["ltla24"]
+    refresh_cadence: "monthly"
+    caveats:
+      - "Net change is registrations minus register removals; removal is not necessarily the exact date an organisation ceased operating."
+      - "Place attribution uses the current or last-known registered-address postcode and is not historical operating geography."
 
   - key: civil_society.grants_in_last_12m_total
     label: "Total grants awarded into the area, last 12 months"
