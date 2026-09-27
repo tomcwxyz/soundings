@@ -302,6 +302,7 @@ async def test_dispatcher_dispatch_get_peer_distribution() -> None:
     assert result["peer_count"] == 1
     assert result["unit"] == "people"
 
+
 @pytest.mark.asyncio
 async def test_dispatch_keeps_ppfi_choropleth() -> None:
     """PPFI is bulk-loaded at LSOA level, so it is valid choropleth data."""
