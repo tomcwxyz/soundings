@@ -169,6 +169,16 @@ sources:
     refresh_cadence: "monthly"
     notes: "Amenity counts from OSM tag queries via Overpass API. Britain & Ireland regional instance. ODbL licence requires attribution."
 
+
+  hasp.ppfi:
+    label: "Priority Places for Food Index (v2.1)"
+    publisher: "Healthy and Sustainable Places Data Service"
+    publisher_url: "https://hasp.ac.uk/"
+    dataset_url: "https://data.hasp.ac.uk/browser/dataset/5276/0"
+    licence: "OGL-UK-3.0"
+    refresh_cadence: "static"
+    notes: "Static July 2024 composite index. Decile 1 is highest priority / most vulnerable and decile 10 lowest priority. Rankings are within UK nations and should not be compared directly across nations. The current Soundings spike loads the England LSOA slice from a pinned official HASP PPFI-IMD Explorer mirror."
+
   sport_england:
     label: "Sport England Active Lives Adult Survey"
     publisher: "Sport England"
@@ -898,3 +908,122 @@ indicators:
     caveats:
       - "Survey-based estimate. Sample sizes vary by LA; small LAs have wider confidence intervals."
       - "England only. Active Lives Survey Nov 2024-25."
+
+
+  # ---------------------------------------------------------------------------
+  # Food access and vulnerability — Priority Places for Food Index v2.1
+  # ---------------------------------------------------------------------------
+
+  - key: food.ppfi.overall_decile
+    label: "Priority Places for Food overall decile"
+    description: "Country-relative PPFI v2.1 combined decile for neighbourhood vulnerability to accessing affordable, nutritious and sustainable food. Decile 1 is highest priority; decile 10 is lowest priority."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "PPFI v2.1 is a static July 2024 composite index, not a current direct measure of food insecurity."
+      - "Decile 1 is the highest-priority / most vulnerable tenth; decile 10 is the lowest-priority tenth."
+      - "PPFI ranks neighbourhoods within each UK nation; values should not be compared directly between nations."
+      - "The current Soundings source spike loads England LSOAs only from the pinned official HASP PPFI-IMD Explorer mirror."
+    related_keys:
+      - "food.ppfi.supermarket_proximity_decile"
+      - "food.ppfi.supermarket_accessibility_decile"
+      - "food.ppfi.ecommerce_access_decile"
+      - "food.ppfi.nonsupermarket_proximity_decile"
+      - "food.ppfi.socioeconomic_barriers_decile"
+      - "food.ppfi.family_food_support_decile"
+      - "food.ppfi.fuel_poverty_decile"
+      - "infrastructure.food_banks_count"
+
+  - key: food.ppfi.supermarket_proximity_decile
+    label: "PPFI supermarket proximity decile"
+    description: "PPFI v2.1 decile for proximity to and density of supermarket retail facilities. Decile 1 indicates greater vulnerability."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "Static PPFI v2.1 component; deciles are country-relative and decile 1 indicates greater vulnerability."
+    related_keys: ["food.ppfi.overall_decile"]
+
+  - key: food.ppfi.supermarket_accessibility_decile
+    label: "PPFI supermarket accessibility decile"
+    description: "PPFI v2.1 decile for transport to and accessibility of grocery retail facilities. Decile 1 indicates greater vulnerability."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "Static PPFI v2.1 component; deciles are country-relative and decile 1 indicates greater vulnerability."
+    related_keys: ["food.ppfi.overall_decile"]
+
+  - key: food.ppfi.ecommerce_access_decile
+    label: "PPFI online grocery access decile"
+    description: "PPFI v2.1 decile for access to online grocery deliveries and propensity to shop online. Decile 1 indicates greater vulnerability."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "Static PPFI v2.1 component; some constituent e-commerce measures pre-date the July 2024 index release."
+      - "Deciles are country-relative and decile 1 indicates greater vulnerability."
+    related_keys: ["food.ppfi.overall_decile"]
+
+  - key: food.ppfi.nonsupermarket_proximity_decile
+    label: "PPFI non-supermarket food provision decile"
+    description: "PPFI v2.1 decile for proximity to and density of non-supermarket food provision such as markets and other food retail. Decile 1 indicates greater vulnerability."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "Static PPFI v2.1 component; deciles are country-relative and decile 1 indicates greater vulnerability."
+    related_keys: ["food.ppfi.overall_decile"]
+
+  - key: food.ppfi.socioeconomic_barriers_decile
+    label: "PPFI socio-economic barriers decile"
+    description: "PPFI v2.1 decile for neighbourhood socio-economic and demographic barriers relevant to food access. Decile 1 indicates greater vulnerability."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "Static PPFI v2.1 component; deciles are country-relative and decile 1 indicates greater vulnerability."
+    related_keys:
+      - "food.ppfi.overall_decile"
+      - "deprivation.imd.score"
+
+  - key: food.ppfi.family_food_support_decile
+    label: "PPFI need for family food support decile"
+    description: "PPFI v2.1 decile for indicators of need for family food support, including measures relating to households with children and food support. Decile 1 indicates greater vulnerability."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "Static PPFI v2.1 component; deciles are country-relative and decile 1 indicates greater vulnerability."
+      - "This domain is a composite signal of potential need and should not be read as a count of households experiencing food insecurity."
+    related_keys:
+      - "food.ppfi.overall_decile"
+      - "infrastructure.food_banks_count"
+
+  - key: food.ppfi.fuel_poverty_decile
+    label: "PPFI fuel poverty decile"
+    description: "PPFI v2.1 decile for fuel-poverty pressures relevant to household food affordability. Decile 1 indicates greater vulnerability."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "hasp.ppfi"
+    available_at: ["lsoa21"]
+    refresh_cadence: "static"
+    caveats:
+      - "Static PPFI v2.1 component; deciles are country-relative and decile 1 indicates greater vulnerability."
+    related_keys: ["food.ppfi.overall_decile"]
+
