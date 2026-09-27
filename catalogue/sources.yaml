@@ -235,6 +235,19 @@ sources:
     refresh_cadence: "0 4 * * *"
     rate_limit: { rps: 1 }
 
+
+  - id: hasp.ppfi
+    label: HASP — Priority Places for Food Index (v2.1)
+    publisher: Healthy and Sustainable Places Data Service
+    publisher_url: https://hasp.ac.uk/
+    dataset_url: https://github.com/Leeds-HASP/imd_ppfi_dash_app/blob/63424725c7db67dd3c1546572430a54ea5f9550f/data/ppfi_imd_lsoa_england.geojson
+    licence: OGL-UK-3.0
+    mode: loader
+    # PPFI v2.1 is a static July 2024 index. Re-check annually for a replacement
+    # release; the loader itself is pinned to the exact HASP Explorer commit.
+    refresh_cadence: "0 6 14 7 *"
+    rate_limit: { rps: 1 }
+
   - id: sport_england
     label: Sport England — Active Lives Adult Survey
     publisher: Sport England
