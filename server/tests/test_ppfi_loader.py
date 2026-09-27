@@ -87,10 +87,10 @@ async def _seed() -> None:
                 text(
                     "INSERT INTO catalogue.indicator "
                     "(key, label, unit, source_id, available_at, caveats, related_keys) "
-                    "VALUES (:key, :key, 'decile', 'hasp.ppfi', ARRAY['lsoa21'], "
+                    "VALUES (:key, :label, 'decile', 'hasp.ppfi', ARRAY['lsoa21'], "
                     "'[]'::jsonb, ARRAY[]::text[]) ON CONFLICT (key) DO NOTHING"
                 ),
-                {"key": indicator_key},
+                {"key": indicator_key, "label": indicator_key},
             )
         await conn.execute(
             text(
