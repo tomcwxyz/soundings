@@ -442,7 +442,7 @@ questions:
     known_gap: "The live CILIF_AHC dataset exposes a count measure; the former proportion-shaped mapping was retired."
 
 
-  - id: Q31
+  - id: Q38
     question: "Which neighbourhoods in Middlesbrough are most vulnerable to difficulties accessing affordable food?"
     places: ["Middlesbrough"]
     intent: neighbourhood
@@ -457,7 +457,7 @@ questions:
       - "States that PPFI v2.1 is a static July 2024 composite lens, not a current direct measure of food insecurity."
       - "Keeps the analysis within England and does not imply cross-country comparability."
 
-  - id: Q32
+  - id: Q39
     question: "Why are the highest-priority food neighbourhoods in Middlesbrough being flagged?"
     places: ["Middlesbrough"]
     intent: neighbourhood
@@ -480,7 +480,7 @@ questions:
       - "Does not claim a domain caused food insecurity; it describes what contributes to the composite ranking."
       - "Keeps the direction explicit: lower deciles indicate greater vulnerability."
 
-  - id: Q33
+  - id: Q40
     question: "Where in Middlesbrough are high-priority food neighbourhoods but relatively little food-bank provision?"
     places: ["Middlesbrough"]
     intent: synthesis
@@ -497,7 +497,7 @@ questions:
       - "Treats the comparison as an exploration of need and provision, not proof that an area is adequately served or underserved."
       - "Makes the different vintages explicit: PPFI is a 2024 snapshot while Give Food locations are refreshed more frequently."
 
-  - id: Q34
+  - id: Q41
     question: "What organisations in Middlesbrough could be relevant to food poverty, alongside the neighbourhoods with greatest food-access vulnerability?"
     places: ["Middlesbrough"]
     intent: synthesis
