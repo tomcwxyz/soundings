@@ -61,6 +61,7 @@ class _FakeConn:
         return [
             ("population.total",),
             ("deprivation.imd.average_score",),
+            ("food.ppfi.overall_decile",),
             ("infrastructure.parks_count",),
         ]
 
@@ -300,3 +301,24 @@ async def test_dispatcher_dispatch_get_peer_distribution() -> None:
     assert "peer_place_values" in result
     assert result["peer_count"] == 1
     assert result["unit"] == "people"
+
+@pytest.mark.asyncio
+async def test_dispatch_keeps_ppfi_choropleth() -> None:
+    """PPFI is bulk-loaded at LSOA level, so it is valid choropleth data."""
+    dispatcher = _make_dispatcher()
+    tool_input = {
+        "blocks": [
+            {
+                "type": "map",
+                "place_id": "ltla24:E06000002",
+                "indicator_key": "food.ppfi.overall_decile",
+                "granularity": "sub_areas",
+            },
+        ]
+    }
+    result = await dispatcher.dispatch("compose_answer", tool_input)
+    blocks = result["blocks"]
+    assert len(blocks) == 1
+    assert blocks[0]["indicator_key"] == "food.ppfi.overall_decile"
+    assert blocks[0]["granularity"] == "sub_areas"
+
