@@ -322,4 +322,3 @@ async def test_dispatch_keeps_ppfi_choropleth() -> None:
     assert len(blocks) == 1
     assert blocks[0]["indicator_key"] == "food.ppfi.overall_decile"
     assert blocks[0]["granularity"] == "sub_areas"
-
