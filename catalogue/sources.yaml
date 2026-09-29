@@ -245,3 +245,13 @@ sources:
     # Active Lives is published annually (typically Apr/May for the Nov
     # survey year). Cron on the 15th of May at 04:00 UTC.
     refresh_cadence: "0 4 15 5 *"
+
+  - id: ctx.manual_signup
+    label: Manual sign-up (Soundings contribution)
+    publisher: Soundings
+    publisher_url: https://soundings.local
+    dataset_url: ""
+    licence: CC0-1.0
+    mode: loader
+    refresh_cadence: ""
+    rate_limit: { rps: 0 }

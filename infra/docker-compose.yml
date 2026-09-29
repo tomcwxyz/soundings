@@ -85,6 +85,10 @@ services:
         condition: service_healthy
     environment:
       SOUNDINGS_API_BASE: "http://server:8000"
+      # Public origin for canonical/sitemap/Open Graph URLs. The Node
+      # adapter cannot derive this from the proxied request, so it must be
+      # supplied. Empty in plain local dev, where the request origin is right.
+      SOUNDINGS_PUBLIC_SITE_URL: "${SOUNDINGS_PUBLIC_SITE_URL:-}"
     ports:
       - "127.0.0.1:4321:4321"
     restart: unless-stopped

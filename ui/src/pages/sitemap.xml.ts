@@ -1,5 +1,7 @@
 import type { APIRoute } from "astro";
 
+import { siteOrigin } from "../lib/site";
+
 const publicRoutes = [
   "/",
   "/explore",
@@ -18,10 +20,11 @@ const escapeXml = (value: string) =>
     .replaceAll("'", "&apos;");
 
 export const GET: APIRoute = ({ url }) => {
+  const origin = siteOrigin(url.origin);
   const entries = publicRoutes
     .map(
       (path) =>
-        `  <url><loc>${escapeXml(new URL(path, url.origin).toString())}</loc></url>`,
+        `  <url><loc>${escapeXml(new URL(path, origin).toString())}</loc></url>`,
     )
     .join("\n");
 

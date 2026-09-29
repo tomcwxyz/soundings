@@ -43,6 +43,7 @@ from soundings.adapters.ons_geography.places_loader import OnsGeographyPlacesLoa
 from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimatesLoader
 from soundings.adapters.ons_nspl.loader import NsplLoader
 from soundings.db.engine import get_engine
+from soundings.seed.themes import seed_themes
 
 LIGHT_LAYERS = {"ltla24", "utla24", "region", "country", "westminster_constituency_24", "ward24"}
 
@@ -101,6 +102,10 @@ async def _run_loader(
 
 async def _seed(*, full: bool) -> None:
     engine = get_engine()
+
+    # Theme vocabulary must exist before any observation-dependent seeds
+    # (data.observation.theme FK → catalogue.theme.key).
+    await seed_themes(engine)
 
     layers = (
         BOUNDARY_LAYERS if full else {k: v for k, v in BOUNDARY_LAYERS.items() if k in LIGHT_LAYERS}

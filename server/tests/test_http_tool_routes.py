@@ -107,6 +107,7 @@ async def test_get_v1_tools_lists_specs() -> None:
         "find_place",
         "get_containing_places",
         "get_indicators",
+        "get_observations",
         "get_place_profile",
         "compare_places",
         "get_trend",
