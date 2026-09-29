@@ -41,8 +41,8 @@ An open insight commons for understanding UK places. Single MCP server wrapping 
 
 ## State & Progress
 
-> Updated: 2026-08-24
-> Phase: **Phase 7 — Observations MVP** in progress on `feat/observations-mvp`
+> Updated: 2026-09-29
+> Phase: **Phase 7 — Observations MVP** merged to `main` (PR #43)
 > Status: Hybrid contribution layer (observation schema + submission + `get_observations` tool + UI panel/stream/contribute page) shipped.
 
 See PLAN.md for task tracking, STATE.md for system state.

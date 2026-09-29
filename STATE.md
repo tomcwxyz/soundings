@@ -1,8 +1,8 @@
 # Soundings — current state
 
-> Last updated: **16 September 2026**
+> Last updated: **29 September 2026**
 >
-> Current position: **Phase 6.5 started — questions before sources**. Phase 7 (Observations MVP) is complete on `feat/observations-mvp` (PR #43, open) and now carries `main` merged in; it is not yet on `main`.
+> Current position: **Phase 6.5 started — questions before sources**. Phase 7 (Observations MVP) is shipped and merged to `main` (PR #43), together with the 360Giving grant index, temporal foundations and ONS CHD historical geography work (PRs #45–#59).
 
 This file is the canonical short-form statement of what is actually implemented. Older phase plans in `docs/plans/` are useful design history, but should not be read as the current status.
 
