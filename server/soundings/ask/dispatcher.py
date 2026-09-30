@@ -136,6 +136,7 @@ _ANSWER_BLOCK_ADAPTER: TypeAdapter[Any] = TypeAdapter(AnswerBlock)
 _CHOROPLETH_ELIGIBLE_PREFIXES = (
     "deprivation.",
     "environment.greenspace.",
+    "food.ppfi.",
     "economy.active_companies_",
     "economy.new_incorporations_12m",
     "population.",

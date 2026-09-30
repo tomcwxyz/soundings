@@ -441,6 +441,7 @@ questions:
       - "Explains that a tested denominator/derivation is needed."
     known_gap: "The live CILIF_AHC dataset exposes a count measure; the former proportion-shaped mapping was retired."
 
+
   - id: Q38
     question: "Have any local organisations reported on food bank demand in Stockton-on-Tees recently?"
     places: ["Stockton-on-Tees"]
@@ -455,3 +456,78 @@ questions:
       - "Draws on organisation-submitted observations rather than only catalogue indicators."
       - "Attributes each observation to the submitting organisation and states its confidence/evidence type."
       - "Says plainly when no observations exist for the place/theme instead of inventing one."
+
+  - id: Q39
+    question: "Which neighbourhoods in Middlesbrough are most vulnerable to difficulties accessing affordable food?"
+    places: ["Middlesbrough"]
+    intent: neighbourhood
+    expected: supported
+    tags: [food, ppfi, neighbourhood, vulnerability]
+    required_tools: [find_place, get_sub_areas]
+    required_indicators: [food.ppfi.overall_decile]
+    candidate_indicator_keys: []
+    expected_blocks: [text, sub-area-table, map]
+    success_criteria:
+      - "Uses LSOA-level PPFI and sorts the lowest deciles first because decile 1 is highest priority."
+      - "States that PPFI v2.1 is a static July 2024 composite lens, not a current direct measure of food insecurity."
+      - "Keeps the analysis within England and does not imply cross-country comparability."
+
+  - id: Q40
+    question: "Why are the highest-priority food neighbourhoods in Middlesbrough being flagged?"
+    places: ["Middlesbrough"]
+    intent: neighbourhood
+    expected: supported
+    tags: [food, ppfi, neighbourhood, explanation]
+    required_tools: [find_place, get_sub_areas]
+    required_indicators:
+      - food.ppfi.overall_decile
+      - food.ppfi.supermarket_proximity_decile
+      - food.ppfi.supermarket_accessibility_decile
+      - food.ppfi.ecommerce_access_decile
+      - food.ppfi.nonsupermarket_proximity_decile
+      - food.ppfi.socioeconomic_barriers_decile
+      - food.ppfi.family_food_support_decile
+      - food.ppfi.fuel_poverty_decile
+    candidate_indicator_keys: []
+    expected_blocks: [text, sub-area-table, map]
+    success_criteria:
+      - "Explains the overall PPFI result through its component domains rather than treating the combined decile as a black box."
+      - "Does not claim a domain caused food insecurity; it describes what contributes to the composite ranking."
+      - "Keeps the direction explicit: lower deciles indicate greater vulnerability."
+
+  - id: Q41
+    question: "Where in Middlesbrough are high-priority food neighbourhoods but relatively little food-bank provision?"
+    places: ["Middlesbrough"]
+    intent: synthesis
+    expected: supported
+    tags: [food, ppfi, food-banks, neighbourhood, provision]
+    required_tools: [find_place, get_sub_areas, get_indicators]
+    required_indicators:
+      - food.ppfi.overall_decile
+      - infrastructure.food_banks_count
+    candidate_indicator_keys: []
+    expected_blocks: [text, map, sub-area-table]
+    success_criteria:
+      - "Combines the PPFI neighbourhood choropleth with Give Food location data rather than substituting one source for the other."
+      - "Treats the comparison as an exploration of need and provision, not proof that an area is adequately served or underserved."
+      - "Makes the different vintages explicit: PPFI is a 2024 snapshot while Give Food locations are refreshed more frequently."
+
+  - id: Q42
+    question: "What organisations in Middlesbrough could be relevant to food poverty, alongside the neighbourhoods with greatest food-access vulnerability?"
+    places: ["Middlesbrough"]
+    intent: synthesis
+    expected: partial
+    tags: [food, ppfi, civil-society, neighbourhood]
+    required_tools:
+      - find_place
+      - get_sub_areas
+      - find_organisations_in_place
+      - get_civil_society_profile
+    required_indicators: [food.ppfi.overall_decile]
+    candidate_indicator_keys: []
+    expected_blocks: [text, map, organisations, sub-area-table]
+    success_criteria:
+      - "Shows PPFI vulnerability and relevant organisations as separate evidence layers."
+      - "Makes keyword-based charity matching explicit and does not assume a registered or operating address proves neighbourhood-level service coverage."
+      - "Does not imply a causal relationship between organisation presence and PPFI vulnerability."
+    known_gap: "Soundings can combine place-level food-poverty organisation context with LSOA PPFI, but it does not yet model organisation service coverage at neighbourhood level."

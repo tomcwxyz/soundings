@@ -39,6 +39,7 @@ from soundings.adapters.ons_geography.hierarchy_loader import (
 from soundings.adapters.ons_geography.places_loader import OnsGeographyPlacesLoader
 from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimatesLoader
 from soundings.adapters.ons_nspl.loader import NsplLoader
+from soundings.adapters.ppfi.loader import PpfiLoader
 from soundings.capture.retention import delete_old_raw_records
 from soundings.db.engine import get_engine
 from soundings.grants.grantnav_refresh import GRANT_INDEX_REFRESH_CRON, refresh_grant_index
@@ -91,6 +92,9 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     async def _foe_green_space() -> None:
         await FoeGreenSpaceLoader(engine).load()
 
+    async def _ppfi() -> None:
+        await PpfiLoader(engine).load()
+
     async def _nspl() -> None:
         await NsplLoader(engine).load()
 
@@ -106,6 +110,7 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
         "charity_commission": _charity_commission,
         "companies_house": _companies_house,
         "foe.green_space": _foe_green_space,
+        "hasp.ppfi": _ppfi,
         "ons.nspl": _nspl,
         GRANT_INDEX_JOB_ID: _grant_index,
     }
