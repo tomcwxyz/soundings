@@ -2,8 +2,8 @@
 
 This first slice intentionally ingests the England LSOA deciles exposed by
 HASP's official PPFI-IMD Explorer. It does not pretend that the mirror is the
-full UK dataset: the catalogue/caveats call out that Scotland, Wales and
-Northern Ireland still need the primary HASP download wired in.
+full Great Britain dataset: the catalogue/caveats call out that Scotland and
+Wales still need the primary HASP download wired in.
 
 PPFI deciles are ranked within country and run in the opposite direction to
 many "higher is worse" indicators: decile 1 is the highest-priority / most
@@ -44,8 +44,9 @@ CAVEATS = [
     "not a current direct measure of food insecurity.",
     "Decile 1 is the highest-priority / most vulnerable tenth of neighbourhoods; "
     "decile 10 is the lowest-priority tenth.",
-    "PPFI ranks neighbourhoods within each UK nation; ranks should not be "
-    "compared directly between nations.",
+    "PPFI v2.1 covers Great Britain and ranks neighbourhoods within England, "
+    "Scotland and Wales; country-relative ranks should not be compared directly "
+    "across nations.",
     "This Soundings source spike currently loads the England LSOA slice from "
     "HASP's official PPFI-IMD Explorer mirror. Wider UK coverage is not yet "
     "loaded.",
