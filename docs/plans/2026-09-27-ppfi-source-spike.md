@@ -24,8 +24,8 @@ The spike is justified by four evaluation questions:
 Primary source: HASP Priority Places for Food Index v2.1, DOI 10.82147/003.
 
 HASP describes PPFI as a static July 2024 composite index built from seven
-domains. Rankings are produced within country, so cross-country comparisons
-are not valid.
+domains. The primary v2.1 dataset covers Great Britain. Rankings are produced
+within country, so cross-country comparisons are not valid.
 
 The Tier-0 catalogue download currently sits behind HASP's MetadataWorks
 download flow. For this spike, Soundings uses a pinned copy of the England LSOA
@@ -70,6 +70,5 @@ priority**.
 
 Obtain a stable machine-readable primary HASP download URL (or supported API
 access) for dataset 5276, inspect the full geography/code contract, then extend
-the loader to Wales and Scotland (and Northern Ireland if present in the primary
-asset). Keep country-relative ranking semantics intact rather than creating a
-UK-wide pseudo-rank.
+the loader to Wales and Scotland. Keep country-relative ranking semantics intact
+rather than creating a Great Britain-wide pseudo-rank.
