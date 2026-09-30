@@ -1,0 +1,305 @@
+---
+// /contribute — public page where organisations sign up, authenticate, and
+// submit observations. Three states:
+//   1. Unauthenticated: existing-org magic link form + new-org sign-up form
+//   2. Authenticated (cookie present): observation submission form
+//   3. Submitted (client-side): confirmation + "submit another" link
+//
+// The contributor session cookie (`soundings_contrib_session`) is signed by
+// the API with an HMAC secret. The UI can't verify the signature server-side,
+// so we only check that the cookie *exists* and has the `<org_id>.<sig>`
+// shape — the actual auth check happens when the form is submitted to the
+// API, which will reject invalid cookies with 401. Showing the form to
+// someone with a forged cookie is harmless because they can't submit.
+import Base from "../layouts/Base.astro";
+import MagicLinkAuth from "../components/MagicLinkAuth.astro";
+import ObservationForm from "../components/ObservationForm.astro";
+
+export const prerender = false;
+
+// Browser-facing base for client-side fetches (autocomplete, form POSTs).
+// Same pattern as /ask and /explore: relative paths proxied through Caddy,
+// overridable via SOUNDINGS_PUBLIC_API_BASE.
+const publicApiBase =
+  (typeof process !== "undefined" && process.env.SOUNDINGS_PUBLIC_API_BASE) ||
+  "";
+
+const url = new URL(Astro.request.url);
+const initialPlaceId = url.searchParams.get("place_id") ?? undefined;
+
+// --- Detect auth state from the contributor session cookie -----------------
+const cookieHeader = Astro.request.headers.get("cookie") ?? "";
+let authenticatedOrgId: string | null = null;
+
+function parseContribCookie(header: string): string | null {
+  for (const pair of header.split(";")) {
+    const trimmed = pair.trim();
+    if (!trimmed.startsWith("soundings_contrib_session=")) continue;
+    const value = decodeURIComponent(trimmed.slice("soundings_contrib_session=".length));
+    // Cookie format is `<org_id>.<hmac_signature>`.
+    const dotIdx = value.lastIndexOf(".");
+    if (dotIdx <= 0) return null;
+    return value.slice(0, dotIdx);
+  }
+  return null;
+}
+
+authenticatedOrgId = parseContribCookie(cookieHeader);
+const isAuthenticated = authenticatedOrgId !== null;
+---
+
+<Base title="Contribute — Soundings">
+  <div
+    id="contribute-root"
+    data-api-base={publicApiBase}
+    data-organisation-id={authenticatedOrgId ?? ""}
+  >
+    <header class="contribute-header">
+      <h1>Contribute an observation</h1>
+      <p class="lead">
+        Organisations working in UK places can share experiential evidence
+        that sits alongside official statistics in Soundings. Observations are
+        clearly flagged as contributed, not official.
+      </p>
+    </header>
+
+    {isAuthenticated ? (
+      <>
+        <section class="authed-intro">
+          <p class="signed-in">
+            Signed in as <code>{authenticatedOrgId}</code>.
+            Observations will be attributed publicly to this organisation.
+          </p>
+        </section>
+
+        <ObservationForm
+          organisationId={authenticatedOrgId!}
+          organisationName={authenticatedOrgId!}
+          initialPlaceId={initialPlaceId}
+        />
+
+        <div id="observation-success" class="confirmation" hidden>
+          <h3>Observation submitted</h3>
+          <p>
+            Thank you — your observation has been accepted and will appear on
+            the relevant place page. It is now part of the public record.
+          </p>
+          <p>
+            <a href="#" id="submit-another" class="btn-link">Submit another observation →</a>
+          </p>
+        </div>
+      </>
+    ) : (
+      <>
+        <div class="contribute-grid">
+          <MagicLinkAuth idPrefix="existing" />
+
+          <section class="signup-card">
+            <h3>New organisation</h3>
+            <p class="muted">
+              If your organisation isn't in a public register, sign up here.
+              We'll create a lightweight profile so you can contribute
+              observations.
+            </p>
+            <form id="signup-form" class="auth-form">
+              <div class="form-row">
+                <label for="signup-name">Organisation name</label>
+                <input
+                  type="text"
+                  id="signup-name"
+                  name="name"
+                  placeholder="e.g. Hackney Community Food Network"
+                  required
+                />
+              </div>
+              <div class="form-row">
+                <label for="signup-email">Contact email</label>
+                <input
+                  type="email"
+                  id="signup-email"
+                  name="email"
+                  placeholder="you@organisation.org.uk"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+              <div class="form-row">
+                <label for="signup-place-search">Primary place</label>
+                <input
+                  type="text"
+                  id="signup-place-search"
+                  placeholder="Search for a place (e.g. Hackney, E8 1AB)"
+                  autocomplete="off"
+                  required
+                />
+                <input type="hidden" id="signup-place-id" name="primary_place_id" />
+                <ul id="signup-place-results" class="autocomplete-results" hidden></ul>
+              </div>
+              <p id="signup-error" class="error" hidden></p>
+              <button type="submit">Sign up</button>
+            </form>
+            <div id="signup-success" class="success-message" hidden>
+              <h4>Organisation created</h4>
+              <p>
+                Your organisation profile is ready. Now send yourself a magic
+                link below to sign in and start contributing.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        {/* Pre-filled magic link form, shown after a new-org sign-up */}
+        <MagicLinkAuth idPrefix="prefill" />
+      </>
+    )}
+  </div>
+
+  <script>
+    import "../scripts/contribute_page";
+  </script>
+</Base>
+
+<style>
+  .contribute-header {
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .contribute-header h1 {
+    margin: 0 0 var(--space-sm);
+  }
+  .lead {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    color: var(--color-text-light);
+    line-height: var(--line-height-relaxed);
+    max-width: 40rem;
+  }
+  .contribute-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+  .signup-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .signup-card h3 {
+    margin: 0 0 var(--space-sm);
+    font-size: var(--font-size-lg);
+  }
+  .muted {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin: 0 0 var(--space-md);
+  }
+  .auth-form .form-row {
+    margin-bottom: var(--space-md);
+  }
+  .auth-form label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+  .autocomplete-results {
+    list-style: none;
+    margin: var(--space-xs) 0 0;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    box-shadow: var(--shadow);
+    max-height: 12rem;
+    overflow-y: auto;
+  }
+  .autocomplete-item {
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    border-bottom: 1px solid var(--color-border-light);
+  }
+  .autocomplete-item:last-child {
+    border-bottom: none;
+  }
+  .autocomplete-item:hover {
+    background: var(--color-bg);
+  }
+  .autocomplete-hint {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+  .success-message {
+    padding: var(--space-md);
+    background: rgba(74, 124, 89, 0.08);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-top: var(--space-md);
+  }
+  .success-message h4 {
+    margin: 0 0 var(--space-xs);
+    color: var(--color-primary);
+  }
+  .success-message p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-light);
+  }
+  .error {
+    padding: var(--space-sm) var(--space-md);
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-md);
+  }
+  .authed-intro {
+    margin-bottom: var(--space-md);
+  }
+  .signed-in {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-light);
+    background: rgba(74, 124, 89, 0.08);
+    border-left: 3px solid var(--color-accent);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+  .signed-in code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--color-bg);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-light);
+  }
+  .confirmation {
+    padding: var(--space-lg);
+    background: rgba(74, 124, 89, 0.08);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-lg);
+    margin-top: var(--space-lg);
+  }
+  .confirmation h3 {
+    margin: 0 0 var(--space-sm);
+    color: var(--color-primary);
+  }
+  .confirmation p {
+    margin: 0 0 var(--space-sm);
+    color: var(--color-text-light);
+  }
+  .btn-link {
+    color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+  }
+  @media (max-width: 720px) {
+    .contribute-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

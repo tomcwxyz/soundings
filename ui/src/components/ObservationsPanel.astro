@@ -1,0 +1,131 @@
+---
+import type { ObservationSummary } from "../lib/types";
+
+interface Props {
+  summary: ObservationSummary | null;
+  placeId: string;
+}
+
+const { summary, placeId } = Astro.props;
+
+const hasObservations = summary !== null && summary.total_observations > 0;
+
+function fmtDate(value: string): string {
+  return new Date(value).toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+---
+
+{hasObservations ? (
+  <section class="obs-panel">
+    <h3>Observations from local organisations</h3>
+    <p class="obs-intro">
+      Experiential evidence contributed by organisations working in this area.
+      These are not official statistics.
+    </p>
+    <ul class="theme-list">
+      {summary!.themes.map((item) => (
+        <li class="theme-item">
+          <div class="theme-head">
+            <span class="theme-label">{item.theme.replace(/_/g, " ")}</span>
+            <span class="theme-count">{item.count} observation{item.count !== 1 ? "s" : ""}</span>
+          </div>
+          <div class="theme-meta">
+            <span class="theme-orgs">{item.organisation_names.join(", ")}</span>
+            <span class="theme-latest">Latest: {fmtDate(item.latest_submission)}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+    <a href={`/contribute?place_id=${encodeURIComponent(placeId)}`} class="contribute-link">
+      Add an observation for this area →
+    </a>
+  </section>
+) : (
+  <section class="obs-panel empty">
+    <h3>No observations yet</h3>
+    <p class="obs-intro">Be the first to contribute an observation about this area.</p>
+    <a href={`/contribute?place_id=${encodeURIComponent(placeId)}`} class="contribute-link">
+      Add an observation →
+    </a>
+  </section>
+)}
+
+<style>
+  .obs-panel {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .obs-panel h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+  }
+  .obs-intro {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--color-muted);
+  }
+  .theme-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+  }
+  .theme-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .theme-item:last-child {
+    border-bottom: none;
+  }
+  .theme-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+  }
+  .theme-label {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  .theme-count {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .theme-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-top: 0.25rem;
+  }
+  .theme-orgs {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 1rem;
+  }
+  .theme-latest {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    flex-shrink: 0;
+  }
+  .contribute-link {
+    display: inline-block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-primary, #1a2f4e);
+    text-decoration: none;
+  }
+  .contribute-link:hover {
+    text-decoration: underline;
+  }
+</style>

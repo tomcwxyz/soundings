@@ -19,8 +19,17 @@ import type {
   FindPlaceResponse,
   FindOrganisationsInPlaceResponse,
   GetIndicatorsResponse,
+  GetObservationsResponse,
   GetTrendResponse,
+  ObservationSubmit,
   PlaceProfile,
+  RequestMagicLinkInput,
+  RequestMagicLinkOutput,
+  SignupOrgInput,
+  SignupOrgOutput,
+  SubmitObservationOutput,
+  VerifyMagicLinkInput,
+  VerifyMagicLinkOutput,
 } from "./types";
 
 const DEFAULT_BASE = "http://localhost:8000";
@@ -267,4 +276,70 @@ export async function getCorpusManifest(
     throw new Error(`/v1/corpus/manifest ${response.status} ${response.statusText}`);
   }
   return (await response.json()) as CorpusManifest;
+}
+
+// get_observations (Phase 7 / observations MVP) ------------------------------
+
+export async function getObservations(
+  params: {
+    place_id?: string;
+    theme?: string;
+    indicator_key?: string;
+    organisation_id?: string;
+    limit?: number;
+  } = {},
+  opts: { cookieHeader?: string } = {},
+): Promise<GetObservationsResponse> {
+  const body: Record<string, unknown> = {};
+  if (params.place_id !== undefined) body.place_id = params.place_id;
+  if (params.theme !== undefined) body.theme = params.theme;
+  if (params.indicator_key !== undefined) body.indicator_key = params.indicator_key;
+  if (params.organisation_id !== undefined)
+    body.organisation_id = params.organisation_id;
+  if (params.limit !== undefined) body.limit = params.limit;
+  return postJSON<GetObservationsResponse>("/v1/tools/get_observations", body, {
+    cookieHeader: opts.cookieHeader,
+  });
+}
+
+// contribute auth (observations MVP) ------------------------------------------
+
+export async function requestMagicLink(
+  input: RequestMagicLinkInput,
+  opts: { cookieHeader?: string } = {},
+): Promise<RequestMagicLinkOutput> {
+  return postJSON<RequestMagicLinkOutput>(
+    "/v1/contribute/request-link",
+    input,
+    { cookieHeader: opts.cookieHeader },
+  );
+}
+
+export async function verifyMagicLink(
+  input: VerifyMagicLinkInput,
+  opts: { cookieHeader?: string } = {},
+): Promise<VerifyMagicLinkOutput> {
+  return postJSON<VerifyMagicLinkOutput>(
+    "/v1/contribute/verify-link",
+    input,
+    { cookieHeader: opts.cookieHeader },
+  );
+}
+
+export async function signupOrg(
+  input: SignupOrgInput,
+  opts: { cookieHeader?: string } = {},
+): Promise<SignupOrgOutput> {
+  return postJSON<SignupOrgOutput>("/v1/contribute/signup", input, {
+    cookieHeader: opts.cookieHeader,
+  });
+}
+
+export async function submitObservation(
+  input: ObservationSubmit,
+  opts: { cookieHeader?: string } = {},
+): Promise<SubmitObservationOutput> {
+  return postJSON<SubmitObservationOutput>("/v1/observations", input, {
+    cookieHeader: opts.cookieHeader,
+  });
 }

@@ -10,6 +10,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.contracts.indicator_value import IndicatorValue
+from soundings.contracts.observation import (
+    ObservationSummary,
+    ObservationSummaryItem,
+)
 from soundings.contracts.source_ref import SourceRef
 from soundings.orchestration.errors import GeographyNotFoundError
 from soundings.orchestration.orchestrator import IndicatorOrchestrator
@@ -32,6 +36,7 @@ class GetPlaceProfileOutput(BaseModel):
     sources: list[SourceRef] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
     partial: bool = False
+    observations_summary: ObservationSummary | None = None
 
 
 async def get_place_profile(
@@ -47,12 +52,14 @@ async def get_place_profile(
         period=None,
     )
     enriched = await _enrich(engine, input.place_id, result.values)
+    observations_summary = await _observations_summary(engine, input.place_id)
     return GetPlaceProfileOutput(
         place=header,
         indicators=enriched,
         sources=result.sources,
         caveats=result.caveats,
         partial=result.partial,
+        observations_summary=observations_summary,
     )
 
 
@@ -166,6 +173,48 @@ async def _resolve_place_header(engine: AsyncEngine, place_id: str) -> PlaceHead
     if row is None:
         raise GeographyNotFoundError(place_id)
     return PlaceHeader(id=row.id, name=row.name, type=row.type)
+
+
+async def _observations_summary(engine: AsyncEngine, place_id: str) -> ObservationSummary | None:
+    """Per-theme aggregate of observations submitted for ``place_id``.
+
+    Groups ``data.observation`` by theme, joining ``data.organisation`` for
+    org names. Returns ``None`` when the place has no observations, so a place
+    page can show "no local observations yet" instead of an empty summary.
+    """
+    sql = text(
+        """
+        SELECT
+            o.theme,
+            count(*) AS count,
+            max(o.submitted_at) AS latest,
+            array_agg(DISTINCT org.name) AS org_names
+        FROM data.observation o
+        JOIN data.organisation org ON org.id = o.organisation_id
+        WHERE o.place_id = :place_id
+        GROUP BY o.theme
+        ORDER BY latest DESC
+        """
+    )
+    async with engine.connect() as conn:
+        rows = (await conn.execute(sql, {"place_id": place_id})).all()
+
+    if not rows:
+        return None
+
+    items = [
+        ObservationSummaryItem(
+            theme=r.theme,
+            count=r.count,
+            latest_submission=r.latest,
+            organisation_names=list(r.org_names or []),
+        )
+        for r in rows
+    ]
+    return ObservationSummary(
+        total_observations=sum(i.count for i in items),
+        themes=items,
+    )
 
 
 async def _resolve_indicators(engine: AsyncEngine, domains: list[str]) -> list[str]:
