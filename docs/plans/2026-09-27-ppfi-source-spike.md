@@ -60,7 +60,7 @@ priority**.
   official mirror we can pin and test without an authenticated data download.
 - Do not describe PPFI as current food insecurity. It is a static composite
   index with constituent data from several vintages.
-- Do not compare deciles between UK nations.
+- Do not compare country-relative deciles directly between England, Scotland and Wales.
 - The loader stores PPFI's published deciles rather than attempting to
   reconstruct the underlying index.
 - No LTLA aggregate is fabricated. Neighbourhood questions use
