@@ -177,7 +177,7 @@ sources:
     dataset_url: "https://data.hasp.ac.uk/browser/dataset/5276/0"
     licence: "OGL-UK-3.0"
     refresh_cadence: "static"
-    notes: "Static July 2024 composite index. Decile 1 is highest priority / most vulnerable and decile 10 lowest priority. Rankings are within UK nations and should not be compared directly across nations. The current Soundings spike loads the England LSOA slice from a pinned official HASP PPFI-IMD Explorer mirror."
+    notes: "Static July 2024 composite index. Decile 1 is highest priority / most vulnerable and decile 10 lowest priority. PPFI v2.1 covers Great Britain; rankings are country-relative and should not be compared directly between England, Scotland and Wales. The current Soundings spike loads the England LSOA slice from a pinned official HASP PPFI-IMD Explorer mirror."
 
   sport_england:
     label: "Sport England Active Lives Adult Survey"
@@ -925,7 +925,7 @@ indicators:
     caveats:
       - "PPFI v2.1 is a static July 2024 composite index, not a current direct measure of food insecurity."
       - "Decile 1 is the highest-priority / most vulnerable tenth; decile 10 is the lowest-priority tenth."
-      - "PPFI ranks neighbourhoods within each UK nation; values should not be compared directly between nations."
+      - "PPFI v2.1 covers Great Britain and ranks neighbourhoods within each constituent nation; values should not be compared directly between England, Scotland and Wales."
       - "The current Soundings source spike loads England LSOAs only from the pinned official HASP PPFI-IMD Explorer mirror."
     related_keys:
       - "food.ppfi.supermarket_proximity_decile"
