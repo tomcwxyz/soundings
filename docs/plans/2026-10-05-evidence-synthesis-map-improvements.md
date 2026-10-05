@@ -52,3 +52,19 @@ Make Soundings better at turning several kinds of place evidence into one useful
   containing authority and offer a direct "Focus on neighbourhoods in …" route.
 - Add unit coverage for prepared choropleth state, including reversed PPFI rank
   semantics and non-mutating GeoJSON preparation.
+
+
+## Slice 4 — neighbourhood comparison
+
+- Let users build a comparison set of up to five LSOAs from a focused authority
+  without introducing a separate map mode.
+- Keep the active area highlighted in navy and the comparison set highlighted
+  separately on the same persistent map.
+- Preserve a comparison set when switching to another LSOA-capable indicator in
+  the same focused authority.
+- Clear the set when the geography context is no longer compatible.
+- Link the selected set into the existing Compare page using absolute values for
+  the active indicator.
+- Provide an "Ask about selected" route that names the chosen neighbourhoods,
+  their parent authority and the active indicator so Ask can investigate the set
+  rather than starting from an unscoped question.
