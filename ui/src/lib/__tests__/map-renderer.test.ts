@@ -155,6 +155,9 @@ describe("choropleth semantics", () => {
   });
 
   it("also reverses IMD deciles, where decile 1 is most deprived", () => {
+    const semantics = choroplethSemantics("deprivation.imd.decile");
+    expect(semantics.lowValueLabel).toBe("Most deprived");
+    expect(semantics.highValueLabel).toBe("Least deprived");
     expect(choroplethRankFractions([1, 10], "deprivation.imd.decile")).toEqual([1, 0]);
   });
 
