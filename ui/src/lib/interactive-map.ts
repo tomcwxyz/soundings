@@ -26,6 +26,7 @@ const CHOROPLETH_SOURCE = "interactive-choropleth";
 const CHOROPLETH_FILL = "interactive-choropleth-fill";
 const CHOROPLETH_OUTLINE = "interactive-choropleth-outline";
 const CHOROPLETH_SELECTED = "interactive-choropleth-selected";
+const CHOROPLETH_COMPARE = "interactive-choropleth-compare";
 const AMENITY_SOURCE = "interactive-amenities";
 
 const RANK_KEY = "__rank";
@@ -194,6 +195,7 @@ export class InteractiveMap {
   private currentValueKey = "value";
   private currentLabel = "Value";
   private selectedPlaceId: string | null = null;
+  private comparisonPlaceIds: string[] = [];
   private choroplethInitialised = false;
   private hasFitted = false;
   private amenityLayerIds = new Map<string, string>();
@@ -256,6 +258,21 @@ export class InteractiveMap {
         paint: {
           "line-color": "#ffffff",
           "line-width": 0.5,
+        },
+      });
+      this.map.addLayer({
+        id: CHOROPLETH_COMPARE,
+        type: "line",
+        source: CHOROPLETH_SOURCE,
+        filter: [
+          "in",
+          ["get", PLACE_ID_KEY],
+          ["literal", []],
+        ],
+        paint: {
+          "line-color": ACCENT_GREEN,
+          "line-width": 4,
+          "line-dasharray": [2, 1],
         },
       });
       this.map.addLayer({
@@ -335,6 +352,7 @@ export class InteractiveMap {
     }
 
     this.renderLegend();
+    this.setComparisonPlaceIds(this.comparisonPlaceIds);
     this.setSelectedPlaceId(this.selectedPlaceId);
 
     if (state.fit || !this.hasFitted) {
@@ -425,6 +443,16 @@ export class InteractiveMap {
       "==",
       ["get", PLACE_ID_KEY],
       placeId ?? "__soundings_no_selection__",
+    ]);
+  }
+
+  setComparisonPlaceIds(placeIds: string[]): void {
+    this.comparisonPlaceIds = Array.from(new Set(placeIds));
+    if (!this.choroplethInitialised) return;
+    this.map.setFilter(CHOROPLETH_COMPARE, [
+      "in",
+      ["get", PLACE_ID_KEY],
+      ["literal", this.comparisonPlaceIds],
     ]);
   }
 
