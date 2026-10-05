@@ -56,6 +56,53 @@ export function rankFractions(
   return out;
 }
 
+export interface ChoroplethSemantics {
+  reverse: boolean;
+  lowValueLabel: string;
+  highValueLabel: string;
+  note: string;
+}
+
+/** Describe how an indicator should read on a choropleth. Rank colouring is
+ * deliberately neutral for most indicators, but some deciles run in the
+ * opposite direction: a lower number represents greater need/priority. */
+export function choroplethSemantics(indicatorKey?: string): ChoroplethSemantics {
+  if (
+    indicatorKey?.startsWith("food.ppfi.") ||
+    indicatorKey === "deprivation.imd.decile"
+  ) {
+    return {
+      reverse: true,
+      lowValueLabel: indicatorKey.startsWith("food.ppfi.")
+        ? "Highest priority"
+        : "Most deprived",
+      highValueLabel: indicatorKey.startsWith("food.ppfi.")
+        ? "Lowest priority"
+        : "Least deprived",
+      note: indicatorKey.startsWith("food.ppfi.")
+        ? "PPFI decile 1 is highest priority. Colours show relative rank."
+        : "IMD decile 1 is most deprived. Colours show relative rank.",
+    };
+  }
+  return {
+    reverse: false,
+    lowValueLabel: "Lower value",
+    highValueLabel: "Higher value",
+    note: "Colours show relative rank, not equal value intervals.",
+  };
+}
+
+/** Rank values for choropleth display, reversing the visual direction for
+ * indicators where a lower numeric value means greater priority/need. */
+export function choroplethRankFractions(
+  values: Array<number | null | undefined>,
+  indicatorKey?: string,
+): Array<number | null> {
+  const ranks = rankFractions(values);
+  if (!choroplethSemantics(indicatorKey).reverse) return ranks;
+  return ranks.map((rank) => (rank === null ? null : 1 - rank));
+}
+
 // Shared base-map options: no tile source (solid background via CSS), no
 // rotation, zoom controls in the bottom-right. When `tilesUrl` is provided, a
 // raster OSM base layer is added; otherwise the map renders tile-less (as
@@ -232,6 +279,10 @@ export interface RenderChoroplethMapOptions {
   /** Two-stop colour scale [low, high]. Default: cream → navy via green. */
   colourScale?: [string, string];
   label?: string;
+  /** Catalogue key used to apply indicator-specific map semantics. */
+  indicatorKey?: string;
+  /** Keep an existing area highlighted when the map is rebuilt. */
+  selectedPlaceId?: string;
   tilesUrl?: string;
   /** Optional amenity point layers to overlay on top of the choropleth
    *  (e.g. food banks over a deprivation map). Toggleable via the legend. */
@@ -293,12 +344,19 @@ export function renderChoroplethMap(
   // skewed (one rural outlier dwarfs the rest), so a linear value ramp crushes
   // most areas into a single shade. Rank/quantile colouring spreads contrast
   // evenly. Each feature carries its rank in [0,1] as `__rank`.
-  const ranks = rankFractions(values);
+  const semantics = choroplethSemantics(options.indicatorKey ?? valueKey);
+  const ranks = choroplethRankFractions(values, options.indicatorKey ?? valueKey);
   const RANK_KEY = "__rank";
+  const PLACE_ID_KEY = "__place_id";
   featureCollection.features.forEach((f, i) => {
-    if (f.properties && ranks[i] != null) {
+    if (!f.properties) f.properties = {};
+    if (ranks[i] != null) {
       f.properties[RANK_KEY] = ranks[i];
     }
+    const placeId =
+      (f.properties.id as string | undefined) ??
+      (f.properties.place_id as string | undefined);
+    if (placeId) f.properties[PLACE_ID_KEY] = placeId;
   });
 
   // No data anywhere → neutral fill (no misleading ramp). Otherwise interpolate
@@ -330,11 +388,22 @@ export function renderChoroplethMap(
   const legend = document.createElement("div");
   legend.className = "map-legend choropleth-legend";
   if (hasData) {
+    const leftValue = semantics.reverse ? domMax : domMin;
+    const rightValue = semantics.reverse ? domMin : domMax;
+    const leftMeaning = semantics.reverse
+      ? semantics.highValueLabel
+      : semantics.lowValueLabel;
+    const rightMeaning = semantics.reverse
+      ? semantics.lowValueLabel
+      : semantics.highValueLabel;
     legend.innerHTML =
       `<span class="legend-label">${escapeHtml(options.label ?? valueKey)}</span>` +
       `<span class="legend-gradient"></span>` +
-      `<span class="legend-min">${domMin.toLocaleString("en-GB")}</span>` +
-      `<span class="legend-max">${domMax.toLocaleString("en-GB")}</span>`;
+      `<span class="legend-scale">` +
+      `<span><strong>${leftValue.toLocaleString("en-GB")}</strong><small>${escapeHtml(leftMeaning)}</small></span>` +
+      `<span class="legend-scale-right"><strong>${rightValue.toLocaleString("en-GB")}</strong><small>${escapeHtml(rightMeaning)}</small></span>` +
+      `</span>` +
+      `<span class="legend-note">${escapeHtml(semantics.note)}</span>`;
   }
 
   const amenityPopup = options.points
@@ -361,6 +430,21 @@ export function renderChoroplethMap(
       paint: {
         "line-color": "#ffffff",
         "line-width": 0.5,
+      },
+    });
+
+    map.addLayer({
+      id: "choropleth-selected",
+      type: "line",
+      source: sourceId,
+      filter: [
+        "==",
+        ["get", PLACE_ID_KEY],
+        options.selectedPlaceId ?? "__soundings_no_selection__",
+      ],
+      paint: {
+        "line-color": NAVY,
+        "line-width": 3,
       },
     });
 
@@ -443,6 +527,14 @@ export function renderChoroplethMap(
       typeof rawValue === "number" ? rawValue.toLocaleString("en-GB") : String(rawValue ?? "—");
     const placeId =
       (props.id as string | undefined) ?? (props.place_id as string | undefined);
+
+    if (placeId) {
+      map.setFilter("choropleth-selected", [
+        "==",
+        ["get", PLACE_ID_KEY],
+        placeId,
+      ]);
+    }
 
     // Explorer mode: notify a side panel instead of covering the map with a
     // pop-up. Otherwise show the built-in "View place" pop-up.

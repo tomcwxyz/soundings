@@ -138,6 +138,42 @@ Infer the user's intent from their question — there are no explicit modes:
   and the parent LTLA as a context_place_id.
 """
 
+_SYNTHESIS_GUIDANCE = """\
+Evidence synthesis mode:
+
+For broad place summaries, insight questions, "what should we pay attention to?"
+questions, and thematic diagnostic questions, do more than stack independent facts.
+Triangulate the evidence when the relevant layers are available:
+
+1. Official indicators — establish the measured baseline with get_place_profile
+   and/or get_indicators.
+2. Change over time — use get_trend or get_change for one or two indicators that
+   materially change the interpretation. Do not add a trend just for decoration.
+3. Contributed observations — call get_observations for the place and relevant
+   theme. Treat these as attributed experiential evidence, not statistics.
+4. Provision and local context — use infrastructure amenity counts/locations,
+   find_organisations_in_place and/or get_civil_society_profile when they help
+   explain what capacity, assets or services exist locally.
+
+Then synthesise, rather than merely listing the four layers:
+- say where evidence is in alignment;
+- identify tensions, contradictions or different time horizons;
+- name important evidence gaps explicitly;
+- finish with one or two things worth paying attention to next, grounded in the
+  evidence retrieved rather than generic advice.
+
+Never imply a contradiction when the sources measure different things. Always
+make vintage, geography and evidence-type differences explicit when they matter.
+If contributed observations or provision data are absent, say that the layer is
+missing rather than inventing a local story.
+
+For spatial questions that combine need and provision, prefer a combined choropleth
++ amenity map when a valid per-area indicator and matching amenity layer exist.
+This is an exploratory view of need and provision, not evidence that a service is
+adequate, insufficient or causally related merely because a point is present or
+absent.
+"""
+
 _BLOCK_GUIDANCE = """\
 Block types for compose_answer:
 - text: markdown prose (use for narrative, explanations, context)
@@ -364,6 +400,8 @@ class SystemPromptBuilder:
             " UK places using open data.",
             "",
             _SCOPE_DESCRIPTION,
+            "",
+            _SYNTHESIS_GUIDANCE,
             "",
             _BLOCK_GUIDANCE,
         ]

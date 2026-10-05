@@ -656,6 +656,7 @@
               ]);
               renderChoroplethMap(container, fc, "value", {
                 label: prettyKey(indicatorKey),
+                indicatorKey,
                 tilesUrl: mapTilesUrl || undefined,
                 points,
               });
@@ -696,6 +697,7 @@
               const fc = await fetchChoroplethFc();
               renderChoroplethMap(container, fc, "value", {
                 label: prettyKey(indicatorKey),
+                indicatorKey,
                 tilesUrl: mapTilesUrl || undefined,
               });
             } else {

@@ -8,6 +8,8 @@ import {
   placePopupHtml,
   buildAmenityLegend,
   amenityPopupHtml,
+  choroplethSemantics,
+  choroplethRankFractions,
 } from "../map-renderer";
 
 describe("amenityPopupHtml", () => {
@@ -135,5 +137,33 @@ describe("amenityLegendItems", () => {
       { label: "Food banks", colour: PALETTE[0] },
       { label: "Schools", colour: PALETTE[1] },
     ]);
+  });
+});
+
+
+describe("choropleth semantics", () => {
+  it("reverses PPFI deciles so the highest-priority neighbourhoods are visually strongest", () => {
+    const semantics = choroplethSemantics("food.ppfi.overall_decile");
+    expect(semantics.reverse).toBe(true);
+    expect(semantics.lowValueLabel).toBe("Highest priority");
+    expect(semantics.highValueLabel).toBe("Lowest priority");
+    expect(choroplethRankFractions([1, 5, 10], "food.ppfi.overall_decile")).toEqual([
+      1,
+      0.5,
+      0,
+    ]);
+  });
+
+  it("also reverses IMD deciles, where decile 1 is most deprived", () => {
+    const semantics = choroplethSemantics("deprivation.imd.decile");
+    expect(semantics.lowValueLabel).toBe("Most deprived");
+    expect(semantics.highValueLabel).toBe("Least deprived");
+    expect(choroplethRankFractions([1, 10], "deprivation.imd.decile")).toEqual([1, 0]);
+  });
+
+  it("keeps ordinary indicators low-to-high", () => {
+    const semantics = choroplethSemantics("population.total");
+    expect(semantics.reverse).toBe(false);
+    expect(choroplethRankFractions([10, 20], "population.total")).toEqual([0, 1]);
   });
 });
