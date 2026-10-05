@@ -1,6 +1,8 @@
-// Client logic for the map explorer (/explore). Picks an indicator + geography
-// level, fetches the national choropleth, and (re)renders it. Rebuild-on-change
-// is fine for the skeleton; an in-place stateful map is a later refinement.
+// Client logic for the map explorer (/explore).
+//
+// One stateful InteractiveMap instance survives indicator, drill-down and
+// provision-layer changes so camera position, selection and map interaction do
+// not reset on every control change.
 
 interface ExploreIndicator {
   key: string;
@@ -8,13 +10,30 @@ interface ExploreIndicator {
   available_at: string[];
 }
 
+interface IndicatorResult {
+  indicator: string;
+  value: number | null;
+  unit?: string | null;
+}
+
+interface ContainingPlace {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface ContainingPlacesResponse {
+  places?: ContainingPlace[];
+}
+
+type InteractiveMapInstance = import("../lib/interactive-map").InteractiveMap;
+
 const LEVEL_LABELS: Record<string, string> = {
   lsoa21: "Neighbourhood (LSOA)",
   ltla24: "Local authority",
   utla24: "Upper-tier authority",
   region: "Region",
 };
-// Preferred order for the level dropdown (coarse → fine reads best as options).
 const LEVEL_ORDER = ["ltla24", "utla24", "region", "lsoa21"];
 
 let maplibreCssLoaded = false;
@@ -29,7 +48,9 @@ function ensureMaplibreCss(): void {
 
 function init(): void {
   const surface = document.getElementById("explore-map");
-  const indicatorSel = document.getElementById("explore-indicator") as HTMLSelectElement | null;
+  const indicatorSel = document.getElementById(
+    "explore-indicator",
+  ) as HTMLSelectElement | null;
   const status = document.getElementById("explore-status");
   const dataEl = document.getElementById("explore-indicators-data");
   if (!surface || !indicatorSel || !dataEl) return;
@@ -37,14 +58,20 @@ function init(): void {
   const apiBase = surface.dataset.apiBase || "";
   const tilesUrl = surface.dataset.mapTiles || undefined;
   const panel = document.getElementById("explore-panel");
+  const backBtn = document.getElementById(
+    "explore-back",
+  ) as HTMLButtonElement | null;
   const overlayInputs = Array.from(
-    document.querySelectorAll<HTMLInputElement>("#explore-overlays input[type=checkbox]"),
+    document.querySelectorAll<HTMLInputElement>(
+      "#explore-overlays input[type=checkbox]",
+    ),
   );
   const overlayHint = document.getElementById("explore-overlay-hint");
-  const indicators = JSON.parse(dataEl.textContent || "[]") as ExploreIndicator[];
-  const byKey = new Map(indicators.map((i) => [i.key, i]));
+  const indicators = JSON.parse(
+    dataEl.textContent || "[]",
+  ) as ExploreIndicator[];
+  const byKey = new Map(indicators.map((indicator) => [indicator.key, indicator]));
 
-  // Contextual indicators shown in the side panel alongside the active one.
   const HEADLINE = [
     "population.total",
     "deprivation.imd.score",
@@ -52,13 +79,21 @@ function init(): void {
     "environment.greenspace.area_per_capita",
   ];
 
-  function esc(s: string): string {
-    return s
+  let drillPlaceId: string | null = null;
+  let drillName: string | null = null;
+  let selectedPlaceId: string | null = null;
+  let currentContextKey: string | null = null;
+  let mapPromise: Promise<InteractiveMapInstance> | null = null;
+  const containingAuthorityCache = new Map<string, ContainingPlace | null>();
+
+  function esc(value: string): string {
+    return value
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
   }
+
   function labelFor(key: string): string {
     const known = byKey.get(key)?.label;
     if (known) return known;
@@ -68,83 +103,10 @@ function init(): void {
     return tail ? `${h}: ${tail}` : h;
   }
 
-  interface IndicatorResult {
-    indicator: string;
-    value: number | null;
-    unit?: string | null;
-  }
-
-  let selectedPlaceId: string | null = null;
-
-  async function showPanel(sel: { placeId?: string; name: string }): Promise<void> {
-    if (!panel) return;
-    selectedPlaceId = sel.placeId ?? null;
-    panel.innerHTML = `<h2>${esc(sel.name)}</h2><p class="text-muted text-small">Loading…</p>`;
-    const keys = Array.from(new Set([indicatorSel!.value, ...HEADLINE]));
-    let results: IndicatorResult[] = [];
-    if (sel.placeId) {
-      try {
-        const res = await fetch(`${apiBase}/v1/tools/get_indicators`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ place_id: sel.placeId, indicators: keys }),
-        });
-        if (res.ok) results = ((await res.json()).results ?? []) as IndicatorResult[];
-      } catch {
-        /* leave results empty; panel shows the no-data note */
-      }
-    }
-    const rows = results
-      .filter((r) => typeof r.value === "number")
-      .map(
-        (r) =>
-          `<div class="panel-row"><span class="panel-label">${esc(labelFor(r.indicator))}</span>` +
-          `<span>${(r.value as number).toLocaleString("en-GB")}${r.unit ? " " + esc(r.unit) : ""}</span></div>`,
-      )
-      .join("");
-    const link = sel.placeId
-      ? `<a class="panel-link" href="/place/${encodeURIComponent(sel.placeId)}">View full profile →</a>`
-      : "";
-    const askLink = sel.placeId
-      ? `<a class="panel-link" href="/ask?q=${encodeURIComponent(`What should we pay attention to in ${sel.name}?`)}&place_id=${encodeURIComponent(sel.placeId)}">Ask about this place →</a>`
-      : "";
-    panel.innerHTML =
-      `<h2>${esc(sel.name)}</h2>` +
-      (rows || `<p class="text-muted text-small">No indicator data for this area.</p>`) +
-      link +
-      askLink;
-
-    // Offer a drill-down into this area's neighbourhoods when it's an authority
-    // and the active indicator has LSOA-level data.
-    const activeKey = indicatorSel!.value;
-    const canDrill =
-      !drillPlaceId &&
-      !!sel.placeId &&
-      (sel.placeId.startsWith("ltla24:") || sel.placeId.startsWith("utla24:")) &&
-      (byKey.get(activeKey)?.available_at.includes("lsoa21") ?? false);
-    if (canDrill && sel.placeId) {
-      const placeId = sel.placeId;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "panel-drill";
-      btn.textContent = "Explore its neighbourhoods →";
-      btn.addEventListener("click", () => {
-        drillPlaceId = placeId;
-        drillName = sel.name;
-        selectedPlaceId = null;
-        void render();
-      });
-      panel.appendChild(btn);
-    }
-  }
-
-  const backBtn = document.getElementById("explore-back") as HTMLButtonElement | null;
-  let drillPlaceId: string | null = null;
-  let drillName: string | null = null;
-  let cleanup: (() => void) | null = null;
-
   function selectedOverlayKeys(): string[] {
-    return overlayInputs.filter((input) => input.checked).map((input) => input.value);
+    return overlayInputs
+      .filter((input) => input.checked)
+      .map((input) => input.value);
   }
 
   function syncOverlayControls(): void {
@@ -153,118 +115,300 @@ function init(): void {
     if (overlayHint) {
       overlayHint.textContent = enabled
         ? "Toggle local provision on top of the neighbourhood map."
-        : "Drill into an authority to compare need and provision.";
+        : "Focus on an authority to compare need and provision.";
     }
   }
 
-  // Each indicator shows at its default (coarsest available) level — a sensible
-  // national overview — with drill-down for neighbourhoods. No manual level
-  // picker (it confused more than it helped).
+  function resetPanel(): void {
+    if (!panel) return;
+    panel.innerHTML =
+      '<p class="explore-panel-empty text-muted text-small">Click an area on the map to see its details.</p>';
+  }
+
   function defaultLevel(key: string): string {
-    const avail = byKey.get(key)?.available_at ?? [];
-    return LEVEL_ORDER.find((l) => avail.includes(l)) ?? avail[0] ?? "ltla24";
+    const available = byKey.get(key)?.available_at ?? [];
+    return (
+      LEVEL_ORDER.find((level) => available.includes(level)) ??
+      available[0] ??
+      "ltla24"
+    );
+  }
+
+  async function getMap(): Promise<InteractiveMapInstance> {
+    if (!mapPromise) {
+      ensureMaplibreCss();
+      mapPromise = import("../lib/interactive-map").then(
+        ({ InteractiveMap }) =>
+          new InteractiveMap(surface, {
+            tilesUrl,
+            onSelectArea: (selection) => void showPanel(selection),
+          }),
+      );
+    }
+    return mapPromise;
+  }
+
+  async function fetchIndicatorRows(
+    placeId: string,
+    keys: string[],
+  ): Promise<IndicatorResult[]> {
+    try {
+      const res = await fetch(`${apiBase}/v1/tools/get_indicators`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ place_id: placeId, indicators: keys }),
+      });
+      if (!res.ok) return [];
+      return ((await res.json()).results ?? []) as IndicatorResult[];
+    } catch {
+      return [];
+    }
+  }
+
+  async function containingAuthority(
+    placeId: string,
+  ): Promise<ContainingPlace | null> {
+    if (!placeId.startsWith("lsoa21:")) return null;
+    if (containingAuthorityCache.has(placeId)) {
+      return containingAuthorityCache.get(placeId) ?? null;
+    }
+
+    try {
+      const res = await fetch(`${apiBase}/v1/tools/get_containing_places`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ place_id: placeId }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const payload = (await res.json()) as ContainingPlacesResponse;
+      const authority =
+        payload.places?.find((place) => place.type === "ltla24") ??
+        payload.places?.find((place) => place.type === "utla24") ??
+        null;
+      containingAuthorityCache.set(placeId, authority);
+      return authority;
+    } catch {
+      containingAuthorityCache.set(placeId, null);
+      return null;
+    }
+  }
+
+  async function showPanel(selection: {
+    placeId?: string;
+    name: string;
+  }): Promise<void> {
+    if (!panel) return;
+
+    selectedPlaceId = selection.placeId ?? null;
+    panel.innerHTML =
+      `<h2>${esc(selection.name)}</h2><p class="text-muted text-small">Loading…</p>`;
+
+    const keys = Array.from(
+      new Set([indicatorSel!.value, ...HEADLINE]),
+    );
+    const [results, parentAuthority] = await Promise.all([
+      selection.placeId
+        ? fetchIndicatorRows(selection.placeId, keys)
+        : Promise.resolve([]),
+      selection.placeId
+        ? containingAuthority(selection.placeId)
+        : Promise.resolve(null),
+    ]);
+
+    const rows = results
+      .filter((result) => typeof result.value === "number")
+      .map(
+        (result) =>
+          `<div class="panel-row"><span class="panel-label">${esc(labelFor(result.indicator))}</span>` +
+          `<span>${(result.value as number).toLocaleString("en-GB")}${result.unit ? " " + esc(result.unit) : ""}</span></div>`,
+      )
+      .join("");
+
+    const profileLink = selection.placeId
+      ? `<a class="panel-link" href="/place/${encodeURIComponent(selection.placeId)}">View full profile →</a>`
+      : "";
+    const askLink = selection.placeId
+      ? `<a class="panel-link" href="/ask?q=${encodeURIComponent(`What should we pay attention to in ${selection.name}?`)}&place_id=${encodeURIComponent(selection.placeId)}">Ask about this place →</a>`
+      : "";
+
+    panel.innerHTML =
+      `<h2>${esc(selection.name)}</h2>` +
+      (rows ||
+        '<p class="text-muted text-small">No indicator data for this area.</p>') +
+      profileLink +
+      askLink;
+
+    const activeKey = indicatorSel!.value;
+    const supportsNeighbourhoods =
+      byKey.get(activeKey)?.available_at.includes("lsoa21") ?? false;
+
+    const selectedAuthority =
+      selection.placeId &&
+      (selection.placeId.startsWith("ltla24:") ||
+        selection.placeId.startsWith("utla24:"))
+        ? { id: selection.placeId, name: selection.name }
+        : null;
+    const focusAuthority = selectedAuthority ?? parentAuthority;
+
+    if (!drillPlaceId && focusAuthority && supportsNeighbourhoods) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "panel-drill";
+      button.textContent = `Focus on neighbourhoods in ${focusAuthority.name} →`;
+      button.addEventListener("click", () => {
+        drillPlaceId = focusAuthority.id;
+        drillName = focusAuthority.name;
+
+        // If the user arrived here by clicking an LSOA on the national map,
+        // keep that neighbourhood selected after focusing into its authority.
+        if (selectedAuthority) selectedPlaceId = null;
+        void render();
+      });
+      panel.appendChild(button);
+    }
+  }
+
+  async function fetchChoropleth(
+    key: string,
+  ): Promise<{
+    featureCollection: GeoJSON.FeatureCollection;
+    contextLabel: string;
+    contextKey: string;
+  }> {
+    if (drillPlaceId) {
+      const url =
+        `${apiBase}/v1/place/${encodeURIComponent(drillPlaceId)}/children/geometry` +
+        `?indicator=${encodeURIComponent(key)}&child_type=lsoa21`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return {
+        featureCollection: (await res.json()) as GeoJSON.FeatureCollection,
+        contextLabel: `neighbourhoods in ${drillName ?? "this area"}`,
+        contextKey: `drill:${drillPlaceId}`,
+      };
+    }
+
+    const level = defaultLevel(key);
+    const large = level === "lsoa21" ? "&large=true" : "";
+    const url =
+      `${apiBase}/v1/geographies/${encodeURIComponent(level)}/geometry` +
+      `?indicator=${encodeURIComponent(key)}${large}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return {
+      featureCollection: (await res.json()) as GeoJSON.FeatureCollection,
+      contextLabel: `${LEVEL_LABELS[level] ?? level} areas`,
+      contextKey: `national:${level}`,
+    };
+  }
+
+  async function fetchProvision(): Promise<{
+    points?: GeoJSON.FeatureCollection;
+    error?: string;
+  }> {
+    const overlayKeys = selectedOverlayKeys();
+    if (!drillPlaceId || overlayKeys.length === 0) return {};
+
+    try {
+      const res = await fetch(
+        `${apiBase}/v1/place/${encodeURIComponent(drillPlaceId)}/amenities/geometry?indicators=${encodeURIComponent(overlayKeys.join(","))}`,
+      );
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return { points: (await res.json()) as GeoJSON.FeatureCollection };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   async function render(): Promise<void> {
     const key = indicatorSel!.value;
     if (!key) return;
 
-    cleanup?.();
-    cleanup = null;
     if (backBtn) backBtn.hidden = !drillPlaceId;
     syncOverlayControls();
     if (status) status.textContent = "Loading…";
 
-    // Drill mode: the selected area's LSOAs. National mode: all areas of the
-    // chosen level.
-    let url: string;
-    let contextLabel: string;
-    if (drillPlaceId) {
-      url =
-        `${apiBase}/v1/place/${encodeURIComponent(drillPlaceId)}/children/geometry` +
-        `?indicator=${encodeURIComponent(key)}&child_type=lsoa21`;
-      contextLabel = `neighbourhoods in ${drillName ?? "this area"}`;
-    } else {
-      const level = defaultLevel(key);
-      const large = level === "lsoa21" ? "&large=true" : "";
-      url =
-        `${apiBase}/v1/geographies/${encodeURIComponent(level)}/geometry` +
-        `?indicator=${encodeURIComponent(key)}${large}`;
-      contextLabel = `${LEVEL_LABELS[level] ?? level} areas`;
-    }
-
-    let fc: GeoJSON.FeatureCollection;
+    let choropleth: Awaited<ReturnType<typeof fetchChoropleth>>;
+    let provision: Awaited<ReturnType<typeof fetchProvision>>;
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      fc = (await res.json()) as GeoJSON.FeatureCollection;
-    } catch (err) {
+      [choropleth, provision] = await Promise.all([
+        fetchChoropleth(key),
+        fetchProvision(),
+      ]);
+    } catch (error) {
       if (status) {
         status.textContent =
-          "Could not load map: " + (err instanceof Error ? err.message : String(err));
+          "Could not load map: " +
+          (error instanceof Error ? error.message : String(error));
       }
       return;
     }
 
-    let points: GeoJSON.FeatureCollection | undefined;
-    let overlayError: string | null = null;
-    const overlayKeys = selectedOverlayKeys();
-    if (drillPlaceId && overlayKeys.length > 0) {
-      try {
-        const pointsRes = await fetch(
-          `${apiBase}/v1/place/${encodeURIComponent(drillPlaceId)}/amenities/geometry?indicators=${encodeURIComponent(overlayKeys.join(","))}`,
-        );
-        if (!pointsRes.ok) throw new Error(`${pointsRes.status} ${pointsRes.statusText}`);
-        points = (await pointsRes.json()) as GeoJSON.FeatureCollection;
-      } catch (err) {
-        overlayError = err instanceof Error ? err.message : String(err);
-      }
-    }
+    const map = await getMap();
+    const shouldFit = currentContextKey !== choropleth.contextKey;
 
-    ensureMaplibreCss();
-    surface!.innerHTML = "";
-    const { renderChoroplethMap } = await import("../lib/map-renderer");
-    cleanup = renderChoroplethMap(surface!, fc, "value", {
+    await map.setChoropleth({
+      featureCollection: choropleth.featureCollection,
+      valueKey: "value",
       label: byKey.get(key)?.label ?? key,
       indicatorKey: key,
-      selectedPlaceId: selectedPlaceId ?? undefined,
-      tilesUrl,
-      points,
-      onSelectArea: (sel) => void showPanel(sel),
+      fit: shouldFit,
     });
-    const n = (fc.features ?? []).filter(
-      (f) => typeof f.properties?.value === "number",
+    currentContextKey = choropleth.contextKey;
+    map.setSelectedPlaceId(selectedPlaceId);
+    await map.setAmenityPoints(provision.points);
+
+    const n = (choropleth.featureCollection.features ?? []).filter(
+      (feature) => typeof feature.properties?.value === "number",
     ).length;
+    const overlayKeys = selectedOverlayKeys();
+    const pointCount = provision.points?.features.length ?? 0;
+    const overlayStatus =
+      overlayKeys.length > 0
+        ? provision.error
+          ? ` · provision layer unavailable (${provision.error})`
+          : ` · ${pointCount} provision points`
+        : "";
+
     if (status) {
-      const pointCount = points?.features?.length ?? 0;
-      const overlayStatus =
-        overlayKeys.length > 0
-          ? overlayError
-            ? ` · provision layer unavailable (${overlayError})`
-            : ` · ${pointCount} provision points`
-          : "";
       status.textContent =
-        `${n} ${contextLabel} with data${overlayStatus} · click an area for details`;
+        `${n} ${choropleth.contextLabel} with data${overlayStatus} · click an area for details`;
     }
   }
 
   indicatorSel.addEventListener("change", () => {
-    // New indicator → its default national view (out of any drill-down).
     drillPlaceId = null;
     drillName = null;
     selectedPlaceId = null;
+    currentContextKey = null;
+    resetPanel();
+    void getMap().then((map) => map.clearSelection());
     void render();
   });
+
   backBtn?.addEventListener("click", () => {
     drillPlaceId = null;
     drillName = null;
     selectedPlaceId = null;
+    currentContextKey = null;
+    resetPanel();
+    void getMap().then((map) => map.clearSelection());
     void render();
   });
 
   for (const input of overlayInputs) {
     input.addEventListener("change", () => void render());
   }
+
+  window.addEventListener(
+    "pagehide",
+    () => {
+      void mapPromise?.then((map) => map.destroy());
+    },
+    { once: true },
+  );
 
   void render();
 }
