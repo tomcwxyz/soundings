@@ -37,6 +37,10 @@ function init(): void {
   const apiBase = surface.dataset.apiBase || "";
   const tilesUrl = surface.dataset.mapTiles || undefined;
   const panel = document.getElementById("explore-panel");
+  const overlayInputs = Array.from(
+    document.querySelectorAll<HTMLInputElement>("#explore-overlays input[type=checkbox]"),
+  );
+  const overlayHint = document.getElementById("explore-overlay-hint");
   const indicators = JSON.parse(dataEl.textContent || "[]") as ExploreIndicator[];
   const byKey = new Map(indicators.map((i) => [i.key, i]));
 
@@ -70,8 +74,11 @@ function init(): void {
     unit?: string | null;
   }
 
+  let selectedPlaceId: string | null = null;
+
   async function showPanel(sel: { placeId?: string; name: string }): Promise<void> {
     if (!panel) return;
+    selectedPlaceId = sel.placeId ?? null;
     panel.innerHTML = `<h2>${esc(sel.name)}</h2><p class="text-muted text-small">Loading…</p>`;
     const keys = Array.from(new Set([indicatorSel!.value, ...HEADLINE]));
     let results: IndicatorResult[] = [];
@@ -98,10 +105,14 @@ function init(): void {
     const link = sel.placeId
       ? `<a class="panel-link" href="/place/${encodeURIComponent(sel.placeId)}">View full profile →</a>`
       : "";
+    const askLink = sel.placeId
+      ? `<a class="panel-link" href="/ask?q=${encodeURIComponent(`What should we pay attention to in ${sel.name}?`)}&place_id=${encodeURIComponent(sel.placeId)}">Ask about this place →</a>`
+      : "";
     panel.innerHTML =
       `<h2>${esc(sel.name)}</h2>` +
       (rows || `<p class="text-muted text-small">No indicator data for this area.</p>`) +
-      link;
+      link +
+      askLink;
 
     // Offer a drill-down into this area's neighbourhoods when it's an authority
     // and the active indicator has LSOA-level data.
@@ -120,6 +131,7 @@ function init(): void {
       btn.addEventListener("click", () => {
         drillPlaceId = placeId;
         drillName = sel.name;
+        selectedPlaceId = null;
         void render();
       });
       panel.appendChild(btn);
@@ -130,6 +142,20 @@ function init(): void {
   let drillPlaceId: string | null = null;
   let drillName: string | null = null;
   let cleanup: (() => void) | null = null;
+
+  function selectedOverlayKeys(): string[] {
+    return overlayInputs.filter((input) => input.checked).map((input) => input.value);
+  }
+
+  function syncOverlayControls(): void {
+    const enabled = Boolean(drillPlaceId);
+    for (const input of overlayInputs) input.disabled = !enabled;
+    if (overlayHint) {
+      overlayHint.textContent = enabled
+        ? "Toggle local provision on top of the neighbourhood map."
+        : "Drill into an authority to compare need and provision.";
+    }
+  }
 
   // Each indicator shows at its default (coarsest available) level — a sensible
   // national overview — with drill-down for neighbourhoods. No manual level
@@ -146,6 +172,7 @@ function init(): void {
     cleanup?.();
     cleanup = null;
     if (backBtn) backBtn.hidden = !drillPlaceId;
+    syncOverlayControls();
     if (status) status.textContent = "Loading…";
 
     // Drill mode: the selected area's LSOAs. National mode: all areas of the
@@ -179,19 +206,45 @@ function init(): void {
       return;
     }
 
+    let points: GeoJSON.FeatureCollection | undefined;
+    let overlayError: string | null = null;
+    const overlayKeys = selectedOverlayKeys();
+    if (drillPlaceId && overlayKeys.length > 0) {
+      try {
+        const pointsRes = await fetch(
+          `${apiBase}/v1/place/${encodeURIComponent(drillPlaceId)}/amenities/geometry?indicators=${encodeURIComponent(overlayKeys.join(","))}`,
+        );
+        if (!pointsRes.ok) throw new Error(`${pointsRes.status} ${pointsRes.statusText}`);
+        points = (await pointsRes.json()) as GeoJSON.FeatureCollection;
+      } catch (err) {
+        overlayError = err instanceof Error ? err.message : String(err);
+      }
+    }
+
     ensureMaplibreCss();
     surface!.innerHTML = "";
     const { renderChoroplethMap } = await import("../lib/map-renderer");
     cleanup = renderChoroplethMap(surface!, fc, "value", {
       label: byKey.get(key)?.label ?? key,
+      indicatorKey: key,
+      selectedPlaceId: selectedPlaceId ?? undefined,
       tilesUrl,
+      points,
       onSelectArea: (sel) => void showPanel(sel),
     });
     const n = (fc.features ?? []).filter(
       (f) => typeof f.properties?.value === "number",
     ).length;
     if (status) {
-      status.textContent = `${n} ${contextLabel} with data · click an area for details`;
+      const pointCount = points?.features?.length ?? 0;
+      const overlayStatus =
+        overlayKeys.length > 0
+          ? overlayError
+            ? ` · provision layer unavailable (${overlayError})`
+            : ` · ${pointCount} provision points`
+          : "";
+      status.textContent =
+        `${n} ${contextLabel} with data${overlayStatus} · click an area for details`;
     }
   }
 
@@ -199,13 +252,19 @@ function init(): void {
     // New indicator → its default national view (out of any drill-down).
     drillPlaceId = null;
     drillName = null;
+    selectedPlaceId = null;
     void render();
   });
   backBtn?.addEventListener("click", () => {
     drillPlaceId = null;
     drillName = null;
+    selectedPlaceId = null;
     void render();
   });
+
+  for (const input of overlayInputs) {
+    input.addEventListener("change", () => void render());
+  }
 
   void render();
 }
