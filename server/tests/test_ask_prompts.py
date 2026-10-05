@@ -179,3 +179,20 @@ def test_prompt_mentions_ward_data_availability():
     prompt = SystemPromptBuilder().build()
     assert "ward" in prompt.lower()
     assert "subset" in prompt.lower() or "limited" in prompt.lower()
+
+
+def test_prompt_teaches_evidence_triangulation():
+    prompt = SystemPromptBuilder().build()
+    assert "triangulate" in prompt.lower()
+    assert "official indicators" in prompt.lower()
+    assert "contributed observations" in prompt.lower()
+    assert "provision" in prompt.lower()
+    assert "alignment" in prompt.lower()
+    assert "tension" in prompt.lower()
+    assert "worth paying attention" in prompt.lower()
+
+
+def test_prompt_prefers_combined_need_and_provision_maps():
+    prompt = SystemPromptBuilder().build()
+    assert "combined choropleth" in prompt.lower()
+    assert "need and provision" in prompt.lower()
