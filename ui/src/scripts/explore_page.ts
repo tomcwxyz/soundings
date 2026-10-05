@@ -366,7 +366,7 @@ function init(): void {
     const overlayKeys = selectedOverlayKeys();
     const pointCount = provision.points?.features.length ?? 0;
     const overlayStatus =
-      overlayKeys.length > 0
+      drillPlaceId && overlayKeys.length > 0
         ? provision.error
           ? ` · provision layer unavailable (${provision.error})`
           : ` · ${pointCount} provision points`
@@ -382,7 +382,6 @@ function init(): void {
     drillPlaceId = null;
     drillName = null;
     selectedPlaceId = null;
-    currentContextKey = null;
     resetPanel();
     void getMap().then((map) => map.clearSelection());
     void render();
