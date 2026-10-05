@@ -126,6 +126,7 @@ function init(): void {
     if (!panel) return;
     panel.innerHTML =
       '<p class="explore-panel-empty text-muted text-small">Click an area on the map to see its details.</p>';
+    renderComparisonSummary();
   }
 
   function comparisonIds(): string[] {
@@ -362,11 +363,22 @@ function init(): void {
       button.addEventListener("click", () => {
         drillPlaceId = focusAuthority.id;
         drillName = focusAuthority.name;
+        comparisonPlaces.clear();
 
-        // If the user arrived here by clicking an LSOA on the national map,
-        // keep that neighbourhood selected after focusing into its authority.
-        if (selectedAuthority) selectedPlaceId = null;
-        void render();
+        if (selectedAuthority) {
+          // The user focused from an authority polygon: enter the local view
+          // with no neighbourhood selected yet.
+          selectedPlaceId = null;
+          currentSelection = null;
+          resetPanel();
+          void render();
+        } else {
+          // The user focused from a national LSOA: keep that neighbourhood
+          // selected and refresh the panel so comparison actions appear.
+          void render().then(() => {
+            if (currentSelection) void showPanel(currentSelection);
+          });
+        }
       });
       panel.appendChild(button);
     }
