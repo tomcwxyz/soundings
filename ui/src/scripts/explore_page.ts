@@ -54,8 +54,9 @@ function init(): void {
   const status = document.getElementById("explore-status");
   const dataEl = document.getElementById("explore-indicators-data");
   if (!surface || !indicatorSel || !dataEl) return;
+  const mapSurface = surface;
 
-  const apiBase = surface.dataset.apiBase || "";
+  const apiBase = mapSurface.dataset.apiBase || "";
   const tilesUrl = surface.dataset.mapTiles || undefined;
   const panel = document.getElementById("explore-panel");
   const backBtn = document.getElementById(
@@ -139,7 +140,7 @@ function init(): void {
       ensureMaplibreCss();
       mapPromise = import("../lib/interactive-map").then(
         ({ InteractiveMap }) =>
-          new InteractiveMap(surface, {
+          new InteractiveMap(mapSurface, {
             tilesUrl,
             onSelectArea: (selection) => void showPanel(selection),
           }),
