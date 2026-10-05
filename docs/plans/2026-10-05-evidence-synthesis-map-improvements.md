@@ -1,7 +1,7 @@
 # Evidence synthesis + map improvements
 
 **Date:** 2026-10-05  
-**Status:** In progress
+**Status:** In progress — slices 1–3 implemented in PR #62
 
 ## Goal
 
@@ -36,3 +36,19 @@ Make Soundings better at turning several kinds of place evidence into one useful
 - Add prompt tests for triangulation guidance.
 - Add pure map-renderer tests for scale direction and legend semantics.
 - Run the existing Python lint/type/test suite and UI typecheck/tests in CI.
+
+
+## Slice 3 — stateful explorer map
+
+- Add a persistent `InteractiveMap` wrapper for the explorer while keeping the
+  existing stateless Ask/place renderers unchanged.
+- Swap choropleth GeoJSON and paint state in place rather than recreating
+  MapLibre on indicator changes.
+- Preserve camera position when the geography context is unchanged.
+- Refit only when moving between national and focused-authority contexts.
+- Preserve and clear selected-area state explicitly.
+- Update provision point layers in place as checkboxes change.
+- For national LSOA views such as PPFI, resolve the clicked neighbourhood's
+  containing authority and offer a direct "Focus on neighbourhoods in …" route.
+- Add unit coverage for prepared choropleth state, including reversed PPFI rank
+  semantics and non-mutating GeoJSON preparation.
