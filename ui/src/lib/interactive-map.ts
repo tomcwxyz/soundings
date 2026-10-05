@@ -193,7 +193,6 @@ export class InteractiveMap {
 
   private currentValueKey = "value";
   private currentLabel = "Value";
-  private currentIndicatorKey = "";
   private selectedPlaceId: string | null = null;
   private choroplethInitialised = false;
   private hasFitted = false;
@@ -224,7 +223,6 @@ export class InteractiveMap {
 
     this.currentValueKey = state.valueKey;
     this.currentLabel = state.label;
-    this.currentIndicatorKey = state.indicatorKey;
 
     const prepared = prepareChoroplethFeatureCollection(
       state.featureCollection,
