@@ -83,6 +83,7 @@ function init(): void {
   let drillPlaceId: string | null = null;
   let drillName: string | null = null;
   let selectedPlaceId: string | null = null;
+  const comparisonPlaces = new Map<string, { name: string; value: unknown }>();
   let currentContextKey: string | null = null;
   let mapPromise: Promise<InteractiveMapInstance> | null = null;
   const containingAuthorityCache = new Map<string, ContainingPlace | null>();
@@ -124,6 +125,111 @@ function init(): void {
     if (!panel) return;
     panel.innerHTML =
       '<p class="explore-panel-empty text-muted text-small">Click an area on the map to see its details.</p>';
+  }
+
+  function comparisonIds(): string[] {
+    return Array.from(comparisonPlaces.keys());
+  }
+
+  async function syncComparisonHighlight(): Promise<void> {
+    const map = await getMap();
+    map.setComparisonPlaceIds(comparisonIds());
+  }
+
+  function clearComparison(): void {
+    comparisonPlaces.clear();
+    void syncComparisonHighlight();
+  }
+
+  function comparisonAskHref(): string {
+    const names = Array.from(comparisonPlaces.values()).map((place) => place.name);
+    const scope = drillName ? ` within ${drillName}` : "";
+    const question =
+      `Compare ${names.join(", ")}${scope}. What stands out, where do they differ, and what should we pay attention to?`;
+    return "/ask?q=" + encodeURIComponent(question);
+  }
+
+  function renderComparisonSummary(): void {
+    if (!panel || comparisonPlaces.size === 0) return;
+
+    const section = document.createElement("section");
+    section.className = "comparison-summary";
+    const heading = document.createElement("h3");
+    heading.textContent = `Comparison set (${comparisonPlaces.size}/5)`;
+    section.appendChild(heading);
+
+    const list = document.createElement("ul");
+    list.className = "comparison-list";
+    for (const [id, place] of comparisonPlaces) {
+      const item = document.createElement("li");
+      const label = document.createElement("span");
+      label.textContent = place.name;
+      item.appendChild(label);
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "comparison-remove secondary";
+      remove.textContent = "Remove";
+      remove.addEventListener("click", () => {
+        comparisonPlaces.delete(id);
+        void syncComparisonHighlight();
+        void showPanel({
+          placeId: selectedPlaceId ?? undefined,
+          name:
+            selectedPlaceId && comparisonPlaces.has(selectedPlaceId)
+              ? comparisonPlaces.get(selectedPlaceId)!.name
+              : drillName ?? "Selected area",
+        });
+      });
+      item.appendChild(remove);
+      list.appendChild(item);
+    }
+    section.appendChild(list);
+
+    if (comparisonPlaces.size >= 2) {
+      const actions = document.createElement("div");
+      actions.className = "comparison-actions";
+
+      const compare = document.createElement("a");
+      compare.className = "panel-link";
+      compare.href =
+        "/compare?places=" +
+        encodeURIComponent(comparisonIds().join(",")) +
+        "&indicators=" +
+        encodeURIComponent(indicatorSel!.value);
+      compare.textContent = "Compare selected →";
+      actions.appendChild(compare);
+
+      const ask = document.createElement("a");
+      ask.className = "panel-link";
+      ask.href = comparisonAskHref();
+      ask.textContent = "Ask about selected →";
+      actions.appendChild(ask);
+
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "comparison-clear secondary";
+      clear.textContent = "Clear";
+      clear.addEventListener("click", () => {
+        clearComparison();
+        if (selectedPlaceId) {
+          void showPanel({
+            placeId: selectedPlaceId,
+            name:
+              comparisonPlaces.get(selectedPlaceId)?.name ??
+              drillName ??
+              "Selected area",
+          });
+        } else {
+          resetPanel();
+        }
+      });
+      actions.appendChild(clear);
+
+      section.appendChild(actions);
+    }
+
+    panel.appendChild(section);
   }
 
   function defaultLevel(key: string): string {
@@ -267,6 +373,38 @@ function init(): void {
       });
       panel.appendChild(button);
     }
+
+    if (
+      drillPlaceId &&
+      selection.placeId?.startsWith("lsoa21:")
+    ) {
+      const compareButton = document.createElement("button");
+      compareButton.type = "button";
+      compareButton.className = "panel-drill secondary";
+      const alreadySelected = comparisonPlaces.has(selection.placeId);
+      compareButton.textContent = alreadySelected
+        ? "Remove from comparison"
+        : comparisonPlaces.size >= 5
+          ? "Comparison set full"
+          : "Add to comparison";
+      compareButton.disabled = !alreadySelected && comparisonPlaces.size >= 5;
+      compareButton.addEventListener("click", () => {
+        if (!selection.placeId) return;
+        if (comparisonPlaces.has(selection.placeId)) {
+          comparisonPlaces.delete(selection.placeId);
+        } else if (comparisonPlaces.size < 5) {
+          comparisonPlaces.set(selection.placeId, {
+            name: selection.name,
+            value: selection.value,
+          });
+        }
+        void syncComparisonHighlight();
+        void showPanel(selection);
+      });
+      panel.appendChild(compareButton);
+    }
+
+    renderComparisonSummary();
   }
 
   async function fetchChoropleth(
@@ -359,6 +497,7 @@ function init(): void {
     });
     currentContextKey = choropleth.contextKey;
     map.setSelectedPlaceId(selectedPlaceId);
+    map.setComparisonPlaceIds(comparisonIds());
     await map.setAmenityPoints(provision.points);
 
     const n = (choropleth.featureCollection.features ?? []).filter(
@@ -383,6 +522,7 @@ function init(): void {
     drillPlaceId = null;
     drillName = null;
     selectedPlaceId = null;
+    comparisonPlaces.clear();
     resetPanel();
     void getMap().then((map) => map.clearSelection());
     void render();
@@ -392,6 +532,7 @@ function init(): void {
     drillPlaceId = null;
     drillName = null;
     selectedPlaceId = null;
+    comparisonPlaces.clear();
     currentContextKey = null;
     resetPanel();
     void getMap().then((map) => map.clearSelection());
