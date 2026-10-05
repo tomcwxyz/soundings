@@ -531,3 +531,28 @@ questions:
       - "Makes keyword-based charity matching explicit and does not assume a registered or operating address proves neighbourhood-level service coverage."
       - "Does not imply a causal relationship between organisation presence and PPFI vulnerability."
     known_gap: "Soundings can combine place-level food-poverty organisation context with LSOA PPFI, but it does not yet model organisation service coverage at neighbourhood level."
+
+
+  - id: Q43
+    question: "What should we pay attention to about food access and local response in Middlesbrough?"
+    places: ["Middlesbrough"]
+    intent: synthesis
+    expected: partial
+    tags: [food, synthesis, observations, provision, ppfi]
+    required_tools:
+      - find_place
+      - get_sub_areas
+      - get_observations
+      - get_indicators
+      - get_civil_society_profile
+    required_indicators:
+      - food.ppfi.overall_decile
+      - infrastructure.food_banks_count
+    candidate_indicator_keys: []
+    expected_blocks: [text, map]
+    success_criteria:
+      - "Triangulates official indicators, contributed observations and local provision/context rather than presenting them as interchangeable evidence."
+      - "States plainly that PPFI is a static July 2024 snapshot and identifies the lack of a like-for-like PPFI trend rather than inventing one."
+      - "Surfaces alignment, tensions or evidence gaps and ends with evidence-backed things worth paying attention to."
+      - "Treats the combined need/provision map as exploratory rather than proof of service adequacy or causality."
+    known_gap: "PPFI is a static July 2024 snapshot, so this synthesis does not have a like-for-like PPFI time series."
