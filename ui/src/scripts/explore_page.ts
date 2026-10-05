@@ -83,6 +83,7 @@ function init(): void {
   let drillPlaceId: string | null = null;
   let drillName: string | null = null;
   let selectedPlaceId: string | null = null;
+  let currentSelection: { placeId?: string; name: string; value?: unknown } | null = null;
   const comparisonPlaces = new Map<string, { name: string; value: unknown }>();
   let currentContextKey: string | null = null;
   let mapPromise: Promise<InteractiveMapInstance> | null = null;
@@ -173,13 +174,11 @@ function init(): void {
       remove.addEventListener("click", () => {
         comparisonPlaces.delete(id);
         void syncComparisonHighlight();
-        void showPanel({
-          placeId: selectedPlaceId ?? undefined,
-          name:
-            selectedPlaceId && comparisonPlaces.has(selectedPlaceId)
-              ? comparisonPlaces.get(selectedPlaceId)!.name
-              : drillName ?? "Selected area",
-        });
+        if (currentSelection) {
+          void showPanel(currentSelection);
+        } else {
+          resetPanel();
+        }
       });
       item.appendChild(remove);
       list.appendChild(item);
@@ -212,14 +211,8 @@ function init(): void {
       clear.textContent = "Clear";
       clear.addEventListener("click", () => {
         clearComparison();
-        if (selectedPlaceId) {
-          void showPanel({
-            placeId: selectedPlaceId,
-            name:
-              comparisonPlaces.get(selectedPlaceId)?.name ??
-              drillName ??
-              "Selected area",
-          });
+        if (currentSelection) {
+          void showPanel(currentSelection);
         } else {
           resetPanel();
         }
@@ -303,9 +296,11 @@ function init(): void {
   async function showPanel(selection: {
     placeId?: string;
     name: string;
+    value?: unknown;
   }): Promise<void> {
     if (!panel) return;
 
+    currentSelection = selection;
     selectedPlaceId = selection.placeId ?? null;
     panel.innerHTML =
       `<h2>${esc(selection.name)}</h2><p class="text-muted text-small">Loading…</p>`;
@@ -519,12 +514,25 @@ function init(): void {
   }
 
   indicatorSel.addEventListener("change", () => {
-    drillPlaceId = null;
-    drillName = null;
+    const supportsCurrentDrill =
+      !drillPlaceId ||
+      (byKey.get(indicatorSel!.value)?.available_at.includes("lsoa21") ?? false);
+
     selectedPlaceId = null;
-    comparisonPlaces.clear();
+    currentSelection = null;
+
+    if (!supportsCurrentDrill) {
+      drillPlaceId = null;
+      drillName = null;
+      comparisonPlaces.clear();
+      currentContextKey = null;
+    }
+
     resetPanel();
-    void getMap().then((map) => map.clearSelection());
+    void getMap().then((map) => {
+      map.clearSelection();
+      map.setComparisonPlaceIds(comparisonIds());
+    });
     void render();
   });
 
@@ -532,6 +540,7 @@ function init(): void {
     drillPlaceId = null;
     drillName = null;
     selectedPlaceId = null;
+    currentSelection = null;
     comparisonPlaces.clear();
     currentContextKey = null;
     resetPanel();
