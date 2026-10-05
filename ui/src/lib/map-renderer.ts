@@ -73,7 +73,9 @@ export function choroplethSemantics(indicatorKey?: string): ChoroplethSemantics 
   ) {
     return {
       reverse: true,
-      lowValueLabel: "Highest priority",
+      lowValueLabel: indicatorKey.startsWith("food.ppfi.")
+        ? "Highest priority"
+        : "Most deprived",
       highValueLabel: indicatorKey.startsWith("food.ppfi.")
         ? "Lowest priority"
         : "Least deprived",
