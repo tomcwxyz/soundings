@@ -167,9 +167,8 @@ make vintage, geography and evidence-type differences explicit when they matter.
 If contributed observations or provision data are absent, say that the layer is
 missing rather than inventing a local story.
 
-For spatial questions that combine need and provision, prefer a combined
-choropleth + amenity map when a valid per-area indicator and matching amenity
-layer exist. This is an exploratory view of need and provision, not evidence
+For spatial questions that combine need and provision, prefer a combined choropleth
++ amenity map when a valid per-area indicator and matching amenity layer exist. This is an exploratory view of need and provision, not evidence
 that a service is adequate, insufficient or causally related merely because a
 point is present or absent.
 """
