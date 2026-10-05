@@ -145,8 +145,9 @@ function init(): void {
   function comparisonAskHref(): string {
     const names = Array.from(comparisonPlaces.values()).map((place) => place.name);
     const scope = drillName ? ` within ${drillName}` : "";
+    const indicator = labelFor(indicatorSel!.value);
     const question =
-      `Compare ${names.join(", ")}${scope}. What stands out, where do they differ, and what should we pay attention to?`;
+      `Compare ${names.join(", ")}${scope} for ${indicator}. What stands out, where do they differ, and what should we pay attention to?`;
     return "/ask?q=" + encodeURIComponent(question);
   }
 
@@ -195,7 +196,8 @@ function init(): void {
         "/compare?places=" +
         encodeURIComponent(comparisonIds().join(",")) +
         "&indicators=" +
-        encodeURIComponent(indicatorSel!.value);
+        encodeURIComponent(indicatorSel!.value) +
+        "&basis=absolute";
       compare.textContent = "Compare selected →";
       actions.appendChild(compare);
 
