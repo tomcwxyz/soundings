@@ -70,9 +70,7 @@ class SearchGrantsInput(BaseModel):
         default=10,
         ge=1,
         le=25,
-        description=(
-            "Number of ranked funder aggregates to return across all matching grants."
-        ),
+        description="Number of ranked funder aggregates to return across all matching grants.",
     )
 
 
@@ -134,9 +132,7 @@ async def search_grants(input: SearchGrantsInput, engine: AsyncEngine) -> Search
         grants=[GrantSearchResult.model_validate(row) for row in result["grants"]],
         total=result["total"],
         total_gbp=result["total_gbp"],
-        top_funders=[
-            GrantFunderSummary.model_validate(row) for row in result["top_funders"]
-        ],
+        top_funders=[GrantFunderSummary.model_validate(row) for row in result["top_funders"]],
         limit=result["limit"],
         offset=result["offset"],
         index_complete=bool(status["complete"]),
