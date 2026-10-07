@@ -53,7 +53,14 @@ async def _seed() -> None:
         await conn.execute(
             text(
                 "INSERT INTO geography.place (id, type, code, name) VALUES "
-                "('ltla24:E06000002', 'ltla24', 'E06000002', 'Middlesbrough')"
+                "('ltla24:E06000002', 'ltla24', 'E06000002', 'Middlesbrough'), "
+                "('country:E92000001', 'country', 'E92000001', 'England')"
+            )
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO geography.place_hierarchy (child_id, parent_id) VALUES "
+                "('ltla24:E06000002', 'country:E92000001')"
             )
         )
         await conn.execute(
@@ -138,6 +145,58 @@ async def test_search_grants_combines_topic_place_and_date_filters() -> None:
     assert result.index_complete is False
     assert result.index_coverage == "partial-write-through"
     assert result.caveats
+
+
+async def test_country_scope_search_rolls_up_descendants_and_ranks_funders() -> None:
+    await _seed()
+    engine = get_engine()
+    store = GrantStore(engine)
+    await store.upsert_api_grants(
+        [
+            _grant(
+                "environment-1",
+                description="Environment restoration and biodiversity work",
+                amount=80_000,
+                award_date="2026-04-01",
+                funder_id="GB-CHC-111111",
+                funder_name="Green Foundation",
+            ),
+            _grant(
+                "environment-2",
+                description="Environment and climate action programme",
+                amount=20_000,
+                award_date="2026-03-01",
+                funder_id="GB-CHC-222222",
+                funder_name="Climate Trust",
+            ),
+            _grant(
+                "arts-1",
+                description="Community arts programme",
+                amount=500_000,
+                award_date="2026-02-01",
+                funder_id="GB-CHC-333333",
+                funder_name="Arts Foundation",
+            ),
+        ]
+    )
+
+    result = await search_grants(
+        SearchGrantsInput(
+            query="environment",
+            place_id="country:E92000001",
+            funder_limit=10,
+        ),
+        engine,
+    )
+
+    assert result.total == 2
+    assert result.total_gbp == pytest.approx(100_000)
+    assert [grant.id for grant in result.grants] == ["environment-1", "environment-2"]
+    assert [funder.funder_name for funder in result.top_funders] == [
+        "Green Foundation",
+        "Climate Trust",
+    ]
+    assert result.top_funders[0].total_gbp == pytest.approx(80_000)
 
 
 async def test_funder_profile_aggregates_indexed_grants() -> None:
