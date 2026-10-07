@@ -190,6 +190,7 @@ async def _bootstrap_grant_index_if_needed(engine: AsyncEngine) -> bool:
         return False
     return True
 
+
 async def _run_forever() -> None:
     engine = get_engine()
     registry = build_source_registry(engine)
