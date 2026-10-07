@@ -51,6 +51,7 @@ def test_source_registry_returns_callable_for_each_phase_1_loader() -> None:
     ):
         assert callable(registry[sid])
 
+
 async def test_missing_grant_index_bootstraps_on_loader_start(monkeypatch: pytest.MonkeyPatch) -> None:
     engine = get_engine()
     complete = AsyncMock(return_value=False)
