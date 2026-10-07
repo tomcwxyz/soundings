@@ -7,6 +7,8 @@ from sqlalchemy import func, select, text
 from soundings.adapters.base import _cron_to_window_days
 from soundings.db.engine import get_engine
 from soundings.db.models.catalogue import Source
+from soundings.grants.grantnav_refresh import GRANT_INDEX_REFRESH_CRON
+from soundings.grants.status import get_grant_index_status
 
 router = APIRouter()
 
@@ -40,6 +42,12 @@ async def healthz() -> dict[str, Any]:
 
     try:
         engine = get_engine()
+        checks["grant_index"] = await _grant_index_check(engine)
+    except Exception as exc:
+        checks["grant_index"] = f"fail: {exc.__class__.__name__}"
+
+    try:
+        engine = get_engine()
         checks["capture"] = await _capture_check(engine)
     except Exception as exc:
         checks["capture"] = f"fail: {exc.__class__.__name__}"
@@ -47,6 +55,33 @@ async def healthz() -> dict[str, Any]:
     overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
     return {"status": overall, "checks": checks}
 
+
+async def _grant_index_check(engine: object) -> str:
+    """Return health for the internal full GrantNav materialisation job.
+
+    The grant index is deliberately not a catalogue.source loader because
+    threesixtygiving remains a passthrough source for targeted hydration.
+    That means the generic loader freshness check cannot see this job.
+    """
+    status = await get_grant_index_status(engine)  # type: ignore[arg-type]
+    if not status["complete"]:
+        return (
+            f"incomplete: {status['coverage']}; "
+            f"{status['grants']} indexed grant records"
+        )
+
+    snapshot = status.get("snapshot")
+    if not isinstance(snapshot, dict) or not snapshot.get("finished_at"):
+        return "incomplete: full index has no successful snapshot timestamp"
+
+    finished_at = datetime.fromisoformat(str(snapshot["finished_at"]))
+    if finished_at.tzinfo is None:
+        finished_at = finished_at.replace(tzinfo=UTC)
+    window_days = _cron_to_window_days(GRANT_INDEX_REFRESH_CRON)
+    threshold = timedelta(days=window_days * 1.5)
+    if datetime.now(tz=UTC) - finished_at > threshold:
+        return f"stale: last full GrantNav snapshot {finished_at.isoformat()}"
+    return "ok"
 
 async def _capture_check(engine: object) -> str:
     """Returns 'ok' or a degraded reason.
