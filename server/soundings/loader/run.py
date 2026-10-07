@@ -43,6 +43,7 @@ from soundings.adapters.ppfi.loader import PpfiLoader
 from soundings.capture.retention import delete_old_raw_records
 from soundings.db.engine import get_engine
 from soundings.grants.grantnav_refresh import GRANT_INDEX_REFRESH_CRON, refresh_grant_index
+from soundings.grants.status import has_complete_grant_index
 from soundings.publication.automatic import PUBLICATION_CRON, publish_previous_month_if_due
 
 LoaderCallable = Callable[[], Awaitable[None]]
@@ -171,6 +172,24 @@ async def build_scheduler(
     return sched
 
 
+async def _bootstrap_grant_index_if_needed(engine: AsyncEngine) -> bool:
+    """Ensure a newly deployed loader does not wait until the next weekly cron.
+
+    Returns True when a bootstrap import was attempted successfully, False when
+    a complete corpus already exists or the bootstrap failed. Failures are
+    logged and left visible through /healthz; they do not stop other loader jobs.
+    """
+    if await has_complete_grant_index(engine):
+        return False
+
+    _log.warning("No complete GrantNav index found; bootstrapping full corpus now")
+    try:
+        await refresh_grant_index(engine)
+    except Exception:
+        _log.exception("startup GrantNav full-index bootstrap failed")
+        return False
+    return True
+
 async def _run_forever() -> None:
     engine = get_engine()
     registry = build_source_registry(engine)
@@ -185,11 +204,17 @@ async def _run_forever() -> None:
 
     sched = await build_scheduler(engine, registry)
     sched.start()
+    grant_bootstrap = asyncio.create_task(
+        _bootstrap_grant_index_if_needed(engine),
+        name="grant-index-bootstrap",
+    )
     try:
         # Sleep until cancelled — APScheduler runs in the same event loop.
         while True:
             await asyncio.sleep(3600)
     finally:
+        if not grant_bootstrap.done():
+            grant_bootstrap.cancel()
         sched.shutdown(wait=False)
 
 
