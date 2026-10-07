@@ -34,3 +34,20 @@ questions:
       - "Surfaces leading recipients or programmes only when supported by the indexed data."
       - "Qualifies the answer when the local index is not yet full-corpus."
     known_gap: "Named-funder coverage may be partial until the full GrantNav corpus refresh is automated."
+
+  - id: Q44
+    question: "Tell me about who funds environmental work in England"
+    places: ["England"]
+    intent: grants-search
+    expected: supported
+    tags: [civil-society, grants, funding, topic, national]
+    required_tools: [find_place, search_grants]
+    required_indicators: []
+    candidate_indicator_keys: []
+    expected_blocks: [text]
+    success_criteria:
+      - "Treats England as a valid national geography rather than redirecting to a local-authority question."
+      - "Uses the England country place ID to search matching grants across descendant places."
+      - "Uses deterministic ranked funder aggregates from the complete matched set, not just funder names seen in the first page of grants."
+      - "Keeps 360Giving coverage and publication caveats visible."
+

@@ -15,6 +15,12 @@ elsewhere in the system prompt:
   civil_society.grants_in_last_12m_total and civil_society.grants_in_last_12m_count.
 - Use search_grants when the user wants individual grant evidence or asks which
   grants, funders or recipients match a topic, place, date range or amount.
+  Place scope can be local, regional or national. For questions such as "who
+  funds environmental work in England", resolve England with find_place and pass
+  the returned country place_id to search_grants. Use total_gbp and top_funders
+  for the funding picture, with individual grants as supporting evidence. Do not
+  refuse or redirect to a local-authority question merely because the requested
+  geography is a country or region.
   Prefer this over reconstructing grant evidence from charity profiles.
 - Use get_funder_profile for questions about a specific funder's grantmaking,
   including totals, award range, leading recipients and programmes. If an exact

@@ -23,20 +23,39 @@ from soundings.db.models.data import GrantRecord
 SOURCE_ID = "threesixtygiving"
 UPSERT_CHUNK = 1000
 
-# Prefer explicit beneficiary geography. Only infer place from the recipient's
-# operating geography when GrantNav has no beneficiary place for the grant.
-# This prevents an award benefiting Leeds, for example, being counted as money
-# "into" Stockton solely because the recipient's registered organisation is
-# based there.
+# Prefer explicit beneficiary geography. Place filters accept any canonical
+# Soundings geography, including regions and countries: the current hierarchy
+# contains transitive child→ancestor edges, so an LTLA-tagged grant can be
+# matched to England without duplicating country IDs onto every grant record.
+# Only infer geography from the recipient's operating geography when GrantNav
+# has no beneficiary place for the grant. This prevents an award benefiting
+# Leeds, for example, being counted as money "into" Stockton solely because the
+# recipient's registered organisation is based there.
 _PLACE_PREDICATE = """
 (
     :place_id = ANY(g.beneficiary_place_ids)
+    OR EXISTS (
+        SELECT 1
+        FROM unnest(g.beneficiary_place_ids) AS beneficiary(place_id)
+        JOIN geography.current_place_hierarchy ph
+          ON ph.child_id = beneficiary.place_id
+        WHERE ph.parent_id = :place_id
+    )
     OR (
         COALESCE(cardinality(g.beneficiary_place_ids), 0) = 0
         AND EXISTS (
-            SELECT 1 FROM data.organisation_operates_in oi
+            SELECT 1
+            FROM data.organisation_operates_in oi
             WHERE oi.organisation_id = g.recipient_org_id
-              AND oi.place_id = :place_id
+              AND (
+                  oi.place_id = :place_id
+                  OR EXISTS (
+                      SELECT 1
+                      FROM geography.current_place_hierarchy ph
+                      WHERE ph.child_id = oi.place_id
+                        AND ph.parent_id = :place_id
+                  )
+              )
         )
     )
 )
@@ -132,15 +151,18 @@ class GrantStore:
         amount_max: float | None = None,
         limit: int = 25,
         offset: int = 0,
+        funder_limit: int = 10,
     ) -> dict[str, Any]:
         """Search the local index with deterministic filters and FTS ranking."""
         limit = max(1, min(limit, 100))
         offset = max(0, offset)
+        funder_limit = max(1, min(funder_limit, 25))
         where = ["g.source_id = :source_id"]
         params: dict[str, Any] = {
             "source_id": SOURCE_ID,
             "limit": limit,
             "offset": offset,
+            "funder_limit": funder_limit,
         }
 
         if query:
@@ -193,15 +215,47 @@ class GrantStore:
             LIMIT :limit OFFSET :offset
             """
         )
-        count_sql = text(f"SELECT COUNT(*) FROM data.grant_record g WHERE {predicate}")
+        summary_sql = text(
+            f"""
+            SELECT COUNT(*) AS grants,
+                   COALESCE(
+                       SUM(g.amount) FILTER (WHERE g.currency = 'GBP'),
+                       0
+                   ) AS total_gbp
+            FROM data.grant_record g
+            WHERE {predicate}
+            """
+        )
+        funders_sql = text(
+            f"""
+            SELECT MAX(g.funder_id) AS funder_id,
+                   COALESCE(MAX(g.funder_name), MAX(g.funder_id), 'Unknown') AS funder_name,
+                   COUNT(*) AS grants,
+                   COALESCE(
+                       SUM(g.amount) FILTER (WHERE g.currency = 'GBP'),
+                       0
+                   ) AS total_gbp
+            FROM data.grant_record g
+            WHERE {predicate}
+            GROUP BY COALESCE(
+                NULLIF(g.funder_id, ''),
+                'name:' || COALESCE(NULLIF(g.funder_name, ''), 'Unknown')
+            )
+            ORDER BY total_gbp DESC, grants DESC, funder_name
+            LIMIT :funder_limit
+            """
+        )
 
         async with self._engine.connect() as conn:
             result = (await conn.execute(sql, params)).mappings().all()
-            total = int((await conn.execute(count_sql, params)).scalar_one())
+            summary = (await conn.execute(summary_sql, params)).mappings().one()
+            funders = (await conn.execute(funders_sql, params)).mappings().all()
 
         return {
             "grants": [self._serialise_row(dict(row)) for row in result],
-            "total": total,
+            "total": int(summary["grants"] or 0),
+            "total_gbp": self._number(summary["total_gbp"]) or 0.0,
+            "top_funders": [self._serialise_row(dict(row)) for row in funders],
             "limit": limit,
             "offset": offset,
         }
