@@ -70,7 +70,9 @@ class SearchGrantsInput(BaseModel):
         default=10,
         ge=1,
         le=25,
-        description="Number of ranked funder aggregates to return across all matching grants.",
+        description=(
+            "Number of ranked funder aggregates to return across all matching grants."
+        ),
     )
 
 
