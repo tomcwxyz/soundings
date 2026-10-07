@@ -1,7 +1,10 @@
+from unittest.mock import AsyncMock
+
 import pytest
 from sqlalchemy import text
 
 from soundings.db.engine import get_engine
+from soundings.loader import run as loader_run
 from soundings.loader.run import GRANT_INDEX_JOB_ID, build_scheduler, build_source_registry
 
 pytestmark = pytest.mark.integration
@@ -47,3 +50,33 @@ def test_source_registry_returns_callable_for_each_phase_1_loader() -> None:
         GRANT_INDEX_JOB_ID,
     ):
         assert callable(registry[sid])
+
+async def test_missing_grant_index_bootstraps_on_loader_start(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine = get_engine()
+    complete = AsyncMock(return_value=False)
+    refresh = AsyncMock(return_value=123)
+    monkeypatch.setattr(loader_run, "has_complete_grant_index", complete)
+    monkeypatch.setattr(loader_run, "refresh_grant_index", refresh)
+
+    attempted = await loader_run._bootstrap_grant_index_if_needed(engine)
+
+    assert attempted is True
+    complete.assert_awaited_once_with(engine)
+    refresh.assert_awaited_once_with(engine)
+
+
+async def test_complete_grant_index_skips_startup_bootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = get_engine()
+    complete = AsyncMock(return_value=True)
+    refresh = AsyncMock()
+    monkeypatch.setattr(loader_run, "has_complete_grant_index", complete)
+    monkeypatch.setattr(loader_run, "refresh_grant_index", refresh)
+
+    attempted = await loader_run._bootstrap_grant_index_if_needed(engine)
+
+    assert attempted is False
+    complete.assert_awaited_once_with(engine)
+    refresh.assert_not_awaited()
+
