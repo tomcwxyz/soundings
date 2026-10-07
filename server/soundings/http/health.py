@@ -65,10 +65,7 @@ async def _grant_index_check(engine: object) -> str:
     """
     status = await get_grant_index_status(engine)  # type: ignore[arg-type]
     if not status["complete"]:
-        return (
-            f"incomplete: {status['coverage']}; "
-            f"{status['grants']} indexed grant records"
-        )
+        return f"incomplete: {status['coverage']}; {status['grants']} indexed grant records"
 
     snapshot = status.get("snapshot")
     if not isinstance(snapshot, dict) or not snapshot.get("finished_at"):
@@ -82,6 +79,7 @@ async def _grant_index_check(engine: object) -> str:
     if datetime.now(tz=UTC) - finished_at > threshold:
         return f"stale: last full GrantNav snapshot {finished_at.isoformat()}"
     return "ok"
+
 
 async def _capture_check(engine: object) -> str:
     """Returns 'ok' or a degraded reason.
