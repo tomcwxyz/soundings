@@ -82,4 +82,3 @@ async def test_complete_grant_index_skips_startup_bootstrap(
     assert attempted is False
     complete.assert_awaited_once_with(engine)
     refresh.assert_not_awaited()
-
