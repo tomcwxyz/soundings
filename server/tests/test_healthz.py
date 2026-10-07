@@ -35,6 +35,19 @@ async def _seed_recent_loader_runs() -> None:
                     "f": now,
                 },
             )
+        await conn.execute(
+            text(
+                "INSERT INTO data.loader_run "
+                "(id, source_id, started_at, finished_at, status, rows_written, notes) "
+                "VALUES (:id, 'threesixtygiving', :s, :f, 'ok', 1, "
+                "'grant_index_scope=full')"
+            ),
+            {
+                "id": uuid.uuid4(),
+                "s": now - timedelta(minutes=5),
+                "f": now,
+            },
+        )
 
 
 async def test_healthz_returns_ok_when_db_catalogue_and_loaders_fresh() -> None:
@@ -52,6 +65,7 @@ async def test_healthz_returns_ok_when_db_catalogue_and_loaders_fresh() -> None:
     assert body["checks"]["postgres"] == "ok"
     assert body["checks"]["catalogue"] == "ok"
     assert body["checks"]["loader_runs"] == "ok"
+    assert body["checks"]["grant_index"] == "ok"
     assert body["checks"]["capture"] == "ok"
     assert body["status"] == "ok"
 
@@ -67,6 +81,33 @@ async def test_healthz_degrades_when_loader_runs_are_stale() -> None:
     body = response.json()
     assert body["status"] == "degraded"
     assert "stale" in body["checks"]["loader_runs"]
+
+
+async def test_healthz_degrades_when_full_grant_index_is_missing() -> None:
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "DELETE FROM data.loader_run "
+                "WHERE source_id = 'threesixtygiving' "
+                "AND notes LIKE '%grant_index_scope=full%'"
+            )
+        )
+    async with app.router.lifespan_context(app):
+        await _seed_recent_loader_runs()
+        async with engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "DELETE FROM data.loader_run "
+                    "WHERE source_id = 'threesixtygiving' "
+                    "AND notes LIKE '%grant_index_scope=full%'"
+                )
+            )
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.get("/healthz")
+    body = response.json()
+    assert body["status"] == "degraded"
+    assert body["checks"]["grant_index"].startswith("incomplete:")
 
 
 async def test_healthz_degrades_when_capture_backlog_is_large() -> None:

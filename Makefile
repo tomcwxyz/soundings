@@ -1,4 +1,4 @@
-.PHONY: help install install-spacy lint type test test-integration test-live test-db-create migrate seed seed-light up down logs decrypt-env publish-corpus refresh-grants
+.PHONY: help install install-spacy lint type test test-integration test-live test-db-create migrate seed seed-light up down logs decrypt-env publish-corpus refresh-grants restart-runtime
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## ' Makefile | awk 'BEGIN{FS=":.*?## "} {printf "  %-18s %s\n", $$1, $$2}'
@@ -53,8 +53,13 @@ seed-light:  ## Dev seed (single LTLA, ~5 min)
 	docker compose -f infra/docker-compose.yml --project-directory . exec server python -m soundings.seed.run --light
 
 refresh-grants:  ## Download GrantNav and rebuild the full local 360Giving grant index
-	docker compose -f infra/docker-compose.yml --project-directory . exec loader \
+	docker compose -f infra/docker-compose.yml --project-directory . run --rm --build loader \
 	  python -m soundings.loader.run --once threesixtygiving.grant_index
+
+restart-runtime:  ## Rebuild/recreate all code-bearing runtime services after a deploy
+	docker compose -f infra/docker-compose.yml --project-directory . build server ui
+	docker compose -f infra/docker-compose.yml --project-directory . up -d --force-recreate \
+	  server loader pre_warmer ui
 
 OPS_ENV ?= ../soundings-ops/env/production.env.sops
 
