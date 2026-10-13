@@ -191,7 +191,12 @@ async def get_children_geometry(
                 text(
                     """
                     SELECT c.id, c.name,
-                           ST_AsGeoJSON(ST_Simplify(c.geom, 0.005)) AS geojson,
+                           ST_AsGeoJSON(
+                               CASE WHEN c.type IN ('dz22', 'dz11', 'lsoa21')
+                                    THEN ST_SimplifyPreserveTopology(c.geom, 0.0002)
+                                    ELSE ST_Simplify(c.geom, 0.005)
+                               END
+                           ) AS geojson,
                            iv.value
                     FROM geography.current_place_hierarchy h
                     JOIN geography.place c ON c.id = h.child_id

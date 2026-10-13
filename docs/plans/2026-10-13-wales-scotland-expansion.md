@@ -146,3 +146,12 @@ Large `dz22` and `dz11` national exports need `large=true`.
 **Remaining limitations:** Scottish official datasets and actual geometry
 download require development smoke tests. Polygon import does not by itself
 provide Scottish Census, SIMD, OSCR or postcode-by-data-zone bulk reporting.
+
+### Small-area geometry presentation
+
+For LSOA/Data Zone child maps, a five-thousandth-of-a-degree
+simplification tolerance was too coarse and could destroy small
+neighbourhood outlines. Their endpoint now uses a topology-preserving
+0.0002-degree tolerance (roughly tens of metres), while other areas
+retain their previous simplification policy. This remains subject to
+real map rendering checks.
