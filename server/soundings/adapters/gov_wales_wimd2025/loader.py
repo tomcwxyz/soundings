@@ -69,14 +69,10 @@ class Wimd2025Loader(LoaderAdapter):
     async def load_from_bytes(self, content: bytes) -> LoaderResult:
         parsed = parse_wimd_csv(content)
         overall_rank_codes = {
-            row.lsoa_code
-            for row in parsed
-            if row.indicator_key == "deprivation.wimd2025.rank"
+            row.lsoa_code for row in parsed if row.indicator_key == "deprivation.wimd2025.rank"
         }
         overall_decile_codes = {
-            row.lsoa_code
-            for row in parsed
-            if row.indicator_key == "deprivation.wimd2025.decile"
+            row.lsoa_code for row in parsed if row.indicator_key == "deprivation.wimd2025.decile"
         }
         if (
             len(overall_rank_codes) < self._minimum_lsoas
