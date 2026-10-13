@@ -81,7 +81,9 @@ async def test_scottish_loader_writes_idempotent_hierarchy() -> None:
             )
         ).all()
     assert {r.parent_id for r in result} == {
-        "iz22:S02000001", "ltla24:S12000033", "country:S92000003"
+        "iz22:S02000001",
+        "ltla24:S12000033",
+        "country:S92000003",
     }
 
 
