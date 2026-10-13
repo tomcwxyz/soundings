@@ -210,8 +210,8 @@ async def find_organisations_in_place(
             partial = True
         elif input.funded_only and ftc_place:
             caveats.append(
-                "funded_only is not yet available for Find That Charity-backed "
-                "Scotland/Northern Ireland organisation results"
+                "funded_only is not yet available for Scotland/Northern Ireland "
+                "organisation results (OSCR or Find That Charity)"
             )
             partial = True
 
