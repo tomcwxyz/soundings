@@ -893,8 +893,14 @@ class IndicatorOrchestrator:
                 )
             ).scalar_one()
             if not current:
-                return FindOrganisationsResult(organisations=[], sources=[], caveats=[], partial=True)
-            kw_sql, kw_params = self._keyword_filter_sql(activity_filter)
+                return FindOrganisationsResult(
+                    organisations=[], sources=[], caveats=[], partial=True
+                )
+            kw_patterns = [
+                f"%{keyword.strip()}%"
+                for keyword in (activity_filter or [])
+                if keyword.strip()
+            ]
             rows = (
                 await conn.execute(
                     text(
@@ -908,12 +914,20 @@ class IndicatorOrchestrator:
                         "   SELECT 1 FROM geography.current_place_hierarchy h "
                         "   WHERE h.child_id = o.registered_address_place_id "
                         "     AND h.parent_id = :pid"
-                        " ))"
-                        f"{kw_sql} "
+                        " )) "
+                        "AND (NOT CAST(:has_keywords AS boolean) "
+                        "OR o.name ILIKE ANY(CAST(:keywords AS text[])) "
+                        "OR array_to_string(o.classification,' ') "
+                        "ILIKE ANY(CAST(:keywords AS text[]))) "
                         "ORDER BY (o.raw->>'latest_income')::numeric DESC NULLS LAST "
                         "LIMIT :limit"
                     ),
-                    {"pid": place_id, "limit": limit, **kw_params},
+                    {
+                        "pid": place_id,
+                        "limit": limit,
+                        "has_keywords": bool(kw_patterns),
+                        "keywords": kw_patterns,
+                    },
                 )
             ).all()
 
