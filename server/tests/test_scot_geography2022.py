@@ -44,8 +44,6 @@ def test_wrong_country_codes_rejected() -> None:
 
 
 def test_conflicting_dz_parent_rejected() -> None:
-    conflicted = (
-        SAMPLE + b"S01000001,S02000002,S12000036,Other,Other\n"
-    )
+    conflicted = SAMPLE + b"S01000001,S02000002,S12000036,Other,Other\n"
     with pytest.raises(ValueError, match="Conflicting"):
         parse_scot_dz_lookup(conflicted)

@@ -15,7 +15,6 @@ jobs:
           version: "0.11.12"
       - run: cd server && uv sync --frozen
       - run: cd server && uv run ruff check .
-      - run: cd server && uv run ruff format --diff soundings/adapters/gov_scot_geography/ soundings/tools/get_sub_areas.py tests/test_scot_geography2022.py
       - run: cd server && uv run ruff format --check .
       - run: cd server && uv run mypy soundings
 

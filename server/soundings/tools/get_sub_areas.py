@@ -81,9 +81,7 @@ async def get_sub_areas(
         )
         indicator_row = available.first()
     geography_types = list(indicator_row.available_at) if indicator_row else []
-    child_type = resolve_sub_area_type(
-        input.place_id, input.child_type, geography_types
-    )
+    child_type = resolve_sub_area_type(input.place_id, input.child_type, geography_types)
     # 2. Get current child place IDs via the canonical current hierarchy view.
     async with engine.connect() as conn:
         child_rows = (
@@ -212,9 +210,7 @@ def resolve_sub_area_sort(requested: str, higher_is: str | None) -> str:
     return "value_asc" if higher_is == "better" else "value_desc"
 
 
-def resolve_sub_area_type(
-    parent_id: str, requested: str, available_at: list[str]
-) -> str:
+def resolve_sub_area_type(parent_id: str, requested: str, available_at: list[str]) -> str:
     """Select a small-area edition supported by both the nation and indicator."""
     if requested != "auto":
         return requested

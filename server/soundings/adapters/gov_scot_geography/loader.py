@@ -74,10 +74,7 @@ def hierarchy_edges(records: Sequence[ScottishLookupRow]) -> list[dict[str, str]
                 (la, SCOTLAND_ID),
             )
         )
-    return [
-        {"child_id": child_id, "parent_id": parent_id}
-        for child_id, parent_id in sorted(edges)
-    ]
+    return [{"child_id": child_id, "parent_id": parent_id} for child_id, parent_id in sorted(edges)]
 
 
 class ScotGeography2022Loader(LoaderAdapter):
@@ -115,8 +112,7 @@ class ScotGeography2022Loader(LoaderAdapter):
         iz_count = len({r.iz for r in parsed})
         if dz_count < self._minimum_dz or iz_count < self._minimum_iz:
             raise ValueError(
-                f"Incomplete Scottish lookup: {dz_count} Data Zones, "
-                f"{iz_count} Intermediate Zones"
+                f"Incomplete Scottish lookup: {dz_count} Data Zones, {iz_count} Intermediate Zones"
             )
 
         needed_parents = {f"ltla24:{r.la}" for r in parsed} | {SCOTLAND_ID}
