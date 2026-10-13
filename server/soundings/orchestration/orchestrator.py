@@ -897,9 +897,7 @@ class IndicatorOrchestrator:
                     organisations=[], sources=[], caveats=[], partial=True
                 )
             kw_patterns = [
-                f"%{keyword.strip()}%"
-                for keyword in (activity_filter or [])
-                if keyword.strip()
+                f"%{keyword.strip()}%" for keyword in (activity_filter or []) if keyword.strip()
             ]
             rows = (
                 await conn.execute(

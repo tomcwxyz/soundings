@@ -184,9 +184,18 @@ counts: dual-registered charities are possible, and missing postcodes
 understate local counts.
 
 **Still requires:** an actual upstream ZIP/CSV smoke, isolated-dev DB import,
-application query routing to local OSCR data when present (with FTC fallback),
+verify application query routing to local OSCR data when present (with FTC fallback),
 OSCR attribution in UI/results, dual-register reconciliation and verification
 that not-current organisations don't surface. Keep draft until these pass.
 
 Run on development after catalogue + ONS postcode seed:
 `cd server && uv run python -m soundings.loader.run --once oscr`.
+
+The Scottish organisation search is now wired into the orchestrator: when a
+current OSCR snapshot is present, the query returns matched Scottish
+registered-address charities rather than attempting FTC local-authority
+discovery; before a successful source import, it retains the FTC fallback.
+The query explicitly returns `partial=true` with licensed source
+attribution and missing-address caveats. This **does not** yet provide
+verified service-delivery geography, and the separate civil society profile
+will need Scottish-specific implementation before full UK coverage.
