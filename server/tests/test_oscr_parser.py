@@ -8,13 +8,13 @@ import pytest
 from soundings.adapters.oscr.parser import parse_register_csv, parse_register_zip
 
 CSV = (
-    "Charity Number,Charity Name,Charity Status,Postcode,Registration Date,"
-    "Main Operating Location,Geographical Spread,Income,Expenditure,Purposes\n"
-    "SC000001,Local Example,Active,EH47 8BY,26/06/1986,West Lothian,"
-    "Local,1000,50,Community\n"
-    "SC000002,Other Group,Not Monitored,EH1 2XY,03/04/2004,City of Edinburgh,"
-    "Scotland and UK,,100,Education\n"
-).encode()
+    b"Charity Number,Charity Name,Charity Status,Postcode,Registration Date,"
+    b"Main Operating Location,Geographical Spread,Income,Expenditure,Purposes\n"
+    b"SC000001,Local Example,Active,EH47 8BY,26/06/1986,West Lothian,"
+    b"Local,1000,50,Community\n"
+    b"SC000002,Other Group,Not Monitored,EH1 2XY,03/04/2004,City of Edinburgh,"
+    b"Scotland and UK,,100,Education\n"
+)
 
 
 def zip_csv(data: bytes) -> bytes:
