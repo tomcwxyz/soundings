@@ -53,9 +53,7 @@ async def test_scottish_geometry_loader_handles_paged_geojson() -> None:
         return httpx.Response(200, json={"type": "FeatureCollection", "features": features})
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
-        result = await ScotDataZoneGeometriesLoader(
-            engine, client=client, expected_zones=2
-        ).load()
+        result = await ScotDataZoneGeometriesLoader(engine, client=client, expected_zones=2).load()
     assert result.rows_written == 2
     async with engine.connect() as conn:
         shapes = (
