@@ -14,6 +14,7 @@ from typing import Any, Literal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from soundings.civil_society.oscr_profile import build_oscr_civil_society_profile
 from soundings.contracts.civil_society import (
     CauseAreaCount,
     CivilSocietyProfile,
@@ -1108,6 +1109,15 @@ class IndicatorOrchestrator:
         When `year_from`/`year_to` are given, the registration cohort series
         is filtered to that inclusive range. Totals and income are unaffected.
         """
+        if self._country_from_place_id(place_id) == "Scotland":
+            return await build_oscr_civil_society_profile(
+                self._engine,
+                place_id,
+                keywords,
+                year_from=year_from,
+                year_to=year_to,
+            )
+
         kw_sql, kw_params = self._keyword_filter_sql(keywords)
         retrieved = datetime.now(tz=UTC)
         async with self._engine.connect() as conn:

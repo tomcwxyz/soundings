@@ -6,7 +6,7 @@ trend. Inputs come from `data.organisation` (CC bulk register) joined
 to `data.organisation_operates_in`.
 """
 
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -85,13 +85,21 @@ class CauseAreaCount(BaseModel):
 
 class CivilSocietyProfile(BaseModel):
     place_id: str
+    coverage_basis: Literal["operating_area", "registered_address", "unavailable"] = Field(
+        default="operating_area",
+        description=(
+            "How the headline organisation count was established. The Scottish OSCR "
+            "postcode match measures registered addresses, not service delivery. "
+            "'unavailable' means the geography/source is not covered, not zero charities."
+        ),
+    )
     total_organisations: int = Field(
         ge=0,
         description=(
-            "Charities that *operate* in this place — based on the CC"
-            " area-of-operation field, which a charity self-declares. This"
-            " includes charities registered elsewhere but operating here."
-            " This is the number the Charity Commission website reports."
+            "Charities counted for this area. Interpret using coverage_basis: "
+            "operating_area reflects a declared operating area, registered_address "
+            "reflects a postcode-matched office, and unavailable is NOT a zero count."
+
         ),
     )
     registered_address_count: int = Field(
