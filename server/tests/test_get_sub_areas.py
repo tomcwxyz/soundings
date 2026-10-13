@@ -126,4 +126,5 @@ def test_automatic_neighbourhood_geography_respects_nation_and_vintage() -> None
     assert resolve_sub_area_type("ltla24:S12000036", "auto", ["dz22"]) == "dz22"
     assert resolve_sub_area_type("ltla24:S12000036", "auto", ["dz11"]) == "dz11"
     assert resolve_sub_area_type("ltla24:S12000036", "auto", []) == "dz22"
+    assert resolve_sub_area_type("ltla24:SUBTEST", "auto", ["lsoa21"]) == "lsoa21"
     assert resolve_sub_area_type("ltla24:S12000036", "iz22", ["dz22"]) == "iz22"

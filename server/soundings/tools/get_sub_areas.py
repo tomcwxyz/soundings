@@ -214,7 +214,8 @@ def resolve_sub_area_type(parent_id: str, requested: str, available_at: list[str
     """Select a small-area edition supported by both the nation and indicator."""
     if requested != "auto":
         return requested
-    is_scottish = parent_id.partition(":")[2].startswith("S")
+    code = parent_id.partition(":")[2]
+    is_scottish = len(code) == 9 and code.startswith("S") and code[1:].isdigit()
     if is_scottish:
         for geography in ("dz22", "dz11"):
             if geography in available_at:
