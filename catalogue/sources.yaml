@@ -52,6 +52,17 @@ sources:
     mode: loader
     refresh_cadence: "0 3 1 * *"
 
+  - id: gov_scot.geography2022
+    label: Scottish Government 2022 Data Zone Lookup
+    publisher: Scottish Government
+    publisher_url: https://www.gov.scot/collections/small-area-statistics/
+    dataset_url: https://data.gov.scot/dataset/2022_data_zone_lookup
+    licence: OGL-UK-3.0
+    mode: loader
+    # Annual check after the August update window; geography is edition-specific.
+    refresh_cadence: "0 3 22 8 *"
+    rate_limit: { rps: 1 }
+
   - id: gov_wales.wimd2025
     label: Welsh Index of Multiple Deprivation 2025
     publisher: Welsh Government

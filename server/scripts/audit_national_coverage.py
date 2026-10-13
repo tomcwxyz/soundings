@@ -16,7 +16,7 @@ from sqlalchemy import text
 from soundings.db.engine import get_engine
 
 NATIONS = {"E": "England", "W": "Wales", "S": "Scotland", "N": "Northern Ireland"}
-CORE_PLACE_TYPES = ("country", "ltla24", "lsoa21", "msoa21")
+CORE_PLACE_TYPES = ("country", "ltla24", "lsoa21", "msoa21", "dz22", "iz22", "dz11")
 
 
 async def audit() -> dict[str, object]:
@@ -45,7 +45,34 @@ async def audit() -> dict[str, object]:
                 )
             )
         ).all()
+        registered = (
+            await conn.execute(
+                text(
+                    "SELECT left(p.code,1) AS nation, count(*) AS n "
+                    "FROM data.organisation o "
+                    "JOIN geography.place p ON p.id = o.registered_address_place_id "
+                    "GROUP BY left(p.code,1) ORDER BY nation"
+                )
+            )
+        ).all()
+        operating = (
+            await conn.execute(
+                text(
+                    "SELECT left(p.code,1) AS nation, "
+                    "count(DISTINCT o.organisation_id) AS n "
+                    "FROM data.organisation_operates_in o "
+                    "JOIN geography.place p ON p.id = o.place_id "
+                    "GROUP BY left(p.code,1) ORDER BY nation"
+                )
+            )
+        ).all()
     return {
+        "organisations_registered_here": [
+            {"nation": NATIONS.get(r.nation, r.nation), "count": r.n} for r in registered
+        ],
+        "organisations_operating_here": [
+            {"nation": NATIONS.get(r.nation, r.nation), "count": r.n} for r in operating
+        ],
         "note": "Materialised record coverage, not upstream coverage or answer quality.",
         "place_counts": [
             {"nation": NATIONS.get(r.nation, r.nation), "type": r.type, "count": r.n}

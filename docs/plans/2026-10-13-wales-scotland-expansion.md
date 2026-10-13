@@ -86,3 +86,25 @@ The default `get_sub_areas` sort is now `worst_first`, which reads
 therefore select *lower* numerical values for highest deprivation or
 food-access priority; English IMD scores still select higher values.
 Explicit `value_asc`, `value_desc` and `name` sorts remain supported.
+
+### Scottish 2022 geography foundation (new branch batch)
+
+Source: Scottish Government 2022 Data Zone Lookup
+(https://data.gov.scot/dataset/2022_data_zone_lookup).
+Loader `gov_scot.geography2022` accepts official columns `DZ22`,
+`IZ22`, `LA`. It validates 7,392 DZs and 1,334 IZs, checks all Scottish
+council/country parent places exist and writes direct/transitive hierarchy
+edges. A full ONS UK place seed must precede this operation. Display names
+come from the lookup if provided; otherwise identifiers are used, **not**
+guessed neighbourhood labels.
+
+`cd server && uv run python -m soundings.loader.run --once gov_scot.geography2022`
+
+This source **does not load geometries** or assign postcodes to Data Zones;
+Scottish choropleths/postcode-neighbourhood resolution remain unavailable
+until those separate adapters are verified. Do not mark Scottish maps as
+supported just because the hierarchy is loaded.
+
+The read-only audit now includes Scottish Data/Intermediate Zone counts
+and separates organisations registered in a nation from organisations
+recorded as operating there.
