@@ -55,6 +55,15 @@ sources:
     licence: "OGL-UK-3.0"
     refresh_cadence: "annual"
 
+  gov_wales.wimd2025:
+    label: "Welsh Index of Multiple Deprivation 2025"
+    publisher: "Welsh Government"
+    publisher_url: "https://www.gov.wales/"
+    dataset_url: "https://stats.gov.wales/en-GB/9706edd9-73ad-4902-bb12-7ccd7038626e"
+    licence: "OGL-UK-3.0"
+    refresh_cadence: "fixed 2025 edition"
+    notes: "Wales only. WIMD provides ranks and deciles for 1,917 Welsh LSOA 2021 areas. These are relative rankings, not deprivation scores."
+
   mhclg.imd2025:
     label: "English Indices of Deprivation 2025"
     publisher: "Ministry of Housing, Communities and Local Government"
@@ -1027,3 +1036,239 @@ indicators:
       - "Static PPFI v2.1 component; deciles are country-relative and decile 1 indicates greater vulnerability."
     related_keys: ["food.ppfi.overall_decile"]
 
+
+  # Wales only: separate keys deliberately prevent cross-country IMD comparisons.
+
+  - key: deprivation.wimd2025.rank
+    label: "WIMD 2025 overall WIMD rank"
+    description: "Overall Welsh Index of Multiple Deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.decile"]
+
+  - key: deprivation.wimd2025.decile
+    label: "WIMD 2025 overall WIMD decile"
+    description: "Overall Welsh Index of Multiple Deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.rank"]
+
+  - key: deprivation.wimd2025.income.rank
+    label: "WIMD 2025 income rank"
+    description: "Income deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.income.decile"]
+
+  - key: deprivation.wimd2025.income.decile
+    label: "WIMD 2025 income decile"
+    description: "Income deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.income.rank"]
+
+  - key: deprivation.wimd2025.employment.rank
+    label: "WIMD 2025 employment rank"
+    description: "Employment deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.employment.decile"]
+
+  - key: deprivation.wimd2025.employment.decile
+    label: "WIMD 2025 employment decile"
+    description: "Employment deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.employment.rank"]
+
+  - key: deprivation.wimd2025.health.rank
+    label: "WIMD 2025 health rank"
+    description: "Health deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.health.decile"]
+
+  - key: deprivation.wimd2025.health.decile
+    label: "WIMD 2025 health decile"
+    description: "Health deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.health.rank"]
+
+  - key: deprivation.wimd2025.education.rank
+    label: "WIMD 2025 education rank"
+    description: "Education deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.education.decile"]
+
+  - key: deprivation.wimd2025.education.decile
+    label: "WIMD 2025 education decile"
+    description: "Education deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.education.rank"]
+
+  - key: deprivation.wimd2025.access_to_services.rank
+    label: "WIMD 2025 access to services rank"
+    description: "Access to services deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.access_to_services.decile"]
+
+  - key: deprivation.wimd2025.access_to_services.decile
+    label: "WIMD 2025 access to services decile"
+    description: "Access to services deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.access_to_services.rank"]
+
+  - key: deprivation.wimd2025.housing.rank
+    label: "WIMD 2025 housing rank"
+    description: "Housing deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.housing.decile"]
+
+  - key: deprivation.wimd2025.housing.decile
+    label: "WIMD 2025 housing decile"
+    description: "Housing deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.housing.rank"]
+
+  - key: deprivation.wimd2025.community_safety.rank
+    label: "WIMD 2025 community safety rank"
+    description: "Community safety deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.community_safety.decile"]
+
+  - key: deprivation.wimd2025.community_safety.decile
+    label: "WIMD 2025 community safety decile"
+    description: "Community safety deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.community_safety.rank"]
+
+  - key: deprivation.wimd2025.physical_environment.rank
+    label: "WIMD 2025 physical environment rank"
+    description: "Physical environment deprivation rank among Welsh LSOAs; 1 is most deprived."
+    unit: "rank"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only, ranking 1 to 1917; not comparable with English IMD or Scottish SIMD."
+      - "A rank is relative position, not the scale of deprivation or an absolute change."
+    related_keys: ["deprivation.wimd2025.physical_environment.decile"]
+
+  - key: deprivation.wimd2025.physical_environment.decile
+    label: "WIMD 2025 physical environment decile"
+    description: "Physical environment deprivation national decile across Welsh LSOAs; 1 is most deprived."
+    unit: "decile"
+    higher_is: "better"
+    source_id: "gov_wales.wimd2025"
+    available_at: ["lsoa21"]
+    refresh_cadence: "fixed 2025 edition"
+    caveats:
+      - "Wales only. Decile 1 means the most deprived tenth of Welsh LSOAs."
+      - "WIMD 2025 deciles are not directly comparable with English IMD or Scottish SIMD."
+    related_keys: ["deprivation.wimd2025.physical_environment.rank"]

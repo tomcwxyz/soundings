@@ -52,6 +52,17 @@ sources:
     mode: loader
     refresh_cadence: "0 3 1 * *"
 
+  - id: gov_wales.wimd2025
+    label: Welsh Index of Multiple Deprivation 2025
+    publisher: Welsh Government
+    publisher_url: https://www.gov.wales/welsh-index-multiple-deprivation-2025
+    dataset_url: https://stats.gov.wales/en-GB/9706edd9-73ad-4902-bb12-7ccd7038626e
+    licence: OGL-UK-3.0
+    mode: loader
+    # A fixed 2025 edition; annual check only, no daily/weekly polling.
+    refresh_cadence: "0 4 15 10 *"
+    rate_limit: { rps: 1 }
+
   - id: mhclg.imd2019
     label: English Indices of Deprivation 2019
     publisher: Ministry of Housing, Communities and Local Government
