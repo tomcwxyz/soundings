@@ -56,6 +56,9 @@ async def build_oscr_civil_society_profile(
         return CivilSocietyProfile(
             place_id=place_id,
             coverage_basis="unavailable",
+            total_organisations=0,
+            registered_address_count=0,
+            with_reported_income=0,
             filter_keywords=normalised,
             caveats=[
                 *caveats,
@@ -79,6 +82,9 @@ async def build_oscr_civil_society_profile(
             return CivilSocietyProfile(
                 place_id=place_id,
                 coverage_basis="unavailable",
+                total_organisations=0,
+                registered_address_count=0,
+                with_reported_income=0,
                 filter_keywords=normalised,
                 caveats=[
                     *caveats,
