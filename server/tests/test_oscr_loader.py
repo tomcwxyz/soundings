@@ -48,7 +48,6 @@ def test_registered_address_not_assumed_to_be_operating_area() -> None:
     assert normalise_area("City of Edinburgh") == "edinburgh"
 
 
-
 @pytest_asyncio.fixture
 async def clean_oscr_rows():
     """Restore shared test DB even if a source importer assertion fails."""
@@ -56,24 +55,13 @@ async def clean_oscr_rows():
 
     async def clean() -> None:
         async with engine.begin() as conn:
+            await conn.execute(text("DELETE FROM data.indicator_value WHERE source_id = 'oscr'"))
+            await conn.execute(text("DELETE FROM data.organisation WHERE source_id = 'oscr'"))
             await conn.execute(
-                text("DELETE FROM data.indicator_value WHERE source_id = 'oscr'")
+                text("DELETE FROM data.organisation WHERE id = 'charity_commission:999999'")
             )
-            await conn.execute(
-                text("DELETE FROM data.organisation WHERE source_id = 'oscr'")
-            )
-            await conn.execute(
-                text(
-                    "DELETE FROM data.organisation "
-                    "WHERE id = 'charity_commission:999999'"
-                )
-            )
-            await conn.execute(
-                text("DELETE FROM geography.postcode WHERE postcode = 'EH478BY'")
-            )
-            await conn.execute(
-                text("DELETE FROM geography.place WHERE id = 'ltla24:S12000040'")
-            )
+            await conn.execute(text("DELETE FROM geography.postcode WHERE postcode = 'EH478BY'"))
+            await conn.execute(text("DELETE FROM geography.place WHERE id = 'ltla24:S12000040'"))
 
     await clean()
     try:
