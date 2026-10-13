@@ -134,6 +134,25 @@ async def test_oscr_import_is_idempotent_and_does_not_touch_ccew(clean_oscr_rows
     assert any("registered-address" in caveat for caveat in result.caveats)
     assert result.partial is True
 
+    profile = await orch.compute_civil_society_profile(
+        place_id="ltla24:S12000040", keywords=["local"]
+    )
+    assert profile.coverage_basis == "registered_address"
+    assert profile.total_organisations == profile.registered_address_count == 1
+    assert profile.with_reported_income == 1
+    assert profile.median_income == 1000
+    assert profile.notable.oldest is not None
+    assert profile.notable.oldest.id == "oscr:SC000001"
+    assert profile.registration_cohort[0].year == 1986
+    assert profile.partial is True
+    assert "registered addresses" in profile.caveats[0]
+
+    # No postcode-to-Data-Zone OSCR mapping is claimed.
+    neighbourhood = await orch.compute_civil_society_profile("dz22:S01099999")
+    assert neighbourhood.coverage_basis == "unavailable"
+    assert neighbourhood.total_organisations == 0
+    assert any("not measured" in caveat for caveat in neighbourhood.caveats)
+
 
 @pytest.mark.integration
 async def test_incomplete_oscr_snapshot_does_not_touch_database() -> None:

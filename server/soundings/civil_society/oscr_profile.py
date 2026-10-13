@@ -117,7 +117,7 @@ async def build_oscr_civil_society_profile(
     incomes: list[float] = []
     categories: Counter[str] = Counter()
     registration_years: Counter[int] = Counter()
-    valid_years: list[tuple[str, int, str, float | None]] = []
+    valid_years: list[tuple[str, int, str, str]] = []
     candidates: list[tuple[str, str, float, str | None]] = []
     for row in rows:
         raw = row.raw or {}
