@@ -946,7 +946,7 @@ class IndicatorOrchestrator:
                     latest_income=float(income) if income is not None else None,
                     register_url=(
                         "https://www.oscr.org.uk/about-charities/search-the-register/"
-                        f"charity-details?number={reg.lower()}"
+                        f"charity-details?number={reg}"
                     ),
                     date_of_registration=raw.get("date_of_registration"),
                     postcode=raw.get("postcode"),
@@ -968,17 +968,23 @@ class IndicatorOrchestrator:
             retrieved_at=now,
             cache_status="cached",
         )
+        caveats = [
+            "OSCR results show charities with registered-address postcodes "
+            "mapped to this area, not all organisations delivering services here.",
+            "Some Scottish charities lack matched postcode data; counts may "
+            "understate the register. Cross-registered charities need deduplication.",
+            "OSCR data © Crown Copyright and database right; Office of the "
+            "Scottish Charity Regulator, Open Government Licence v3.0.",
+        ]
+        if place_id.startswith(("dz22:", "iz22:", "dz11:")):
+            caveats.append(
+                "OSCR register postcodes are currently resolved to councils only; "
+                "the absence of neighbourhood results is not evidence of no charities."
+            )
         return FindOrganisationsResult(
             organisations=organisations,
             sources=[source],
-            caveats=[
-                "OSCR results show charities with registered-address postcodes "
-                "mapped to this area, not all organisations delivering services here.",
-                "Some Scottish charities lack matched postcode data; counts may "
-                "understate the register. Cross-registered charities need deduplication.",
-                "OSCR data © Crown Copyright and database right; Office of the "
-                "Scottish Charity Regulator, Open Government Licence v3.0.",
-            ],
+            caveats=caveats,
             partial=True,
         )
 
