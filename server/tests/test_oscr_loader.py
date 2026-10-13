@@ -155,6 +155,17 @@ async def test_oscr_import_is_idempotent_and_does_not_touch_ccew(clean_oscr_rows
 
 
 @pytest.mark.integration
+async def test_scottish_profile_before_source_import_is_unavailable(clean_oscr_rows) -> None:
+    engine = get_engine()
+    orch = IndicatorOrchestrator(engine, MagicMock())
+    result = await orch.compute_civil_society_profile("ltla24:S12000036")
+    assert result.coverage_basis == "unavailable"
+    assert result.total_organisations == 0
+    assert result.partial is True
+    assert any("not measured" in caveat for caveat in result.caveats)
+
+
+@pytest.mark.integration
 async def test_incomplete_oscr_snapshot_does_not_touch_database() -> None:
     loader = OscrLoader(get_engine(), minimum_charities=10)
     with pytest.raises(ValueError, match="Incomplete"):

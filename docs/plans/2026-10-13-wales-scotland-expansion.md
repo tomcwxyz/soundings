@@ -199,3 +199,25 @@ The query explicitly returns `partial=true` with licensed source
 attribution and missing-address caveats. This **does not** yet provide
 verified service-delivery geography, and the separate civil society profile
 will need Scottish-specific implementation before full UK coverage.
+
+### Scottish civil society profile: honest coverage basis
+
+`get_civil_society_profile` now includes `coverage_basis`:
+- `operating_area`: the original CCEW declared-operating-area series;
+- `registered_address`: **partial** OSCR postcode-matched registered-address
+  charities only (not known delivery/service coverage);
+- `unavailable`: OSCR not loaded or requested Scottish Data Zone/Intermediate
+  Zone cannot be resolved from its current council-level postcode cache.
+
+Scottish profile counts, income buckets, first-registration cohorts, largest
+charities and cause distributions are computed from the matched, current
+OSCR subset only. `total_organisations` and `registered_address_count`
+are identical by design when the basis is registered-address, **not** a
+claim that all those charities operate in the area. Cohorts exclude former
+charities and are not historical numbers of charities originally registered
+in each year. Scottish returns set `partial=true`, explicitly warn about
+postcode gaps and cross-register duplication and carry OSCR attribution.
+
+When the basis is `unavailable`, required numerical contract fields are
+zero for schema compatibility, but that **never represents a measured zero**
+and downstream charts/answers must not visualise it as such.
