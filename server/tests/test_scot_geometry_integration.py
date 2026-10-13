@@ -43,9 +43,9 @@ async def test_scottish_geometry_loader_handles_paged_geojson() -> None:
             await conn.execute(
                 text(
                     "INSERT INTO geography.place (id,type,code,name) "
-                    "VALUES (:id,'dz22',:code,:code) ON CONFLICT (id) DO NOTHING"
+                    "VALUES (:id,'dz22',:code,:name) ON CONFLICT (id) DO NOTHING"
                 ),
-                {"id": f"dz22:{code}", "code": code},
+                {"id": f"dz22:{code}", "code": code, "name": code},
             )
     features = [_feature(ids[0], -2.25), _feature(ids[1], -2.20)]
 
