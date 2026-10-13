@@ -118,3 +118,31 @@ the first compatible catalogued `dz22` or `dz11` level (and default to
 requests for `child_type` still take precedence. This is necessary for
 the WIMD/SIMD distinction but does not mean Scottish deprivation data or
 boundaries are loaded yet.
+
+### Scottish 2022 Data Zone polygon service (new batch)
+
+Verified Scottish Government 2022 Data Zone polygon layer:
+https://services-eu1.arcgis.com/4QkhM5AS8YOlkb6T/arcgis/rest/services/2022_Data_Zones_and_Intermediate_Zones/FeatureServer/0.
+It publishes `DZCode`, `DZName` and 7,392 polygons. The separate
+`gov_scot.dz22_boundaries` loader requests paged GeoJSON reprojected to
+WGS84, validates codes/shapes and upserts existing `geography.place.geom`.
+It **requires** `gov_scot.geography2022` to complete beforehand. It does
+not claim maps work until the complete source has been imported.
+
+After Scottish geography import, run in development:
+
+```bash
+uv run python -m soundings.loader.run --once gov_scot.dz22_boundaries
+```
+
+Once polygons are present, Scottish postcodes with coordinates are resolved
+via PostGIS `ST_Covers` into a 2022 Data Zone and its parent Intermediate
+Zone. No new postcode DB column is required. This is explicitly fallback
+enrichment at read time; the `geography.postcode` cache retains its
+existing England/Wales-focused columns. The children map API also now uses
+the same indicator/nation-aware small-area selection as `get_sub_areas`.
+Large `dz22` and `dz11` national exports need `large=true`.
+
+**Remaining limitations:** Scottish official datasets and actual geometry
+download require development smoke tests. Polygon import does not by itself
+provide Scottish Census, SIMD, OSCR or postcode-by-data-zone bulk reporting.

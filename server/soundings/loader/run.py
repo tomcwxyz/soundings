@@ -19,6 +19,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from soundings.adapters.charity_commission.loader import CharityCommissionLoader
 from soundings.adapters.companies_house.loader import CompaniesHouseLoader
 from soundings.adapters.foe_green_space.loader import FoeGreenSpaceLoader
+from soundings.adapters.gov_scot_geography.geometries_loader import (
+    ScotDataZoneGeometriesLoader,
+)
 from soundings.adapters.gov_scot_geography.loader import ScotGeography2022Loader
 from soundings.adapters.gov_wales_wimd2025.loader import Wimd2025Loader
 from soundings.adapters.mhclg_imd2025.aggregation import aggregate_imd_to_ltla
@@ -78,6 +81,9 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     async def _census() -> None:
         await OnsCensus2021Loader(engine).load()
 
+    async def _scot_boundaries2022() -> None:
+        await ScotDataZoneGeometriesLoader(engine).load()
+
     async def _scot_geography2022() -> None:
         await ScotGeography2022Loader(engine).load()
 
@@ -117,6 +123,7 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
         "mhclg.imd2025": _imd2025,
         "gov_wales.wimd2025": _wimd2025,
         "gov_scot.geography2022": _scot_geography2022,
+        "gov_scot.dz22_boundaries": _scot_boundaries2022,
         "mhclg.imd2019": _imd2019,
         "charity_commission": _charity_commission,
         "companies_house": _companies_house,
