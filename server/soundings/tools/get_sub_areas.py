@@ -32,7 +32,7 @@ class GetSubAreasInput(BaseModel):
     child_type: str = "lsoa21"  # child geography type
     period: str | None = None
     limit: int = 50  # cap to avoid huge responses
-    sort_by: str = "value_desc"  # "value_desc", "value_asc", "name"
+    sort_by: str = "worst_first"  # "worst_first", "value_desc", "value_asc", "name"
 
 
 class GetSubAreasOutput(BaseModel):
@@ -112,8 +112,9 @@ async def get_sub_areas(
                     # value per place.
                     """
                     SELECT DISTINCT ON (iv.place_id)
-                        iv.place_id, iv.value, iv.period
+                        iv.place_id, iv.value, iv.period, ind.higher_is
                     FROM data.indicator_value iv
+                    JOIN catalogue.indicator ind ON ind.key = iv.indicator_key
                     WHERE iv.place_id = ANY(:child_ids)
                       AND iv.indicator_key = :indicator_key
                       AND (CAST(:period AS text) IS NULL OR iv.period = :period)
@@ -162,10 +163,13 @@ async def get_sub_areas(
                 )
             )
 
-    # 5. Sort
-    if input.sort_by == "value_desc":
+    # 5. Sort. Welsh WIMD and PPFI deciles are lower-is-worse while
+    #    English IMD scores are higher-is-worse. Use catalogue semantics.
+    higher_is = value_rows[0].higher_is if value_rows else None
+    sort_by = resolve_sub_area_sort(input.sort_by, higher_is)
+    if sort_by == "value_desc":
         sub_areas.sort(key=lambda s: s.value or 0, reverse=True)
-    elif input.sort_by == "value_asc":
+    elif sort_by == "value_asc":
         sub_areas.sort(key=lambda s: s.value or 0)
     else:
         sub_areas.sort(key=lambda s: s.name)
@@ -187,3 +191,10 @@ async def get_sub_areas(
         parent_percentile=parent_percentile,
         period=period_used,
     )
+
+
+def resolve_sub_area_sort(requested: str, higher_is: str | None) -> str:
+    """Translate default worst-first into a numeric ordering, without overriding explicit sorts."""
+    if requested != "worst_first":
+        return requested
+    return "value_asc" if higher_is == "better" else "value_desc"

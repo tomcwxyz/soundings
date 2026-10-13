@@ -78,3 +78,11 @@ Define nation-aware hierarchy types for dz22/iz22 plus dz11 legacy
 boundaries, then update postcode mappings and sub-area selection. Implement
 OSCR register ingestion with registered-address versus operating-area
 provenance, and only after that introduce SIMD and Census 2022 indicators.
+
+### Neighbourhood ordering safeguard
+
+The default `get_sub_areas` sort is now `worst_first`, which reads
+`catalogue.indicator.higher_is`. WIMD/PPFI rank and decile indicators
+therefore select *lower* numerical values for highest deprivation or
+food-access priority; English IMD scores still select higher values.
+Explicit `value_asc`, `value_desc` and `name` sorts remain supported.

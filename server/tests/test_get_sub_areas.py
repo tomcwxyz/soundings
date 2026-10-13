@@ -12,6 +12,7 @@ from soundings.tools.get_sub_areas import (
     GetSubAreasOutput,
     SubAreaValue,
     get_sub_areas,
+    resolve_sub_area_sort,
     tool_spec,
 )
 
@@ -109,3 +110,10 @@ async def test_sub_areas_with_null_period_does_not_raise() -> None:
 
     assert len(out.sub_areas) == 3
     assert {round(s.value or 0) for s in out.sub_areas} == {10, 20, 30}
+
+
+def test_worst_first_sort_respects_indicator_direction() -> None:
+    assert resolve_sub_area_sort("worst_first", "better") == "value_asc"
+    assert resolve_sub_area_sort("worst_first", "worse") == "value_desc"
+    assert resolve_sub_area_sort("worst_first", None) == "value_desc"
+    assert resolve_sub_area_sort("value_desc", "better") == "value_desc"
