@@ -99,7 +99,6 @@ class CivilSocietyProfile(BaseModel):
             "Charities counted for this area. Interpret using coverage_basis: "
             "operating_area reflects a declared operating area, registered_address "
             "reflects a postcode-matched office, and unavailable is NOT a zero count."
-
         ),
     )
     registered_address_count: int = Field(

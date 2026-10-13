@@ -139,9 +139,7 @@ async def build_oscr_civil_society_profile(
         if entry is None:
             return None
         reg, year, org_id, name = entry
-        return NotableOrg(
-            id=org_id, name=name, date_of_registration=reg, year_registered=year
-        )
+        return NotableOrg(id=org_id, name=name, date_of_registration=reg, year_registered=year)
 
     old = min(valid_years, default=None)
     newest = max(valid_years, default=None)
@@ -169,8 +167,7 @@ async def build_oscr_civil_society_profile(
     cohorts = [
         RegistrationCohort(year=year, registered=count, removed=0, net=count)
         for year, count in sorted(registration_years.items())
-        if (year_from is None or year >= year_from)
-        and (year_to is None or year <= year_to)
+        if (year_from is None or year >= year_from) and (year_to is None or year <= year_to)
     ]
     buckets = [
         IncomeBucket(
@@ -207,7 +204,6 @@ async def build_oscr_civil_society_profile(
         partial=True,
         notable=notable_orgs,
         cause_area_distribution=[
-            CauseAreaCount(label=label, count=count)
-            for label, count in categories.most_common(10)
+            CauseAreaCount(label=label, count=count) for label, count in categories.most_common(10)
         ],
     )
