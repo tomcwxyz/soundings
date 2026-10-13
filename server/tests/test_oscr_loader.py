@@ -5,6 +5,7 @@ import zipfile
 from datetime import UTC, datetime
 
 import pytest
+import pytest_asyncio
 from sqlalchemy import text
 
 from soundings.adapters.oscr.loader import (
@@ -47,8 +48,42 @@ def test_registered_address_not_assumed_to_be_operating_area() -> None:
     assert normalise_area("City of Edinburgh") == "edinburgh"
 
 
+
+@pytest_asyncio.fixture
+async def clean_oscr_rows():
+    """Restore shared test DB even if a source importer assertion fails."""
+    engine = get_engine()
+
+    async def clean() -> None:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text("DELETE FROM data.indicator_value WHERE source_id = 'oscr'")
+            )
+            await conn.execute(
+                text("DELETE FROM data.organisation WHERE source_id = 'oscr'")
+            )
+            await conn.execute(
+                text(
+                    "DELETE FROM data.organisation "
+                    "WHERE id = 'charity_commission:999999'"
+                )
+            )
+            await conn.execute(
+                text("DELETE FROM geography.postcode WHERE postcode = 'EH478BY'")
+            )
+            await conn.execute(
+                text("DELETE FROM geography.place WHERE id = 'ltla24:S12000040'")
+            )
+
+    await clean()
+    try:
+        yield
+    finally:
+        await clean()
+
+
 @pytest.mark.integration
-async def test_oscr_import_is_idempotent_and_does_not_touch_ccew() -> None:
+async def test_oscr_import_is_idempotent_and_does_not_touch_ccew(clean_oscr_rows) -> None:
     engine = get_engine()
     now = datetime.now(tz=UTC)
     async with engine.begin() as conn:

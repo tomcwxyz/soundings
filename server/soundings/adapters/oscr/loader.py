@@ -148,9 +148,7 @@ class OscrLoader(LoaderAdapter):
                 ).all()
                 postcode_map.update((r.postcode, r.ltla24) for r in rows)
         postcode_map = {
-            postcode: pid
-            for postcode, pid in postcode_map.items()
-            if pid.startswith("ltla24:S")
+            postcode: pid for postcode, pid in postcode_map.items() if pid.startswith("ltla24:S")
         }
         councils = operating_area_lookup([(row.id, row.name) for row in council_rows])
         timestamp = datetime.now(tz=UTC)
@@ -221,7 +219,7 @@ class OscrLoader(LoaderAdapter):
             rows_written=len(entries),
             notes=(
                 f"{len(entries)} OSCR records; {located} matched registered postcodes, "
-                f"{len(entries)-located} unmatched; {main_locations} main location names "
+                f"{len(entries) - located} unmatched; {main_locations} main location names "
                 "recognised (not asserted as areas served)"
             ),
         )
