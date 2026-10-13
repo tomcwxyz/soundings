@@ -639,6 +639,19 @@ indicators:
   # Civil society context
   # ---------------------------------------------------------------------------
 
+  - key: civil_society.oscr_registered_charities_count
+    label: "OSCR charities registered in the Scottish council area"
+    description: "Current OSCR charities with registered-address postcodes matched to a Scottish local authority in the local postcode cache."
+    unit: "charities"
+    higher_is: null
+    source_id: "oscr"
+    available_at: ["ltla24"]
+    refresh_cadence: "weekly"
+    caveats:
+      - "This is registered-address coverage, not an operating-area count."
+      - "Charities with unmatched registered-address postcodes are excluded."
+      - "Cross-registered charities may appear in both OSCR and CCEW registers; never sum counts without reconciliation."
+
   - key: civil_society.active_charities_count
     label: "Active charities registered in the area"
     description: "Number of charities registered with a primary postcode in the area, currently active."

@@ -155,3 +155,38 @@ neighbourhood outlines. Their endpoint now uses a topology-preserving
 0.0002-degree tolerance (roughly tens of metres), while other areas
 retain their previous simplification policy. This remains subject to
 real map rendering checks.
+
+### Scottish charities: OSCR official current register
+
+New loader `oscr` imports the official daily-updated OSCR bulk ZIP
+(https://www.oscr.org.uk/download/charity-register), without a proprietary
+API key. Scheduled weekly; minimum 20,000 current entries to prevent an
+incomplete/changed upstream response silently replacing existing coverage.
+
+OSCR's Open Government Licence v3 comes with specific constraints:
+no direct marketing, do not claim to publish the Scottish Charity Register,
+and attribute: © Crown Copyright and database right [year]. Contains
+information from the Scottish Charity Register supplied by the Office of
+the Scottish Charity Regulator and licensed under the Open Government
+Licence v.3.0.
+
+Importer stores only public organisation-level metadata, NOT street addresses,
+contacts or trustee names. Identifiers use `oscr:SCxxxxxx`, never overwrite
+`charity_commission:` IDs. Registered councils are resolved only from
+already-cached postcodes (no postcode API fanout). The published "Main
+Operating Location" is captured separately, not misrepresented as the
+area the charity serves. Existing OSCR rows absent from a subsequent
+successful snapshot are marked not current, not hard-deleted.
+
+`civil_society.oscr_registered_charities_count` is a separate
+postcode-matched registered-address indicator. Do not combine it with CCEW
+counts: dual-registered charities are possible, and missing postcodes
+understate local counts.
+
+**Still requires:** an actual upstream ZIP/CSV smoke, isolated-dev DB import,
+application query routing to local OSCR data when present (with FTC fallback),
+OSCR attribution in UI/results, dual-register reconciliation and verification
+that not-current organisations don't surface. Keep draft until these pass.
+
+Run on development after catalogue + ONS postcode seed:
+`cd server && uv run python -m soundings.loader.run --once oscr`.

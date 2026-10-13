@@ -152,6 +152,17 @@ sources:
     ttl_hours: 24
     rate_limit: { rps: 10 }
 
+  - id: oscr
+    label: Scottish Charity Register (OSCR)
+    publisher: Office of the Scottish Charity Regulator
+    publisher_url: https://www.oscr.org.uk/
+    dataset_url: https://www.oscr.org.uk/about-charities/search-the-register/download-the-scottish-charity-register/
+    licence: OGL-UK-3.0
+    mode: loader
+    # Official daily-updated snapshot; weekly re-fetch avoids unnecessary work.
+    refresh_cadence: "0 4 * * 1"
+    rate_limit: { rps: 1 }
+
   - id: charity_commission
     label: Charity Commission Register
     publisher: Charity Commission for England and Wales

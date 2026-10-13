@@ -44,6 +44,7 @@ from soundings.adapters.ons_geography.hierarchy_loader import (
 from soundings.adapters.ons_geography.places_loader import OnsGeographyPlacesLoader
 from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimatesLoader
 from soundings.adapters.ons_nspl.loader import NsplLoader
+from soundings.adapters.oscr.loader import OscrLoader
 from soundings.adapters.ppfi.loader import PpfiLoader
 from soundings.capture.retention import delete_old_raw_records
 from soundings.db.engine import get_engine
@@ -98,6 +99,9 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
         await MhclgImd2019Loader(engine).load()
         await aggregate_imd_to_ltla(engine, source_id="mhclg.imd2019")
 
+    async def _oscr() -> None:
+        await OscrLoader(engine).load()
+
     async def _charity_commission() -> None:
         await CharityCommissionLoader(engine).load()
 
@@ -126,6 +130,7 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
         "gov_scot.dz22_boundaries": _scot_boundaries2022,
         "mhclg.imd2019": _imd2019,
         "charity_commission": _charity_commission,
+        "oscr": _oscr,
         "companies_house": _companies_house,
         "foe.green_space": _foe_green_space,
         "hasp.ppfi": _ppfi,
