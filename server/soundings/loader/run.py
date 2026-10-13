@@ -19,6 +19,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from soundings.adapters.charity_commission.loader import CharityCommissionLoader
 from soundings.adapters.companies_house.loader import CompaniesHouseLoader
 from soundings.adapters.foe_green_space.loader import FoeGreenSpaceLoader
+from soundings.adapters.gov_scot_geography.geometries_loader import (
+    ScotDataZoneGeometriesLoader,
+)
+from soundings.adapters.gov_scot_geography.loader import ScotGeography2022Loader
+from soundings.adapters.gov_wales_wimd2025.loader import Wimd2025Loader
 from soundings.adapters.mhclg_imd2025.aggregation import aggregate_imd_to_ltla
 from soundings.adapters.mhclg_imd2025.loader import MhclgImd2019Loader, MhclgImd2025Loader
 from soundings.adapters.ons_census2021.loader import OnsCensus2021Loader
@@ -39,6 +44,7 @@ from soundings.adapters.ons_geography.hierarchy_loader import (
 from soundings.adapters.ons_geography.places_loader import OnsGeographyPlacesLoader
 from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimatesLoader
 from soundings.adapters.ons_nspl.loader import NsplLoader
+from soundings.adapters.oscr.loader import OscrLoader
 from soundings.adapters.ppfi.loader import PpfiLoader
 from soundings.capture.retention import delete_old_raw_records
 from soundings.db.engine import get_engine
@@ -76,6 +82,15 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     async def _census() -> None:
         await OnsCensus2021Loader(engine).load()
 
+    async def _scot_boundaries2022() -> None:
+        await ScotDataZoneGeometriesLoader(engine).load()
+
+    async def _scot_geography2022() -> None:
+        await ScotGeography2022Loader(engine).load()
+
+    async def _wimd2025() -> None:
+        await Wimd2025Loader(engine).load()
+
     async def _imd2025() -> None:
         await MhclgImd2025Loader(engine).load()
         await aggregate_imd_to_ltla(engine, source_id="mhclg.imd2025")
@@ -83,6 +98,9 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     async def _imd2019() -> None:
         await MhclgImd2019Loader(engine).load()
         await aggregate_imd_to_ltla(engine, source_id="mhclg.imd2019")
+
+    async def _oscr() -> None:
+        await OscrLoader(engine).load()
 
     async def _charity_commission() -> None:
         await CharityCommissionLoader(engine).load()
@@ -107,8 +125,12 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
         "ons.mid_year_estimates": _mye,
         "ons.census2021": _census,
         "mhclg.imd2025": _imd2025,
+        "gov_wales.wimd2025": _wimd2025,
+        "gov_scot.geography2022": _scot_geography2022,
+        "gov_scot.dz22_boundaries": _scot_boundaries2022,
         "mhclg.imd2019": _imd2019,
         "charity_commission": _charity_commission,
+        "oscr": _oscr,
         "companies_house": _companies_house,
         "foe.green_space": _foe_green_space,
         "hasp.ppfi": _ppfi,

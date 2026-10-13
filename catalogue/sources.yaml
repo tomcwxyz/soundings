@@ -52,6 +52,38 @@ sources:
     mode: loader
     refresh_cadence: "0 3 1 * *"
 
+  - id: gov_scot.dz22_boundaries
+    label: Scottish Government 2022 Data Zone boundaries
+    publisher: Scottish Government Spatial Data
+    publisher_url: https://www.gov.scot/collections/small-area-statistics/
+    dataset_url: https://services-eu1.arcgis.com/4QkhM5AS8YOlkb6T/arcgis/rest/services/2022_Data_Zones_and_Intermediate_Zones/FeatureServer/0
+    licence: OGL-UK-3.0
+    mode: loader
+    refresh_cadence: "0 5 24 8 *"
+    rate_limit: { rps: 1 }
+
+  - id: gov_scot.geography2022
+    label: Scottish Government 2022 Data Zone Lookup
+    publisher: Scottish Government
+    publisher_url: https://www.gov.scot/collections/small-area-statistics/
+    dataset_url: https://data.gov.scot/dataset/2022_data_zone_lookup
+    licence: OGL-UK-3.0
+    mode: loader
+    # Annual check after the August update window; geography is edition-specific.
+    refresh_cadence: "0 3 22 8 *"
+    rate_limit: { rps: 1 }
+
+  - id: gov_wales.wimd2025
+    label: Welsh Index of Multiple Deprivation 2025
+    publisher: Welsh Government
+    publisher_url: https://www.gov.wales/welsh-index-multiple-deprivation-2025
+    dataset_url: https://stats.gov.wales/en-GB/9706edd9-73ad-4902-bb12-7ccd7038626e
+    licence: OGL-UK-3.0
+    mode: loader
+    # A fixed 2025 edition; annual check only, no daily/weekly polling.
+    refresh_cadence: "0 4 15 10 *"
+    rate_limit: { rps: 1 }
+
   - id: mhclg.imd2019
     label: English Indices of Deprivation 2019
     publisher: Ministry of Housing, Communities and Local Government
@@ -119,6 +151,17 @@ sources:
     mode: passthrough
     ttl_hours: 24
     rate_limit: { rps: 10 }
+
+  - id: oscr
+    label: Scottish Charity Register (OSCR)
+    publisher: Office of the Scottish Charity Regulator
+    publisher_url: https://www.oscr.org.uk/
+    dataset_url: https://www.oscr.org.uk/about-charities/search-the-register/download-the-scottish-charity-register/
+    licence: OGL-UK-3.0
+    mode: loader
+    # Official daily-updated snapshot; weekly re-fetch avoids unnecessary work.
+    refresh_cadence: "0 4 * * 1"
+    rate_limit: { rps: 1 }
 
   - id: charity_commission
     label: Charity Commission Register

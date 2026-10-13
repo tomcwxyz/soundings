@@ -17,6 +17,8 @@ import json
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
 
+from soundings.tools.get_sub_areas import resolve_sub_area_type
+
 router = APIRouter(prefix="/v1")
 
 
@@ -169,20 +171,32 @@ async def get_children_geometry(
     place_id: str,
     indicator: str = Query(...),
     period: str | None = Query(default=None),
-    child_type: str = Query(default="lsoa21"),
+    child_type: str = Query(default="auto"),
 ) -> dict[str, object]:
-    """FeatureCollection of a place's current sub-areas (default LSOAs)
+    """FeatureCollection of current sub-areas (LSOAs or Scottish Data Zones)
     coloured by an indicator. A LATERAL join picks the latest period per child
     when `period` is omitted. Children without a value are excluded so the
     caller can detect 'no sub-area data' and fall back to peer mode."""
     engine = request.app.state.engine
     async with engine.connect() as conn:
+        available = await conn.execute(
+            text("SELECT available_at FROM catalogue.indicator WHERE key = :key"),
+            {"key": indicator},
+        )
+        indicator_row = available.first()
+        geography_types = list(indicator_row.available_at) if indicator_row else []
+        child_type = resolve_sub_area_type(place_id, child_type, geography_types)
         rows = (
             await conn.execute(
                 text(
                     """
                     SELECT c.id, c.name,
-                           ST_AsGeoJSON(ST_Simplify(c.geom, 0.005)) AS geojson,
+                           ST_AsGeoJSON(
+                               CASE WHEN c.type IN ('dz22', 'dz11', 'lsoa21')
+                                    THEN ST_SimplifyPreserveTopology(c.geom, 0.0002)
+                                    ELSE ST_Simplify(c.geom, 0.005)
+                               END
+                           ) AS geojson,
                            iv.value
                     FROM geography.current_place_hierarchy h
                     JOIN geography.place c ON c.id = h.child_id
@@ -235,10 +249,10 @@ async def get_geographies_geometry(
     indicator (value + percentile). The national counterpart to
     `peers/geometry` (which is relative to one place). Latest period per place
     when `period` is omitted. Large layers (lsoa21) require `large=true`."""
-    if place_type == "lsoa21" and not large:
+    if place_type in {"lsoa21", "dz22", "dz11"} and not large:
         raise HTTPException(
             status_code=422,
-            detail="lsoa21 is a large layer; pass large=true to confirm",
+            detail=f"{place_type} is a large layer; pass large=true to confirm",
         )
     engine = request.app.state.engine
     async with engine.connect() as conn:

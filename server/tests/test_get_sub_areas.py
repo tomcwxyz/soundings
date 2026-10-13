@@ -12,6 +12,8 @@ from soundings.tools.get_sub_areas import (
     GetSubAreasOutput,
     SubAreaValue,
     get_sub_areas,
+    resolve_sub_area_sort,
+    resolve_sub_area_type,
     tool_spec,
 )
 
@@ -25,7 +27,7 @@ def test_input_model_requires_place_id_and_indicator() -> None:
     model = GetSubAreasInput(place_id="ltla24:E06000004", indicator_key="deprivation.imd.score")
     assert model.place_id == "ltla24:E06000004"
     assert model.indicator_key == "deprivation.imd.score"
-    assert model.child_type == "lsoa21"  # default
+    assert model.child_type == "auto"  # resolved by nation and indicator edition
 
 
 def test_output_model_has_sub_areas_list() -> None:
@@ -109,3 +111,20 @@ async def test_sub_areas_with_null_period_does_not_raise() -> None:
 
     assert len(out.sub_areas) == 3
     assert {round(s.value or 0) for s in out.sub_areas} == {10, 20, 30}
+
+
+def test_worst_first_sort_respects_indicator_direction() -> None:
+    assert resolve_sub_area_sort("worst_first", "better") == "value_asc"
+    assert resolve_sub_area_sort("worst_first", "worse") == "value_desc"
+    assert resolve_sub_area_sort("worst_first", None) == "value_desc"
+    assert resolve_sub_area_sort("value_desc", "better") == "value_desc"
+
+
+def test_automatic_neighbourhood_geography_respects_nation_and_vintage() -> None:
+    assert resolve_sub_area_type("ltla24:W06000015", "auto", ["lsoa21"]) == "lsoa21"
+    assert resolve_sub_area_type("ltla24:E08000019", "auto", ["lsoa21"]) == "lsoa21"
+    assert resolve_sub_area_type("ltla24:S12000036", "auto", ["dz22"]) == "dz22"
+    assert resolve_sub_area_type("ltla24:S12000036", "auto", ["dz11"]) == "dz11"
+    assert resolve_sub_area_type("ltla24:S12000036", "auto", []) == "dz22"
+    assert resolve_sub_area_type("ltla24:SUBTEST", "auto", ["lsoa21"]) == "lsoa21"
+    assert resolve_sub_area_type("ltla24:S12000036", "iz22", ["dz22"]) == "iz22"

@@ -56,8 +56,10 @@ class FindOrganisationsInPlaceOutput(BaseModel):
 TOOL_NAME = "find_organisations_in_place"
 TOOL_DESCRIPTION = (
     "Find organisations (charities, nonprofits) operating in a given UK place. "
-    "For England/Wales returns Charity Commission data; for Scotland/NI queries "
-    "Find That Charity. When the full GrantNav corpus is available, can filter "
+    "For England/Wales returns Charity Commission data; for Scotland queries "
+    "OSCR registered-address charities if imported (otherwise Find That Charity); "
+    "Northern Ireland uses Find That Charity. When the full GrantNav index is "
+    "available, can filter "
     "to funded organisations and include recent 360Giving grants from the local index."
 )
 
@@ -76,6 +78,9 @@ def _uses_ftc_place(place_id: str) -> bool:
         (
             "country:S",
             "country:NI",
+            "dz22:S",
+            "iz22:S",
+            "dz11:S",
             "ltla24:S",
             "utla24:S",
             "ltla24:N",
@@ -205,8 +210,8 @@ async def find_organisations_in_place(
             partial = True
         elif input.funded_only and ftc_place:
             caveats.append(
-                "funded_only is not yet available for Find That Charity-backed "
-                "Scotland/Northern Ireland organisation results"
+                "funded_only is not yet available for Scotland/Northern Ireland "
+                "organisation results (OSCR or Find That Charity)"
             )
             partial = True
 

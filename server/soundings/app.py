@@ -14,6 +14,7 @@ from soundings.adapters.dwp_statxplore.adapter import DwpStatXploreAdapter
 from soundings.adapters.find_that_charity import FindThatCharityAdapter
 from soundings.adapters.foe_green_space import FoeGreenSpaceAdapter
 from soundings.adapters.givefood.adapter import GiveFoodAdapter
+from soundings.adapters.gov_wales_wimd2025.loader import Wimd2025Loader
 from soundings.adapters.mhclg_imd2025.adapter import MhclgImd2019Adapter, MhclgImd2025Adapter
 from soundings.adapters.ohid_fingertips.adapter import OhidFingertipsAdapter
 from soundings.adapters.ons_aps.adapter import OnsApsAdapter
@@ -21,6 +22,7 @@ from soundings.adapters.ons_census2021.adapter import OnsCensus2021Adapter
 from soundings.adapters.ons_mid_year_estimates.adapter import OnsMidYearEstimatesAdapter
 from soundings.adapters.openaq.adapter import OpenAqAdapter
 from soundings.adapters.openweather.adapter import OpenWeatherAdapter
+from soundings.adapters.oscr.loader import OscrLoader
 from soundings.adapters.osm_overpass.adapter import OsmOverpassAdapter
 from soundings.adapters.police_uk.adapter import PoliceUkAdapter
 from soundings.adapters.postcodes_io.adapter import PostcodesIoAdapter
@@ -71,6 +73,7 @@ def build_adapter_registry(engine: object) -> AdapterRegistry:
     registry.register("ons.mid_year_estimates", OnsMidYearEstimatesAdapter)
     registry.register("ons.census2021", OnsCensus2021Adapter)
     registry.register("mhclg.imd2025", MhclgImd2025Adapter)
+    registry.register("gov_wales.wimd2025", Wimd2025Loader)
     registry.register("mhclg.imd2019", MhclgImd2019Adapter)
     registry.register("ohid.fingertips", OhidFingertipsAdapter)
     registry.register("dwp.statxplore", DwpStatXploreAdapter)
@@ -82,6 +85,7 @@ def build_adapter_registry(engine: object) -> AdapterRegistry:
     registry.register("osm_overpass", OsmOverpassAdapter)
     registry.register("givefood", GiveFoodAdapter)
     registry.register("charity_commission", CharityCommissionAdapter)
+    registry.register("oscr", OscrLoader)
     registry.register("companies_house", CompaniesHouseAdapter)
     registry.register("foe.green_space", FoeGreenSpaceAdapter)
     registry.register("hasp.ppfi", PpfiAdapter)

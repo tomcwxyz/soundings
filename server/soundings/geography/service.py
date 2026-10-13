@@ -78,6 +78,38 @@ class GeographyService:
         if not place_ids:
             return {}
 
+        # Scottish postcodes do not have English/Welsh LSOA IDs. Once
+        # authoritative DZ22 polygons exist, resolve by WGS84 point-in-polygon
+        # and read its 2022 Intermediate Zone from our lookup hierarchy.
+        is_scottish = cached.country == "country:S92000003"
+        if is_scottish and cached.latitude is not None and cached.longitude is not None:
+            async with self._engine.connect() as conn:
+                dz_row = (
+                    await conn.execute(
+                        text(
+                            "SELECT id FROM geography.place "
+                            "WHERE type = 'dz22' AND geom IS NOT NULL "
+                            "AND ST_Covers(geom, ST_SetSRID(ST_Point(:lng, :lat),4326)) "
+                            "ORDER BY id LIMIT 1"
+                        ),
+                        {"lng": float(cached.longitude), "lat": float(cached.latitude)},
+                    )
+                ).first()
+                if dz_row:
+                    place_ids.append(dz_row.id)
+                    parent_rows = (
+                        await conn.execute(
+                            text(
+                                "SELECT p.id FROM geography.current_place_hierarchy h "
+                                "JOIN geography.place p ON p.id = h.parent_id "
+                                "WHERE h.child_id = :dz AND p.type = 'iz22' "
+                                "ORDER BY p.id LIMIT 1"
+                            ),
+                            {"dz": dz_row.id},
+                        )
+                    ).all()
+                    place_ids.extend(row.id for row in parent_rows)
+
         async with AsyncSession(self._engine) as session:
             places = (await session.scalars(select(Place).where(Place.id.in_(place_ids)))).all()
         return {p.type: p for p in places}
