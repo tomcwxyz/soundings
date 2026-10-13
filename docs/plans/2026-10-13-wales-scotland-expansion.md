@@ -108,3 +108,13 @@ supported just because the hierarchy is loaded.
 The read-only audit now includes Scottish Data/Intermediate Zone counts
 and separates organisations registered in a nation from organisations
 recorded as operating there.
+
+### Nation-aware neighbourhood selection
+
+`get_sub_areas` now defaults to `child_type=auto`: Welsh and English
+local authorities resolve to `lsoa21`, Scottish local authorities prefer
+the first compatible catalogued `dz22` or `dz11` level (and default to
+`dz22` if the source has no matching declared type). Explicit client
+requests for `child_type` still take precedence. This is necessary for
+the WIMD/SIMD distinction but does not mean Scottish deprivation data or
+boundaries are loaded yet.

@@ -29,7 +29,7 @@ class SubAreaValue(BaseModel):
 class GetSubAreasInput(BaseModel):
     place_id: str  # the parent place (e.g. ltla24:E06000004)
     indicator_key: str
-    child_type: str = "lsoa21"  # child geography type
+    child_type: str = "auto"  # auto: use indicator geography + nation
     period: str | None = None
     limit: int = 50  # cap to avoid huge responses
     sort_by: str = "worst_first"  # "worst_first", "value_desc", "value_asc", "name"
@@ -50,9 +50,10 @@ class GetSubAreasOutput(BaseModel):
 TOOL_NAME = "get_sub_areas"
 TOOL_DESCRIPTION = (
     "Get sub-area (neighbourhood-level) indicator values for all children "
-    "of a parent place. Default child_type is 'lsoa21' (LSOA — neighbourhoods "
-    "of ~1,500 people). Returns each child's value, name, and percentile "
-    "within the parent's peer universe, plus the parent's own value for "
+    "of a parent place. Default child_type is 'auto': Welsh/English LSOA "
+    "or Scottish Data Zone matched to the indicator's geography edition. "
+    "Returns each child's value, name, and percentile within the parent's "
+    "peer universe, plus the parent's own value for "
     "context. Use this to answer 'what are the most deprived neighbourhoods "
     "in X?' or 'show me neighbourhood-level [indicator] for X'."
 )
@@ -72,7 +73,18 @@ async def get_sub_areas(
     orchestrator: Any,  # IndicatorOrchestrator
     engine: AsyncEngine,
 ) -> GetSubAreasOutput:
-    # 1. Get current child place IDs via the canonical current hierarchy view.
+    # 1. Choose an indicator-compatible geography rather than assuming LSOAs.
+    async with engine.connect() as conn:
+        available = await conn.execute(
+            text("SELECT available_at FROM catalogue.indicator WHERE key = :key"),
+            {"key": input.indicator_key},
+        )
+        indicator_row = available.first()
+    geography_types = list(indicator_row.available_at) if indicator_row else []
+    child_type = resolve_sub_area_type(
+        input.place_id, input.child_type, geography_types
+    )
+    # 2. Get current child place IDs via the canonical current hierarchy view.
     async with engine.connect() as conn:
         child_rows = (
             await conn.execute(
@@ -86,7 +98,7 @@ async def get_sub_areas(
                     ORDER BY p.name
                     """
                 ),
-                {"parent_id": input.place_id, "child_type": input.child_type},
+                {"parent_id": input.place_id, "child_type": child_type},
             )
         ).all()
 
@@ -94,8 +106,8 @@ async def get_sub_areas(
         return GetSubAreasOutput(
             parent_place_id=input.place_id,
             indicator_key=input.indicator_key,
-            child_type=input.child_type,
-            caveats=[f"No {input.child_type} children found for {input.place_id}"],
+            child_type=child_type,
+            caveats=[f"No {child_type} children found for {input.place_id}"],
         )
 
     # 2. Fetch indicator values for all children in one batched query
@@ -185,7 +197,7 @@ async def get_sub_areas(
     return GetSubAreasOutput(
         parent_place_id=input.place_id,
         indicator_key=input.indicator_key,
-        child_type=input.child_type,
+        child_type=child_type,
         sub_areas=sub_areas,
         parent_value=parent_value,
         parent_percentile=parent_percentile,
@@ -198,3 +210,18 @@ def resolve_sub_area_sort(requested: str, higher_is: str | None) -> str:
     if requested != "worst_first":
         return requested
     return "value_asc" if higher_is == "better" else "value_desc"
+
+
+def resolve_sub_area_type(
+    parent_id: str, requested: str, available_at: list[str]
+) -> str:
+    """Select a small-area edition supported by both the nation and indicator."""
+    if requested != "auto":
+        return requested
+    is_scottish = parent_id.partition(":")[2].startswith("S")
+    if is_scottish:
+        for geography in ("dz22", "dz11"):
+            if geography in available_at:
+                return geography
+        return "dz22"
+    return "lsoa21"
