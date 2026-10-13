@@ -58,7 +58,8 @@ TOOL_DESCRIPTION = (
     "Find organisations (charities, nonprofits) operating in a given UK place. "
     "For England/Wales returns Charity Commission data; for Scotland queries "
     "OSCR registered-address charities if imported (otherwise Find That Charity); "
-    "Northern Ireland uses Find That Charity. When the full GrantNav corpus is available, can filter "
+    "Northern Ireland uses Find That Charity. When the full GrantNav index is "
+    "available, can filter "
     "to funded organisations and include recent 360Giving grants from the local index."
 )
 
