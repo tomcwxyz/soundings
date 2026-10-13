@@ -51,8 +51,11 @@ def parse_scot_dz_lookup(content: bytes) -> list[ScottishLookupRow]:
             field(raw, "IZ22"),
             field(raw, "LA"),
         )
-        if not (DZ_PATTERN.fullmatch(dz) and IZ_PATTERN.fullmatch(iz)
-                and LA_PATTERN.fullmatch(la)):
+        if not (
+            DZ_PATTERN.fullmatch(dz)
+            and IZ_PATTERN.fullmatch(iz)
+            and LA_PATTERN.fullmatch(la)
+        ):
             raise ValueError(f"Invalid Scottish 2022 geography codes: {dz}/{iz}/{la}")
         record = ScottishLookupRow(
             dz=dz,

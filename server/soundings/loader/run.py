@@ -19,8 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from soundings.adapters.charity_commission.loader import CharityCommissionLoader
 from soundings.adapters.companies_house.loader import CompaniesHouseLoader
 from soundings.adapters.foe_green_space.loader import FoeGreenSpaceLoader
-from soundings.adapters.gov_wales_wimd2025.loader import Wimd2025Loader
 from soundings.adapters.gov_scot_geography.loader import ScotGeography2022Loader
+from soundings.adapters.gov_wales_wimd2025.loader import Wimd2025Loader
 from soundings.adapters.mhclg_imd2025.aggregation import aggregate_imd_to_ltla
 from soundings.adapters.mhclg_imd2025.loader import MhclgImd2019Loader, MhclgImd2025Loader
 from soundings.adapters.ons_census2021.loader import OnsCensus2021Loader
