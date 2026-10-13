@@ -973,8 +973,10 @@ class IndicatorOrchestrator:
             "mapped to this area, not all organisations delivering services here.",
             "Some Scottish charities lack matched postcode data; counts may "
             "understate the register. Cross-registered charities need deduplication.",
-            "OSCR data © Crown Copyright and database right; Office of the "
-            "Scottish Charity Regulator, Open Government Licence v3.0.",
+            f"© Crown Copyright and database right {now.year}. Contains information "
+            "from the Scottish Charity Register supplied by the Office of the "
+            "Scottish Charity Regulator and licensed under the Open Government "
+            "Licence v.3.0.",
         ]
         if place_id.startswith(("dz22:", "iz22:", "dz11:")):
             caveats.append(
