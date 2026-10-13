@@ -667,9 +667,18 @@ class IndicatorOrchestrator:
         all_orgs: list[OrganisationRef] = []
         partial = False
 
-        # Route based on country
-        if country in ("Scotland", "Northern Ireland"):
-            # Scotland/NI: use FTC passthrough
+        # Scotland: use the verified local OSCR postcode-matched subset when
+        # imported, retaining FTC fallback before the first successful import.
+        # Northern Ireland continues to use FTC.
+        if country == "Scotland":
+            result = await self._find_via_oscr(place_id, activity_filter, limit)
+            if not result.sources:
+                result = await self._find_via_ftc(place_id, limit)
+            all_orgs = result.organisations
+            all_sources.extend(result.sources)
+            all_caveats.extend(result.caveats)
+            partial = result.partial
+        elif country == "Northern Ireland":
             result = await self._find_via_ftc(place_id, limit)
             all_orgs = result.organisations
             all_sources.extend(result.sources)
@@ -718,7 +727,7 @@ class IndicatorOrchestrator:
             return "Scotland"
         if place_id.startswith("country:NI"):
             return "Northern Ireland"
-        if place_id.startswith(("ltla24:S", "utla24:S")):
+        if place_id.startswith(("ltla24:S", "utla24:S", "dz22:S", "iz22:S", "dz11:S")):
             return "Scotland"
         if place_id.startswith(("ltla24:N", "utla24:N")):
             return "Northern Ireland"
@@ -858,6 +867,107 @@ class IndicatorOrchestrator:
             sources=sources,
             caveats=[],
             partial=False,
+        )
+
+    async def _find_via_oscr(
+        self,
+        place_id: str,
+        activity_filter: list[str] | None,
+        limit: int,
+    ) -> FindOrganisationsResult:
+        """Scottish postcode-matched REGISTERED charities; never areas served.
+
+        No OSCR source loaded yet => return an empty source list so the caller
+        can fall back to Find That Charity. A loaded OSCR snapshot with no
+        matches is *not* interpreted as evidence that no charities exist.
+        """
+        async with self._engine.connect() as conn:
+            current = (
+                await conn.execute(
+                    text(
+                        "SELECT EXISTS("
+                        "SELECT 1 FROM data.organisation "
+                        "WHERE source_id = 'oscr' "
+                        "AND raw->>'in_current_extract' = 'true')"
+                    )
+                )
+            ).scalar_one()
+            if not current:
+                return FindOrganisationsResult(organisations=[], sources=[], caveats=[], partial=True)
+            kw_sql, kw_params = self._keyword_filter_sql(activity_filter)
+            rows = (
+                await conn.execute(
+                    text(
+                        "SELECT o.id, o.name, o.classification, o.registered_address_place_id,"
+                        "o.retrieved_at, o.raw "
+                        "FROM data.organisation o "
+                        "WHERE o.source_id = 'oscr' "
+                        "AND o.raw->>'in_current_extract' = 'true' "
+                        "AND (o.registered_address_place_id = :pid "
+                        " OR EXISTS ("
+                        "   SELECT 1 FROM geography.current_place_hierarchy h "
+                        "   WHERE h.child_id = o.registered_address_place_id "
+                        "     AND h.parent_id = :pid"
+                        " ))"
+                        f"{kw_sql} "
+                        "ORDER BY (o.raw->>'latest_income')::numeric DESC NULLS LAST "
+                        "LIMIT :limit"
+                    ),
+                    {"pid": place_id, "limit": limit, **kw_params},
+                )
+            ).all()
+
+        now = datetime.now(tz=UTC)
+        organisations = []
+        for row in rows:
+            reg = row.id.split(":", 1)[1]
+            raw = row.raw or {}
+            income = raw.get("latest_income")
+            organisations.append(
+                OrganisationRef(
+                    id=row.id,
+                    name=row.name,
+                    classification=list(row.classification or []),
+                    registered_address_place_id=row.registered_address_place_id,
+                    operates_in_place_ids=[],
+                    recent_grants=[],
+                    latest_income=float(income) if income is not None else None,
+                    register_url=(
+                        "https://www.oscr.org.uk/about-charities/search-the-register/"
+                        f"charity-details?number={reg.lower()}"
+                    ),
+                    date_of_registration=raw.get("date_of_registration"),
+                    postcode=raw.get("postcode"),
+                    source=SourceRef(
+                        source_id="oscr",
+                        source_label="Scottish Charity Register (OSCR)",
+                        publisher="Office of the Scottish Charity Regulator",
+                        licence="OGL-UK-3.0",
+                        retrieved_at=row.retrieved_at or now,
+                        cache_status="cached",
+                    ),
+                )
+            )
+        source = SourceRef(
+            source_id="oscr",
+            source_label="Scottish Charity Register (OSCR)",
+            publisher="Office of the Scottish Charity Regulator",
+            licence="OGL-UK-3.0",
+            retrieved_at=now,
+            cache_status="cached",
+        )
+        return FindOrganisationsResult(
+            organisations=organisations,
+            sources=[source],
+            caveats=[
+                "OSCR results show charities with registered-address postcodes "
+                "mapped to this area, not all organisations delivering services here.",
+                "Some Scottish charities lack matched postcode data; counts may "
+                "understate the register. Cross-registered charities need deduplication.",
+                "OSCR data © Crown Copyright and database right; Office of the "
+                "Scottish Charity Regulator, Open Government Licence v3.0.",
+            ],
+            partial=True,
         )
 
     async def _find_via_ftc(self, place_id: str, limit: int) -> FindOrganisationsResult:
