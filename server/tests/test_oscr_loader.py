@@ -3,6 +3,7 @@
 import io
 import zipfile
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
@@ -15,6 +16,7 @@ from soundings.adapters.oscr.loader import (
 )
 from soundings.adapters.oscr.parser import parse_register_csv
 from soundings.db.engine import get_engine
+from soundings.orchestration.orchestrator import IndicatorOrchestrator
 
 CSV = (
     b"Charity Number,Charity Name,Charity Status,Postcode,Registration Date,"
@@ -121,6 +123,16 @@ async def test_oscr_import_is_idempotent_and_does_not_touch_ccew(clean_oscr_rows
     assert west.raw["in_current_extract"] is True
     cc = next(row for row in rows if row.id == "charity_commission:999999")
     assert cc.source_id == "charity_commission"
+
+    orch = IndicatorOrchestrator(engine, MagicMock())
+    result = await orch.find_organisations_in_place(
+        place_id="ltla24:S12000040", activity_filter=["local"], enrich_grants=False
+    )
+    assert [org.id for org in result.organisations] == ["oscr:SC000001"]
+    assert result.organisations[0].latest_income == 1000.0
+    assert result.organisations[0].operates_in_place_ids == []
+    assert any("registered-address" in caveat for caveat in result.caveats)
+    assert result.partial is True
 
 
 @pytest.mark.integration
