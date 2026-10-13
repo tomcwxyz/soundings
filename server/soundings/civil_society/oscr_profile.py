@@ -57,10 +57,10 @@ async def build_oscr_civil_society_profile(
             place_id=place_id,
             coverage_basis="unavailable",
             filter_keywords=normalised,
-            caveats=caveats
-            + [
+            caveats=[
+                *caveats,
                 "OSCR register coverage is not yet resolved to Data Zones or "
-                "Intermediate Zones. Zero in this response means not measured."
+                "Intermediate Zones. Zero in this response means not measured.",
             ],
             partial=True,
         )
@@ -80,10 +80,10 @@ async def build_oscr_civil_society_profile(
                 place_id=place_id,
                 coverage_basis="unavailable",
                 filter_keywords=normalised,
-                caveats=caveats
-                + [
+                caveats=[
+                    *caveats,
                     "The OSCR register has not been successfully imported: "
-                    "zero means not measured, not no charities."
+                    "zero means not measured, not no charities.",
                 ],
                 partial=True,
             )
