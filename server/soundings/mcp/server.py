@@ -327,9 +327,7 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
         if state is None:
             raise RuntimeError("MCP get_peer_distribution invoked without app state")
         result = await get_peer_distribution(
-            GetPeerDistributionInput(
-                indicator_key=indicator_key, place_id=place_id, period=period
-            ),
+            GetPeerDistributionInput(indicator_key=indicator_key, place_id=place_id, period=period),
             state.orchestrator,
         )
         return result.model_dump(mode="json")
