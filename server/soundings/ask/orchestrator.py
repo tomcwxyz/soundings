@@ -18,6 +18,7 @@ which receives events via the callback.
 import asyncio
 import json
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -213,6 +214,7 @@ class AskOrchestrator:
             # block the event loop for the whole request, stalling the SSE
             # stream and rendering `asyncio.timeout` (in run()) ineffective.
             # Run it in a worker thread so the loop stays responsive.
+            model_started = time.perf_counter()
             response = await asyncio.to_thread(
                 lambda: client.messages.create(
                     model=self._model,
@@ -222,6 +224,17 @@ class AskOrchestrator:
                     tools=tool_specs,  # type: ignore[arg-type]
                     messages=messages,  # type: ignore[arg-type]
                 )
+            )
+            usage = getattr(response, "usage", None)
+            logger.info(
+                "ask_model_turn iteration=%d latency_ms=%d input_tokens=%s "
+                "output_tokens=%s cache_read_tokens=%s cache_write_tokens=%s",
+                _iteration + 1,
+                round((time.perf_counter() - model_started) * 1000),
+                getattr(usage, "input_tokens", None),
+                getattr(usage, "output_tokens", None),
+                getattr(usage, "cache_read_input_tokens", None),
+                getattr(usage, "cache_creation_input_tokens", None),
             )
 
             # A cybersecurity/safety classifier can decline a request: HTTP 200
@@ -357,17 +370,28 @@ class AskOrchestrator:
 
                 # Non-terminal tool — dispatch and emit status
                 await _emit(callback, {"type": "status", "message": f"Calling {name}…"})
+                tool_started = time.perf_counter()
+                succeeded = True
                 try:
                     result = await self._dispatcher.dispatch(name, tool_input)
                 except Exception as e:
+                    succeeded = False
                     logger.warning("Tool %s failed: %s", name, e)
                     result = {"error": str(e)}
 
+                payload = json.dumps(result)
+                logger.info(
+                    "ask_tool_call tool=%s latency_ms=%d payload_bytes=%d success=%s",
+                    name,
+                    round((time.perf_counter() - tool_started) * 1000),
+                    len(payload.encode("utf-8")),
+                    succeeded,
+                )
                 tool_results.append(
                     {
                         "type": "tool_result",
                         "tool_use_id": tb["id"],
-                        "content": json.dumps(result),
+                        "content": payload,
                     }
                 )
 

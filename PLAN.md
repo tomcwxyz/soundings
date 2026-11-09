@@ -26,6 +26,12 @@ green → conventional-commit. Block-level commit boundaries. From Phase 3 Block
 onwards each block lands as a single squash-merged PR rather than direct commits
 to `main`.
 
+## Local integration — 9 November 2026
+
+- [x] Combine PRs #65 and #66 on a local deployment branch and check tool defaults.
+- [x] Validate Welsh deprivation and OSCR imports against an isolated database.
+- [x] Complete Scottish geography import validation and runtime/public smoke checks.
+
 ## Tasks
 
 - [x] Phase 0 — Repo scaffolding, schema, geography spine.

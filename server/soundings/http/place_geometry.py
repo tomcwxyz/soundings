@@ -1,8 +1,8 @@
 """GET /v1/place/{place_id}/geometry and GET /v1/place/{place_id}/peers/geometry.
 
-Returns simplified GeoJSON for a single place or its peers (same `type`,
-excluding the place itself). Geometries are simplified with
-ST_Simplify(geom, 0.005) and serialised via ST_AsGeoJSON.
+Returns GeoJSON for a single place or its peers (same `type`, excluding
+the place itself). Stored boundaries are already generalised for display;
+never simplify again in angular degrees, which erases small urban areas.
 
 Peer geometries optionally join `data.indicator_value` to attach the
 indicator value and percentile for a given indicator/period.
@@ -34,7 +34,7 @@ async def get_place_geometry(request: Request, place_id: str) -> dict[str, objec
                         p.id,
                         p.name,
                         p.type,
-                        ST_AsGeoJSON(ST_Simplify(p.geom, 0.005)) AS geojson
+                        ST_AsGeoJSON(p.geom) AS geojson
                     FROM geography.place p
                     WHERE p.id = :place_id
                     """
@@ -124,7 +124,7 @@ async def get_peer_geometry(
                         r.value,
                         r.rank,
                         r.n_with_values,
-                        ST_AsGeoJSON(ST_Simplify(p.geom, 0.005)) AS geojson
+                        ST_AsGeoJSON(p.geom) AS geojson
                     FROM ranked r
                     JOIN geography.place p ON p.id = r.id
                     """
@@ -191,12 +191,7 @@ async def get_children_geometry(
                 text(
                     """
                     SELECT c.id, c.name,
-                           ST_AsGeoJSON(
-                               CASE WHEN c.type IN ('dz22', 'dz11', 'lsoa21')
-                                    THEN ST_SimplifyPreserveTopology(c.geom, 0.0002)
-                                    ELSE ST_Simplify(c.geom, 0.005)
-                               END
-                           ) AS geojson,
+                           ST_AsGeoJSON(c.geom) AS geojson,
                            iv.value
                     FROM geography.current_place_hierarchy h
                     JOIN geography.place c ON c.id = h.child_id
@@ -281,7 +276,7 @@ async def get_geographies_geometry(
                         FROM area_values av
                     )
                     SELECT r.id, r.name, r.value, r.rank, r.n_with_values,
-                           ST_AsGeoJSON(ST_Simplify(p.geom, 0.005)) AS geojson
+                           ST_AsGeoJSON(p.geom) AS geojson
                     FROM ranked r
                     JOIN geography.place p ON p.id = r.id
                     """

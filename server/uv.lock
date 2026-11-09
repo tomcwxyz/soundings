@@ -1954,7 +1954,7 @@ requires-dist = [
     { name = "geoalchemy2", specifier = ">=0.16" },
     { name = "geopandas", specifier = ">=1.0" },
     { name = "httpx", specifier = ">=0.28" },
-    { name = "mcp", specifier = ">=1.2" },
+    { name = "mcp", specifier = ">=1.27,<2" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.10" },
     { name = "pydantic-settings", specifier = ">=2.6" },

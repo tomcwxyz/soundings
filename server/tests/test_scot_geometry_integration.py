@@ -35,7 +35,8 @@ def _feature(code: str, west: float) -> dict[str, object]:
     }
 
 
-async def test_scottish_geometry_loader_handles_paged_geojson() -> None:
+@pytest.mark.parametrize("self_intersecting", [False, True])
+async def test_scottish_geometry_loader_handles_paged_geojson(self_intersecting: bool) -> None:
     engine = get_engine()
     ids = ("S01099998", "S01099999")
     async with engine.begin() as conn:
@@ -48,6 +49,13 @@ async def test_scottish_geometry_loader_handles_paged_geojson() -> None:
                 {"id": f"dz22:{code}", "code": code, "name": code},
             )
     features = [_feature(ids[0], -2.25), _feature(ids[1], -2.20)]
+    if self_intersecting:
+        features[0]["geometry"] = {
+            "type": "Polygon",
+            "coordinates": [
+                [[-2.25, 57.11], [-2.24, 57.12], [-2.25, 57.12], [-2.24, 57.11], [-2.25, 57.11]]
+            ],
+        }
 
     def respond(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"type": "FeatureCollection", "features": features})
@@ -59,7 +67,8 @@ async def test_scottish_geometry_loader_handles_paged_geojson() -> None:
         shapes = (
             await conn.execute(
                 text(
-                    "SELECT ST_SRID(geom) AS srid, ST_IsValid(geom) AS valid "
+                    "SELECT ST_SRID(geom) AS srid, ST_IsValid(geom) AS valid, "
+                    "ST_IsEmpty(geom) AS empty "
                     "FROM geography.place WHERE id = 'dz22:S01099998'"
                 )
             )
@@ -67,6 +76,7 @@ async def test_scottish_geometry_loader_handles_paged_geojson() -> None:
     assert shapes is not None
     assert shapes.srid == 4326
     assert shapes.valid
+    assert not shapes.empty
 
 
 async def test_scottish_postcode_finds_data_zone_and_intermediate_zone() -> None:

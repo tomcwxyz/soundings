@@ -41,6 +41,27 @@ def test_missing_required_columns_rejected() -> None:
         parse_scot_dz_lookup(b"DZ22,IZ22\nS01000001,S02000001\n")
 
 
+def test_cp1252_lookup_preserves_non_ascii_names() -> None:
+    sample = (
+        "DZ22,IZ22,LA,DZ22Name,IZ22Name\n"
+        "S01000001,S02000001,S12000033,Aberdeen\u00a0zone,Aberdeen\u2019s intermediate\n"
+    )
+    rows = parse_scot_dz_lookup(sample.encode("cp1252"))
+    assert rows[0].dz_name == "Aberdeen\u00a0zone"
+    assert rows[0].iz_name == "Aberdeen\u2019s intermediate"
+
+
+def test_official_lookup_column_names_supported() -> None:
+    sample = (
+        b"DZ22_Code,DZ22_Name,IZ22_Code,IZ22_Name,LA_Code,LA_Name\n"
+        b"S01000001,Aberdeen zone,S02000001,Aberdeen intermediate,S12000033,Aberdeen City\n"
+    )
+    row = parse_scot_dz_lookup(sample)[0]
+    assert (row.dz, row.iz, row.la) == ("S01000001", "S02000001", "S12000033")
+    assert row.dz_name == "Aberdeen zone"
+    assert row.iz_name == "Aberdeen intermediate"
+
+
 def test_wrong_country_codes_rejected() -> None:
     with pytest.raises(ValueError, match="Invalid"):
         parse_scot_dz_lookup(SAMPLE.replace(b"S12000033", b"W06000033"))

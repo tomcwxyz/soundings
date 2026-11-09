@@ -26,10 +26,22 @@ class ScottishLookupRow:
 
 
 def parse_scot_dz_lookup(content: bytes) -> list[ScottishLookupRow]:
-    reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig"), newline=""))
+    try:
+        data = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        # The official lookup includes Windows-encoded non-breaking spaces.
+        data = content.decode("cp1252")
+    reader = csv.DictReader(io.StringIO(data, newline=""))
     if not reader.fieldnames:
         raise ValueError("Scottish Data Zone lookup is missing CSV headers")
     names = {name.strip().casefold(): name for name in reader.fieldnames}
+    for compact, official in (
+        ("dz22", "dz22_code"),
+        ("iz22", "iz22_code"),
+        ("la", "la_code"),
+    ):
+        if official in names:
+            names.setdefault(compact, names[official])
     required = {"dz22", "iz22", "la"}
     if missing := required - names.keys():
         raise ValueError(f"Scottish Data Zone lookup missing: {', '.join(sorted(missing))}")
@@ -57,8 +69,8 @@ def parse_scot_dz_lookup(content: bytes) -> list[ScottishLookupRow]:
             dz=dz,
             iz=iz,
             la=la,
-            dz_name=field(raw, "DZ22Name", "DZ22NM", "DataZoneName") or dz,
-            iz_name=field(raw, "IZ22Name", "IZ22NM", "IntermediateZoneName") or iz,
+            dz_name=field(raw, "DZ22_Name", "DZ22Name", "DZ22NM", "DataZoneName") or dz,
+            iz_name=field(raw, "IZ22_Name", "IZ22Name", "IZ22NM", "IntermediateZoneName") or iz,
         )
         previous = parsed.get(dz)
         if previous is not None and (previous.iz, previous.la) != (iz, la):

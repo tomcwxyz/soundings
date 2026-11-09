@@ -133,6 +133,29 @@ async def test_get_place_geometry_returns_feature() -> None:
     assert body["geometry"]["type"] == "MultiPolygon"
 
 
+async def test_small_urban_boundary_survives_geometry_route() -> None:
+    """Regression: degree-based ST_Simplify(0.005) erased urban LSOAs."""
+    await _seed_places_with_geometry()
+    # Roughly 20-metre square; simplify(0.005) previously collapsed it.
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "UPDATE geography.place SET geom = "
+                "ST_GeomFromText('MULTIPOLYGON(((0 0,0.0002 0,"
+                "0.0002 0.0002,0 0.0002,0 0)))', 4326) "
+                "WHERE id = 'ltla24:E06000001'"
+            )
+        )
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            response = await ac.get("/v1/place/ltla24:E06000001/geometry")
+    assert response.status_code == 200, response.text
+    polygon = response.json()["geometry"]["coordinates"][0][0]
+    assert len(polygon) >= 4
+    assert any(point[0] == pytest.approx(0.0002) for point in polygon)
+
+
 async def test_get_place_geometry_404_for_missing_place() -> None:
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

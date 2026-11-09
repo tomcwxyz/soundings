@@ -26,9 +26,12 @@ ARCGIS_LAYER = (
 )
 PAGE_SIZE = 100
 LOG = logging.getLogger(__name__)
+# ArcGIS exports can contain intersecting rings; retain valid polygon parts
+# so postcode containment queries can safely use the stored boundaries.
 UPDATE_GEOMETRY = text(
     "UPDATE geography.place SET "
-    "geom = ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(:geometry), 4326)), "
+    "geom = ST_Multi(ST_CollectionExtract(ST_MakeValid("
+    "ST_SetSRID(ST_GeomFromGeoJSON(:geometry), 4326)), 3)), "
     "name = CASE WHEN name = code THEN :name ELSE name END "
     "WHERE id = :id AND type = 'dz22'"
 )
