@@ -183,9 +183,9 @@ sources:
     licence: OGL-UK-3.0
     mode: loader
     # CH publishes the bulk product within ~5 working days of month end.
-    # Cron on the 7th at 05:00 UTC gives buffer; monthly cadence — nothing
-    # new to pull until the next publication.
-    refresh_cadence: "0 5 7 * *"
+    # The November 2026 files appeared after the old 7th-at-05:00 job.
+    # The 10th allows publication time without downloading unchanged files daily.
+    refresh_cadence: "0 5 10 * *"
     rate_limit: { rps: 4 }
 
   - id: threesixtygiving

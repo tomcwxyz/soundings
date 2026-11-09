@@ -3,7 +3,6 @@ from soundings.adapters.ons_geography.chains import (
     LSOA_MSOA_LTLA,
     LTLA_UTLA_REGION_COUNTRY,
     WARD_LTLA_UTLA,
-    WCONS_LTLA,
 )
 
 
@@ -20,7 +19,6 @@ def test_all_canonical_levels_appear_as_a_child_or_parent_in_some_chain() -> Non
         "utla24",
         "region",
         "country",
-        "westminster_constituency_24",
         "ward24",
     }
     missing = expected - types_seen
@@ -38,6 +36,9 @@ def test_admin_chain_climbs_to_country() -> None:
     assert types == ["ltla24", "utla24", "region", "country"]
 
 
-def test_political_chains_present() -> None:
-    assert WCONS_LTLA.levels[0][0] == "westminster_constituency_24"
-    assert WARD_LTLA_UTLA.levels[0][0] == "ward24"
+def test_ward_chain_contains_only_administrative_parents() -> None:
+    assert WARD_LTLA_UTLA.levels == [
+        ("ward24", "WD24CD"),
+        ("ltla24", "LAD24CD"),
+        ("utla24", "UTLA24CD"),
+    ]

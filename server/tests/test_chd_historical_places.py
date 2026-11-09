@@ -153,3 +153,33 @@ async def test_hierarchy_loader_can_resolve_new_extinct_place() -> None:
 
     assert row.valid_from == date(2009, 1, 1)
     assert row.valid_to == date(2023, 4, 1)
+
+
+async def test_historical_places_import_batches_large_register() -> None:
+    engine = get_engine()
+    rows = [
+        {
+            "id": f"gss_e07:BATCH{index:05d}",
+            "type": "gss_e07",
+            "code": f"BATCH{index:05d}",
+            "name": "Historical batch area",
+            "valid_from": date(2000, 1, 1),
+            "valid_to": date(2020, 1, 1),
+        }
+        for index in range(6000)
+    ]
+    ids = [row["id"] for row in rows]
+    try:
+        await OnsGeographyHistoricalPlacesLoader(engine)._upsert_rows(rows)
+        async with engine.connect() as conn:
+            count = (
+                await conn.execute(
+                    text("SELECT count(*) FROM geography.place WHERE id = ANY(:ids)"), {"ids": ids}
+                )
+            ).scalar_one()
+        assert count == 6000
+    finally:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text("DELETE FROM geography.place WHERE id = ANY(:ids)"), {"ids": ids}
+            )

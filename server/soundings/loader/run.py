@@ -10,12 +10,14 @@ import asyncio
 import logging
 import sys
 from collections.abc import Awaitable, Callable
+from functools import partial
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
 from apscheduler.triggers.cron import CronTrigger  # type: ignore[import-untyped]
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from soundings.adapters.base import LoaderResult
 from soundings.adapters.charity_commission.loader import CharityCommissionLoader
 from soundings.adapters.companies_house.loader import CompaniesHouseLoader
 from soundings.adapters.foe_green_space.loader import FoeGreenSpaceLoader
@@ -46,13 +48,16 @@ from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimates
 from soundings.adapters.ons_nspl.loader import NsplLoader
 from soundings.adapters.oscr.loader import OscrLoader
 from soundings.adapters.ppfi.loader import PpfiLoader
+from soundings.adapters.sport_england.loader import SportEnglandActiveLivesLoader
 from soundings.capture.retention import delete_old_raw_records
 from soundings.db.engine import get_engine
 from soundings.grants.grantnav_refresh import GRANT_INDEX_REFRESH_CRON, refresh_grant_index
 from soundings.grants.status import has_complete_grant_index
+from soundings.loader.tracking import run_tracked_loader
 from soundings.publication.automatic import PUBLICATION_CRON, publish_previous_month_if_due
 
-LoaderCallable = Callable[[], Awaitable[None]]
+LoaderCallable = Callable[[], Awaitable[LoaderResult | None]]
+SourceLoader = Callable[[], Awaitable[LoaderResult]]
 _log = logging.getLogger("soundings.loader")
 GRANT_INDEX_JOB_ID = "threesixtygiving.grant_index"
 
@@ -60,67 +65,88 @@ GRANT_INDEX_JOB_ID = "threesixtygiving.grant_index"
 def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
     """Map source/internal-job IDs to idempotent loader coroutine factories."""
 
-    async def _geography() -> None:
-        await OnsGeographyPlacesLoader(engine).load()
-        await OnsGeographyHierarchyLoader(engine, chains=ALL_CHAINS).load()
-        await OnsGeographyGeometriesLoader(engine).load()
+    async def _geography() -> LoaderResult:
+        results = [
+            await OnsGeographyPlacesLoader(engine).load(),
+            await OnsGeographyHierarchyLoader(engine, chains=ALL_CHAINS).load(),
+            await OnsGeographyGeometriesLoader(engine).load(),
+        ]
 
         # CHD is ~36 MB. Fetch it once per combined geography refresh, create
         # terminated historical place identities first, then resolve hierarchy
         # edges against the expanded place spine using the same source bytes.
         chd_blob = await fetch_chd_archive()
-        await OnsGeographyHistoricalPlacesLoader(engine).load_from_zip_bytes(chd_blob)
-        await OnsGeographyHistoricalHierarchyLoader(engine).load_from_zip_bytes(chd_blob)
+        results.append(
+            await OnsGeographyHistoricalPlacesLoader(engine).load_from_zip_bytes(chd_blob)
+        )
+        results.append(
+            await OnsGeographyHistoricalHierarchyLoader(engine).load_from_zip_bytes(chd_blob)
+        )
 
         # The legacy CodeChange loader is intentionally not part of the live
         # refresh. June 2026 CHD `Changes.csv` does not expose the old/new/type
         # semantics that model assumes; reinterpret it only once documented.
+        return LoaderResult(
+            rows_written=sum(result.rows_written for result in results),
+            notes="; ".join(result.notes for result in results if result.notes) or None,
+        )
 
-    async def _mye() -> None:
-        await OnsMidYearEstimatesLoader(engine).load()
+    async def _mye() -> LoaderResult:
+        return await OnsMidYearEstimatesLoader(engine).load()
 
-    async def _census() -> None:
-        await OnsCensus2021Loader(engine).load()
+    async def _census() -> LoaderResult:
+        return await OnsCensus2021Loader(engine).load()
 
-    async def _scot_boundaries2022() -> None:
-        await ScotDataZoneGeometriesLoader(engine).load()
+    async def _scot_boundaries2022() -> LoaderResult:
+        return await ScotDataZoneGeometriesLoader(engine).load()
 
-    async def _scot_geography2022() -> None:
-        await ScotGeography2022Loader(engine).load()
+    async def _scot_geography2022() -> LoaderResult:
+        return await ScotGeography2022Loader(engine).load()
 
-    async def _wimd2025() -> None:
-        await Wimd2025Loader(engine).load()
+    async def _wimd2025() -> LoaderResult:
+        return await Wimd2025Loader(engine).load()
 
-    async def _imd2025() -> None:
-        await MhclgImd2025Loader(engine).load()
-        await aggregate_imd_to_ltla(engine, source_id="mhclg.imd2025")
+    async def _imd2025() -> LoaderResult:
+        result = await MhclgImd2025Loader(engine).load()
+        aggregates = await aggregate_imd_to_ltla(engine, source_id="mhclg.imd2025")
+        return LoaderResult(
+            rows_written=result.rows_written + aggregates,
+            notes="; ".join(filter(None, [result.notes, f"{aggregates} LTLA aggregates"])),
+        )
 
-    async def _imd2019() -> None:
-        await MhclgImd2019Loader(engine).load()
-        await aggregate_imd_to_ltla(engine, source_id="mhclg.imd2019")
+    async def _imd2019() -> LoaderResult:
+        result = await MhclgImd2019Loader(engine).load()
+        aggregates = await aggregate_imd_to_ltla(engine, source_id="mhclg.imd2019")
+        return LoaderResult(
+            rows_written=result.rows_written + aggregates,
+            notes="; ".join(filter(None, [result.notes, f"{aggregates} LTLA aggregates"])),
+        )
 
-    async def _oscr() -> None:
-        await OscrLoader(engine).load()
+    async def _oscr() -> LoaderResult:
+        return await OscrLoader(engine).load()
 
-    async def _charity_commission() -> None:
-        await CharityCommissionLoader(engine).load()
+    async def _charity_commission() -> LoaderResult:
+        return await CharityCommissionLoader(engine).load()
 
-    async def _companies_house() -> None:
-        await CompaniesHouseLoader(engine).load()
+    async def _companies_house() -> LoaderResult:
+        return await CompaniesHouseLoader(engine).load()
 
-    async def _foe_green_space() -> None:
-        await FoeGreenSpaceLoader(engine).load()
+    async def _foe_green_space() -> LoaderResult:
+        return await FoeGreenSpaceLoader(engine).load()
 
-    async def _ppfi() -> None:
-        await PpfiLoader(engine).load()
+    async def _ppfi() -> LoaderResult:
+        return await PpfiLoader(engine).load()
 
-    async def _nspl() -> None:
-        await NsplLoader(engine).load()
+    async def _nspl() -> LoaderResult:
+        return await NsplLoader(engine).load()
+
+    async def _sport_england() -> LoaderResult:
+        return await SportEnglandActiveLivesLoader(engine).load()
 
     async def _grant_index() -> None:
         await refresh_grant_index(engine)
 
-    return {
+    sources: dict[str, SourceLoader] = {
         "ons.geography": _geography,
         "ons.mid_year_estimates": _mye,
         "ons.census2021": _census,
@@ -135,8 +161,16 @@ def build_source_registry(engine: AsyncEngine) -> dict[str, LoaderCallable]:
         "foe.green_space": _foe_green_space,
         "hasp.ppfi": _ppfi,
         "ons.nspl": _nspl,
-        GRANT_INDEX_JOB_ID: _grant_index,
+        "sport_england": _sport_england,
     }
+
+    registry: dict[str, LoaderCallable] = {
+        source_id: partial(run_tracked_loader, engine, source_id, load)
+        for source_id, load in sources.items()
+    }
+    # The internal grant importer already owns its full-corpus run records.
+    registry[GRANT_INDEX_JOB_ID] = _grant_index
+    return registry
 
 
 async def build_scheduler(

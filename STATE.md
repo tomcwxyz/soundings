@@ -6,6 +6,22 @@
 
 This file is the canonical short-form statement of what is actually implemented. Older phase plans in `docs/plans/` are useful design history, but should not be read as the current status.
 
+## Freshness and runtime follow-up — 9 November 2026
+
+On `codex/freshness-review-followup-20261109`, scheduled imports now record their
+whole outcome and health separates failed/stale/untracked/unavailable sources.
+Stored indicator retrieval dates are preserved. Charity Commission, Companies
+House and ONS geography full refreshes completed successfully after isolated
+validation; previously missing ONS display layers are populated. Ask measurements
+now reach the server log without question text or unrelated INFO logging.
+
+Public map and MCP checks passed. The evaluation set is now 44 questions;
+model-backed scoring awaits a budget decision. Missing historical import records
+and unimplemented housing live tables remain explicit, rather than being hidden
+by synthetic success records. The grant index is outside this follow-up.
+
+Details and remaining priorities: `docs/reviews/2026-11-09-runtime-review.md`.
+
 ## Local integration — 9 November 2026
 
 PRs #65 (Wales/Scotland coverage) and #66 (geometry, MCP discovery and Ask

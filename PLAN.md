@@ -26,6 +26,16 @@ green → conventional-commit. Block-level commit boundaries. From Phase 3 Block
 onwards each block lands as a single squash-merged PR rather than direct commits
 to `main`.
 
+## Freshness follow-up — 9 November 2026
+
+- [x] Record scheduled imports, correct freshness categories and retrieval dates.
+- [x] Repair/validate/refresh Charity Commission, Companies House and ONS geography.
+- [x] Verify public map/MCP behavior and enable privacy-preserving Ask measurements.
+- [ ] Score the current 44-question Ask baseline within an approved budget.
+- [ ] Return neighbourhood source references/caveats directly from `get_sub_areas`.
+
+See `docs/reviews/2026-11-09-runtime-review.md` for evidence and sequencing.
+
 ## Local integration — 9 November 2026
 
 - [x] Combine PRs #65 and #66 on a local deployment branch and check tool defaults.

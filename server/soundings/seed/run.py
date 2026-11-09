@@ -16,12 +16,9 @@ refreshing sparkline data without touching the geography spine or Census.
 import argparse
 import asyncio
 import sys
-import uuid
 from collections.abc import Coroutine
-from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.base import LoaderResult
@@ -43,6 +40,7 @@ from soundings.adapters.ons_geography.places_loader import OnsGeographyPlacesLoa
 from soundings.adapters.ons_mid_year_estimates.loader import OnsMidYearEstimatesLoader
 from soundings.adapters.ons_nspl.loader import NsplLoader
 from soundings.db.engine import get_engine
+from soundings.loader.tracking import run_tracked_loader
 from soundings.seed.themes import seed_themes
 
 LIGHT_LAYERS = {"ltla24", "utla24", "region", "country", "westminster_constituency_24", "ward24"}
@@ -54,50 +52,9 @@ async def _run_loader(
     name: str,
     coro: Coroutine[Any, Any, LoaderResult],
 ) -> LoaderResult:
-    run_id = uuid.uuid4()
-    started = datetime.now(tz=UTC)
-    async with engine.begin() as conn:
-        await conn.execute(
-            text(
-                "INSERT INTO data.loader_run "
-                "(id, source_id, started_at, status, rows_written) "
-                "VALUES (:id, :sid, :st, 'running', 0)"
-            ),
-            {"id": run_id, "sid": source_id, "st": started},
-        )
-    try:
-        result: LoaderResult = await coro
-        finished = datetime.now(tz=UTC)
-        async with engine.begin() as conn:
-            await conn.execute(
-                text(
-                    "UPDATE data.loader_run "
-                    "SET status='ok', finished_at=:f, rows_written=:r, notes=:n "
-                    "WHERE id=:id"
-                ),
-                {
-                    "f": finished,
-                    "r": result.rows_written,
-                    "n": result.notes,
-                    "id": run_id,
-                },
-            )
-        print(f"[seed] {name}: {result.rows_written} rows ({result.notes or 'ok'})")
-        return result
-    except Exception as exc:
-        async with engine.begin() as conn:
-            await conn.execute(
-                text(
-                    "UPDATE data.loader_run "
-                    "SET status='failed', finished_at=:f, notes=:n WHERE id=:id"
-                ),
-                {
-                    "f": datetime.now(tz=UTC),
-                    "n": f"{exc.__class__.__name__}: {exc}",
-                    "id": run_id,
-                },
-            )
-        raise
+    result = await run_tracked_loader(engine, source_id, lambda: coro)
+    print(f"[seed] {name}: {result.rows_written} rows ({result.notes or 'ok'})")
+    return result
 
 
 async def _seed(*, full: bool) -> None:

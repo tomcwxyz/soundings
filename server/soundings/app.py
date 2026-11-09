@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import timedelta
@@ -64,6 +65,13 @@ CATALOGUE_DIR = Path(__file__).resolve().parent.parent.parent / "catalogue"
 POSTCODES_IO_TTL = timedelta(hours=720)
 
 
+def configure_ask_logging(level: str) -> None:
+    # Uvicorn configures its own loggers, leaving application INFO logs muted.
+    # Limit this change to Ask measurements; other namespaces may log secrets.
+    logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    logging.getLogger("soundings.ask").setLevel(level.upper())
+
+
 def build_adapter_registry(engine: object) -> AdapterRegistry:
     """Shared registry construction for the FastAPI lifespan and the
     standalone `pre_warmer` daemon. Both processes need the same adapter
@@ -97,6 +105,7 @@ def build_adapter_registry(engine: object) -> AdapterRegistry:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    configure_ask_logging(get_settings().log_level)
     engine = get_engine()
     await load_catalogue_into_db(
         engine,

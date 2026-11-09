@@ -1,5 +1,6 @@
 import pytest
 
+from soundings.adapters.base import LoaderResult
 from soundings.db.engine import get_engine
 from soundings.loader import run as loader_run
 
@@ -14,8 +15,9 @@ async def test_combined_geography_refresh_reuses_one_chd_archive(monkeypatch) ->
         def __init__(self, *args, **kwargs) -> None:
             pass
 
-        async def load(self) -> None:
+        async def load(self) -> LoaderResult:
             events.append(self.__class__.__name__)
+            return LoaderResult(rows_written=1)
 
     class PlacesLoader(CurrentLoader):
         pass
@@ -30,17 +32,19 @@ async def test_combined_geography_refresh_reuses_one_chd_archive(monkeypatch) ->
         def __init__(self, *args, **kwargs) -> None:
             pass
 
-        async def load_from_zip_bytes(self, supplied: bytes) -> None:
+        async def load_from_zip_bytes(self, supplied: bytes) -> LoaderResult:
             assert supplied is blob
             events.append("historical_places")
+            return LoaderResult(rows_written=1)
 
     class HistoricalHierarchyLoader:
         def __init__(self, *args, **kwargs) -> None:
             pass
 
-        async def load_from_zip_bytes(self, supplied: bytes) -> None:
+        async def load_from_zip_bytes(self, supplied: bytes) -> LoaderResult:
             assert supplied is blob
             events.append("historical_hierarchy")
+            return LoaderResult(rows_written=1)
 
     async def fake_fetch_chd_archive() -> bytes:
         events.append("fetch_chd")

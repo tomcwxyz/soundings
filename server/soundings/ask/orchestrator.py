@@ -118,12 +118,12 @@ class AskOrchestrator:
                 logger.warning("Answer cache read failed; treating as miss", exc_info=True)
                 cached = None
             if cached is not None and cached.messages is not None:
-                logger.info("Answer cache HIT for query: %s", query[:80])
+                logger.info("Answer cache HIT")
                 for event in cached.events:
                     await _emit(callback, event)
                 return cached.messages
             if cached is not None:
-                logger.info("Answer cache legacy entry ignored for query: %s", query[:80])
+                logger.info("Answer cache legacy entry ignored")
 
         # ── Cache miss — run the Claude loop ─────────────────────────
         client = get_anthropic_client(self._api_key)
@@ -177,7 +177,7 @@ class AskOrchestrator:
                         collected_events,
                         messages=messages,
                     )
-                    logger.info("Answer cache STORED for query: %s", query[:80])
+                    logger.info("Answer cache STORED")
                 except Exception:
                     # Cache write failure shouldn't fail the response
                     logger.warning("Answer cache store failed", exc_info=True)

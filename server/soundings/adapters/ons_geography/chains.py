@@ -19,10 +19,10 @@ LSOA_MSOA_LTLA = LookupChain(
     ],
 )
 
-# LTLA → UTLA → Region → Country chain. Sourced from the LAD → CTY → RGN
-# → CTRY lookup. (unverified service name)
+# The ward-based administrative lookup also supplies the full council chain.
+# Repeated council rows are deduplicated by the hierarchy loader.
 LTLA_UTLA_REGION_COUNTRY = LookupChain(
-    url=f"{OGP_LOOKUP_HOST}/LAD24_CTY24_RGN24_CTRY24_UK_LU/FeatureServer/0",
+    url=f"{OGP_LOOKUP_HOST}/WD24_LAD24_CTYUA_RGN_CTRY_UK_LU/FeatureServer/0",
     levels=[
         ("ltla24", "LAD24CD"),
         ("utla24", "CTYUA24CD"),
@@ -31,23 +31,14 @@ LTLA_UTLA_REGION_COUNTRY = LookupChain(
     ],
 )
 
-# Westminster Constituency → LTLA lookup, July 2024. (unverified service name)
-WCONS_LTLA = LookupChain(
-    url=f"{OGP_LOOKUP_HOST}/PCON_JUL24_LAD24_UK_LU/FeatureServer/0",
-    levels=[
-        ("westminster_constituency_24", "PCON24CD"),
-        ("ltla24", "LAD24CD"),
-    ],
-)
-
-# Ward → LTLA → UTLA → Westminster constituency lookup, July 2024. (unverified)
+# Constituencies can cross council boundaries, and some wards are split.
+# Do not turn this overlap lookup into constituency containment edges.
 WARD_LTLA_UTLA = LookupChain(
-    url=f"{OGP_LOOKUP_HOST}/WD24_LAD24_CTY24_PCON24_UK_LU/FeatureServer/0",
+    url=f"{OGP_LOOKUP_HOST}/WD24_PCON24_LAD24_UTLA24_UK_LU/FeatureServer/0",
     levels=[
         ("ward24", "WD24CD"),
         ("ltla24", "LAD24CD"),
-        ("utla24", "CTYUA24CD"),
-        ("westminster_constituency_24", "PCON24CD"),
+        ("utla24", "UTLA24CD"),
     ],
 )
 
@@ -55,6 +46,5 @@ WARD_LTLA_UTLA = LookupChain(
 ALL_CHAINS = [
     LSOA_MSOA_LTLA,
     LTLA_UTLA_REGION_COUNTRY,
-    WCONS_LTLA,
     WARD_LTLA_UTLA,
 ]

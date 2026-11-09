@@ -1,3 +1,15 @@
+# Latest handoff — 9 November 2026
+
+Freshness/runtime fixes are deployed locally on
+`codex/freshness-review-followup-20261109`. Read STATE.md and
+`docs/reviews/2026-11-09-runtime-review.md` first. All three targeted full refreshes
+succeeded; public maps/MCP passed. Paid Ask evaluation is awaiting the user's
+budget choice. Do not work on the grant index in this follow-up, push or merge
+remote PRs, invent historical import successes, or enable broad INFO logging
+(the auth stub logs sensitive fields). The earlier handoff below is history.
+
+---
+
 # Handoff — 29 August 2026
 
 ## Where we are

@@ -150,3 +150,28 @@ async def test_loader_adapter_fetch_indicator_returns_none_when_missing() -> Non
     loader = _DummyLoader(engine)
     iv = await loader.fetch_indicator("population.total", "ltla24:E99999999", None)
     assert iv is None
+
+
+@pytest.mark.parametrize("has_completed_run", [True, False])
+async def test_loader_source_preserves_actual_data_retrieval_time(has_completed_run: bool) -> None:
+    engine = get_engine()
+    completed = datetime.now(tz=UTC) - timedelta(days=1)
+    retrieved = completed - timedelta(days=90)
+    await _seed_source_indicator_and_value(
+        place_id="ltla24:E06000004",
+        indicator_key="population.total",
+        period="2024",
+        value=200000,
+        finished_at=completed,
+    )
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("UPDATE data.indicator_value SET retrieved_at=:retrieved"),
+            {"retrieved": retrieved},
+        )
+        if not has_completed_run:
+            await conn.execute(text("DELETE FROM data.loader_run"))
+    value = await _DummyLoader(engine).fetch_indicator("population.total", "ltla24:E06000004", None)
+    assert value is not None
+    assert value.source.retrieved_at == retrieved
+    assert value.source.cache_status == ("cached" if has_completed_run else "stale")

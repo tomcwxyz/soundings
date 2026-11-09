@@ -47,6 +47,7 @@ def test_source_registry_returns_callable_for_each_phase_1_loader() -> None:
         "ons.mid_year_estimates",
         "ons.census2021",
         "mhclg.imd2025",
+        "sport_england",
         GRANT_INDEX_JOB_ID,
     ):
         assert callable(registry[sid])
