@@ -141,10 +141,7 @@ async def test_orchestrator_streams_status_and_done() -> None:
     assert len(done_events) == 1
 
 
-
-async def test_ask_logs_model_and_tool_timings_without_query_text(
-    caplog: Any,
-) -> None:
+async def test_ask_logs_model_and_tool_timings_without_query_text(caplog: Any) -> None:
     """Measurements should not require paid model calls or include query text."""
     events, callback = _collect_events()
     fake_client = _FakeAnthropic(
