@@ -1,0 +1,836 @@
+[
+  {
+    "id": "Q01",
+    "status": "completed",
+    "duration_seconds": 97.259,
+    "cost_usd": 0.30520699999999995,
+    "question": "Summarise Stockton-on-Tees.",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 1,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 1
+    },
+    "total": 7,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis",
+      "geography",
+      "coverage-honesty",
+      "presentation"
+    ],
+    "evidence_excerpts": [
+      "with an above-average share of both children under 18 and adults over 65",
+      "against all English/Welsh LTLA peers"
+    ],
+    "issue": "Several domains and explicit adapter gaps meet summary scope, with most numeric values grounded. However, age-count percentiles are interpreted as age-share comparisons without denominators or share comparisons. IMD distribution actually returns 296 English-only E-code peers, so repeated English/Welsh comparator claims are contradicted by retrieved geography; same-type peers is also unsupported by generic LTLA comparator. KS4 Attainment8 45.5 belongs to 2025/2026, while prose combines it with 2024/25 persistent absence. Registry dates are called founded and current-survivor registration-cohort chart is described as new registrations with no net removals, which cannot be inferred from cohorts; no-income coverage of 39/545 is omitted. Civil-society operating count545 and narrower charity-density numerator297 appear together without explaining the differing bases. Most blocks are usable but overlapping multi-label causes use composition-chart despite caption admitting overlap, so bar-chart would be clearer. Population.density is defective upstream (206800 equals total206800) but this final answer emits neither density claim nor density card, so do not assign that hard failure to Q01. Unsupported causal employment-access synthesis is hypothesis, not established evidence.",
+    "data_failure_provenance": "Density and unemployment source values are suspicious in saved tools, but neither faulty rate is surfaced in the final response; upstream defects alone do not become response hard failures."
+  },
+  {
+    "id": "Q02",
+    "status": "completed",
+    "duration_seconds": 49.239,
+    "cost_usd": 0.240676,
+    "question": "How does Sheffield compare with similar places?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 1,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 2
+    },
+    "total": 7,
+    "hard_failure": false,
+    "tags": [
+      "synthesis",
+      "geography",
+      "coverage-honesty"
+    ],
+    "evidence_issue": "All quoted focal values/percentiles trace to tools (IMD 27.0484/80.678th; health 19.7%/70.978th; greenspace 186.34/84.775th; social rent 22.6%/87.066th; population 582493/98.778th). But full LTLA universe is not an explicit similar-place peer group despite being called genuine like-for-like. IMD and greenspace peers are England only (296/290), health/housing England+Wales (318), population UK incl NI (361), contradicting GB and English/Welsh descriptions. Large-city greenspace comparison and core-city extremes are unverified rather than demonstrated. 2021/2024 periods mostly omitted in prose; appropriate distributions/map, no inherently misleading visual established. Material peer-selection failure: response explicitly says \"for genuine like-for-like comparison\" while selecting the full national LTLA universe. Not marked rubric hard failure because national values are not presented as local values and no materially misleading visual is established."
+  },
+  {
+    "id": "Q03",
+    "status": "completed",
+    "duration_seconds": 15.943,
+    "cost_usd": 0.0742275,
+    "question": "What are the most deprived neighbourhoods in Middlesbrough?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 1,
+      "context": 2,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 10,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis",
+      "geography"
+    ],
+    "evidence_excerpts": [
+      "suggesting a contiguous zone of acute, multi-dimensional deprivation",
+      "Middlesbrough 004C: 79.998; parent_value: 40.92867777777778"
+    ],
+    "issue": "Correct LSOA-level top-ten values and dated borough comparison directly answer the question. However, central/east location, tight spatial clustering/contiguity, and national most-deprived status are unsupported by the retrieved name/value table: no boundaries, adjacency or England ranks/percentiles were returned. These are unverified claims, not proven false. No rank-as-change error. Do not penalise theoretical 0–100 weighted IMD scale as false. Table and sub-area IMD score map are appropriate structured choices."
+  },
+  {
+    "id": "Q04",
+    "status": "completed",
+    "duration_seconds": 19.639,
+    "cost_usd": 0.034335000000000004,
+    "question": "Which neighbourhoods in Leeds have the highest income deprivation?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 1,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 2
+    },
+    "total": 8,
+    "hard_failure": false,
+    "tags": [
+      "synthesis",
+      "geography",
+      "coverage-honesty"
+    ],
+    "evidence_issue": "Correct income-domain worst-first LSOA tool; all 15 values/IDs match, led by Leeds 053C 0.780, 053B 0.751, 040E 0.744, with 2025 table/map. LSOA proportions are appropriately interpreted. But parent 0.2425676 is an unweighted neighbourhood average (known IMD LTLA implementation), not established as citywide resident share; response says \"around 24% of residents classed as income-deprived\". Tool here supplies no aggregation caveat. Spatial claim about wards/inner-city/outer-estate areas is unverified by returned table, and LSOA prefixes are not ward identifiers. Claimed 053A–D range 0.64–0.78 contradicts listed 0.706–0.780. Ranking useful despite weak contextual interpretation."
+  },
+  {
+    "id": "Q05",
+    "status": "completed",
+    "duration_seconds": 8.329,
+    "cost_usd": 0.02486300000000008,
+    "question": "Is Newcastle's population growing or shrinking?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 2,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 11,
+    "hard_failure": false,
+    "tags": [
+      "synthesis"
+    ],
+    "evidence_issue": "Correct Newcastle upon Tyne LTLA, 2015–2024 trend, 287955 to 320605, +32650/+11.3386%, and 2022–2024 +15719 all match tools. Revision caveat is explicit and trend chart appropriate. Pandemic migration explanation is marked likely but not supported by tool evidence; an unverified causal inference, not an established false numerical claim."
+  },
+  {
+    "id": "Q06",
+    "status": "completed",
+    "duration_seconds": 23.218,
+    "cost_usd": 0.06415499999999996,
+    "question": "How has the number of people on Universal Credit changed in Stockton-on-Tees?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 9,
+    "hard_failure": false,
+    "tags": [
+      "upstream",
+      "synthesis"
+    ],
+    "evidence_issue": "Correct UC indicator and Stockton LTLA attempted; get_trend returns explicit DWP Stat-Xplore 401 Unauthorized, so requested count trend unavailable. Response honestly distinguishes source failure from no data, invents no UC values, and correctly rejects unemployment series 69.6–75.2% as suspect. Profile employment 72.3% Oct 2024–Sep 2025 matches record; no evidence this employment value itself is wrong. Calling an employment level a proxy direction for UC change is ungrounded and weak context. Root-confirmed APS cache-key collision explains bogus unemployment values as upstream, not fabrication; model did not endorse them."
+  },
+  {
+    "id": "Q07",
+    "status": "completed",
+    "duration_seconds": 52.283,
+    "cost_usd": 0.18975200000000036,
+    "question": "How does Sunderland's employment rate compare with peers?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 2,
+      "coverage_honesty": 2,
+      "presentation": 1
+    },
+    "total": 10,
+    "hard_failure": false,
+    "tags": [
+      "synthesis",
+      "presentation"
+    ],
+    "evidence_issue": "Explicitly discloses missing national peer universe after two empty peer-distribution calls, then compares six named regional authorities at same Oct 2024–Sep 2025 period. All rates match compare tool: Sunderland69.4, Newcastle70.0, Gateshead69.1, South Tyneside63.2, Durham72.4, North Tyneside74.7%. Selection is regional context, not a demonstrated statistical similarity cohort. Oct–Sep trend 66.0→71.2→73.1→75.3→69.4 and -5.9pp match tool; survey caveat explicit. Claim other three all exceed70% slightly false (Newcastle=70.0); UK typical mid/high70s benchmark and longstanding gap not retrieved/verified. Trend chart mixes overlapping windows returned in nonchronological window-group order; caption warns but appropriate single-window visual would be clearer. APS unemployment collision visible in profile does not establish employment values wrong."
+  },
+  {
+    "id": "Q08",
+    "status": "completed",
+    "duration_seconds": 53.748,
+    "cost_usd": 0.13038499999999997,
+    "question": "How does life expectancy in Blackpool compare with similar places?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 1
+    },
+    "total": 9,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis",
+      "presentation"
+    ],
+    "findings": [
+      "Direct named-LTLA comparison: Blackpool female79.9/male75.3 (2025), Blackburn81.0/76.4, Hartlepool81.1/77.8; all values and differences correct. Explicitly chosen comparably deprived towns, not a statistical peer universe; comparison rationale is plausible but deprivation of comparator towns was not fetched in this run.",
+      "No stored life-expectancy percentile and absent England/region values acknowledged. Claims among lowest nationally/typical English LTLAs lack actual national distribution evidence; confusing sentence says below a national pattern rather than a measured average.",
+      "Two-point trends use2021-23 versus2025 labels from tools; cautious short-series caveat present, but periods are unequal/partly unparsed and charts receive reverse chronological tool order (2025 then2021-23), risking reversed visual timeline. No rendered failure confirmed.",
+      "Blackpool IMD43.5/100th percentile grounded; long-term conditions25.1%/99.7th percentile grounded but headline highest of any peer overclaims a below100 percentile. Health/deprivation correlation offered as context rather than causal proof.",
+      "Appropriate comparison/card blocks; empty sources is shared dispatcher output provenance defect. Density not used."
+    ]
+  },
+  {
+    "id": "Q09",
+    "status": "completed",
+    "duration_seconds": 20.736,
+    "cost_usd": 0.049359999999999626,
+    "question": "Is smoking prevalence unusually high in Hartlepool?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 9,
+    "hard_failure": false,
+    "failure_tags": [
+      "missing-data",
+      "synthesis"
+    ],
+    "findings": [
+      "Explicit no smoking observation for Hartlepool, refuses to confirm unusually high prevalence, and warns against deriving smoking from related measures. Honest missing-data result, no hard failure.",
+      "Long-term conditions22.9%/94.3rd percentile, IMD37.9/~99th, income~96th/employment99.7th and inactivity~96th trace to tools. Correct LTLA and England deprivation frame.",
+      "General statement catalogue has no smoking at LA level is broader than one-place result. National smoking-deprivation correlation and suggested external sources not retrieved; marked inference, but adds speculative elevated-smoking framing after honest refusal.",
+      "Context cards/distribution appropriate and clearly separate from smoking; would be stronger to retain periods2021/2025/2024-25 in narrative. Empty final sources is shared provenance-output defect."
+    ]
+  },
+  {
+    "id": "Q10",
+    "status": "completed",
+    "duration_seconds": 16.206,
+    "cost_usd": 0.04195400000000005,
+    "question": "How high is free school meal eligibility in Bradford?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 1
+    },
+    "total": 8,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis",
+      "coverage-honesty",
+      "presentation"
+    ],
+    "findings": [
+      "Bradford32.849837% (2025/26), roughly one in3 pupils, historic listed points, +15.21628pp/+86.29% since2015/16 all match tools. Correct LTLA and pupil denominator.",
+      "False monotonic claim grew in every recorded year/no reversal:2016/17=18.062874 fell to17.704503 in2017/18. Long-run rise is real.",
+      "Six-year-extended FSM definition and transition, historic England low/mid20s average, attribution to poverty/pandemic/cost-of-living are not supplied by tool evidence. Specific unsupported definition risks denominator mismatch; verify adapter series before treating as Ever6.",
+      "Explicit no direct peer distribution; definition-comparability caveat useful in principle but unsupported underlying definition. Pinned card and trend appropriate; returned already-percent values labelled proportion is upstream unit contract issue, not actual chart x100 inflation (root verified raw chart rendering).",
+      "Empty final sources shared dispatcher provenance-output defect. No enumerated material hard failure established from saved events alone."
+    ]
+  },
+  {
+    "id": "Q11",
+    "status": "completed",
+    "duration_seconds": 40.454,
+    "cost_usd": 0.1683690000000002,
+    "question": "How does persistent absence in Sheffield compare with peers?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 2,
+      "coverage_honesty": 1,
+      "presentation": 2
+    },
+    "total": 10,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis",
+      "coverage-honesty"
+    ],
+    "findings": [
+      "Sheffield21.28253% (2024/25) versusLeeds19.0076/Manchester18.81227/Birmingham20.95805/Nottingham20.58438 correctly ranks highest of named five; appropriate explicit core-city rationale and same period.",
+      "Sheffield trend peak24.30994 (2022/23), latest21.28253, pre-pandemic12.97771 (2018/19) match tools. No England current benchmark or full peer percentile openly acknowledged.",
+      "Empty detect_insights does not establish not a statistical outlier in named cities: tool has no percentile for this passthrough indicator and does not test caller-selected set. Calling absence of signal evidence of no outlier overclaims missing coverage.",
+      "Shared system-wide post-pandemic shift across all five cities is unsupported by only Sheffield historical trend plus current comparator snapshot; no comparator historic baselines retrieved.",
+      "Persistent-absence definition10%+ sessions is useful but not stated in saved tool responses; no material denominator contradiction established. Raw DfE percent/proportion contract inconsistent upstream; no chart x100 bug. Appropriate trend/compare blocks, empty sources shared dispatcher provenance defect."
+    ]
+  },
+  {
+    "id": "Q12",
+    "status": "completed",
+    "duration_seconds": 39.773,
+    "cost_usd": 0.06018599999999985,
+    "question": "Has recorded crime in Leeds risen or fallen recently?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 2
+    },
+    "total": 8,
+    "hard_failure": false,
+    "tags": [
+      "missing-data",
+      "upstream",
+      "synthesis",
+      "coverage-honesty"
+    ],
+    "evidence_issue": "Correctly refuses rise/fall: get_change/get_trend return \"PoliceUkAdapter does not publish time series\". September2026 rates5.65554 recorded/violence and0.46617 ASB trace to tools; snapshot and centroid (~1mile, not LTLA-boundary) coverage explicit; duplicate recorded/violence values flagged. But response changes adapter limitation into source-wide claim \"data.police.uk ... does not publish a time series for Leeds\" and \"historical series simply isn't published by this source\", unsupported by tool error. Omits available substantive caveat \"Recorded crime reflects what is reported and recorded; not the same as victimisation rates.\" No invented trend or count-rate hard failure."
+  },
+  {
+    "id": "Q13",
+    "status": "completed",
+    "duration_seconds": 47.708,
+    "cost_usd": 0.07444000000000006,
+    "question": "What does the local civil society landscape look like in Stockton-on-Tees?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 1
+    },
+    "total": 8,
+    "hard_failure": false,
+    "tags": [
+      "synthesis",
+      "coverage-honesty",
+      "presentation"
+    ],
+    "evidence_issue": "545 operating/305 registered distinction,506 income-reporters, median£37385,mean£805850.71, top3£120832759/29.6%, buckets and named largest organisations all match tools; correctly warns whole-organisation income not local resourcing, grant timeouts not zero, unregistered-group coverage, and partial2026. However calls registration date founded1962, and registration cohorts \"new charities per year\"/no pandemic collapse without evidence of historical complete registrations/removals (surviving register cohort may differ). Asserts no local observations without an observations call. Cause tags overlap (caption admits this) yet rendered as share-of-whole composition chart; usable counts but poor visual. 39 missing-income charities inferable from506/545 but not explicitly disclosed as missing. No cross-register dedup assumed or performed; no material count fabrication established."
+  },
+  {
+    "id": "Q14",
+    "status": "excluded_grant_scope"
+  },
+  {
+    "id": "Q15",
+    "status": "completed",
+    "duration_seconds": 25.979,
+    "cost_usd": 0.04821600000000004,
+    "question": "Where are the food banks in Newcastle?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 1
+    },
+    "total": 8,
+    "hard_failure": false,
+    "tags": [
+      "upstream",
+      "synthesis",
+      "presentation"
+    ],
+    "evidence_issue": "Food-bank facility indicator correctly attempted, GiveFoodUnavailableError returned. Explicitly refuses verified physical sites/map/count and distinguishes charities, registered offices, operating areas and distribution points; no network HQ presented as all branches. Named charity incomes/years/postcodes match tool. But adds unsupported OpenStreetMap-style amenity matching to Give Food description, and registered organisation block contains only place/limit (no activity_filter), so can re-fetch general top charities rather than filtered food-poverty results. Final response supplies no direct register links despite URLs available; prose examples helpful but no street-site answer. No invalid choropleth or silent substitution."
+  },
+  {
+    "id": "Q16",
+    "status": "completed",
+    "duration_seconds": 13.018,
+    "cost_usd": 0.03585400000000005,
+    "question": "How much community infrastructure is there in Bristol — libraries and community centres?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 2,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 11,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis"
+    ],
+    "evidence_excerpts": [
+      "42 libraries; 162 community centres",
+      "suggests Bristol has a reasonably dense network"
+    ],
+    "issue": "Directly answers both facility types, names OSM/Overpass and incomplete/miscategorised tagging, keeps amenities separate from registered organisations, and correctly declines peer rankings after empty peer responses. Tool counts and current2026-11 reference match. Reasonably dense network and formal library branches are interpretive embellishments: no land/population denominator or venue-type validation establishes them. Saved count evidence has no stated radius/boundary approximation, so no independently proven geographic mismatch can be assigned from this case alone. Counts/cards and amenity overlay are suitable structured choices; rendering not verified."
+  },
+  {
+    "id": "Q17",
+    "status": "completed",
+    "duration_seconds": 55.938,
+    "cost_usd": 0.3409770000000001,
+    "question": "How good is access to green space in Sheffield?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 0,
+      "geography": 1,
+      "context": 2,
+      "coverage_honesty": 1,
+      "presentation": 1
+    },
+    "total": 7,
+    "hard_failure": true,
+    "failure_tags": [
+      "synthesis",
+      "geography",
+      "coverage-honesty",
+      "presentation"
+    ],
+    "evidence_excerpts": [
+      "show 0% good access and effectively 0 m² of green space per capita",
+      "Sheffield 001C (best, for contrast)"
+    ],
+    "issue": "Correct city-wide access40.1%, amount186m², ranks45/41 and English290-peer context; recognises2021 and2011-boundary mismatch and parks timeout. However, combines separate bottom lists into joint-zero claims despite no joined evidence. Labels001C best although it was merely largest in a five-row name-ordered sample, not a best-first whole-city query. Inner-city/outer-suburb explanation and PeakDistrict causal framing are not established by retrieved geometry. Table otherwise usable; caption darker/lower-value meaning must be validated against actual renderer before asserting incorrect colours. Coverage caveat is present but does not qualify invented joint-zero list."
+  },
+  {
+    "id": "Q18",
+    "status": "completed",
+    "duration_seconds": 21.776,
+    "cost_usd": 0.04735999999999985,
+    "question": "What does Soundings know about air quality in Bristol?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 2
+    },
+    "total": 9,
+    "hard_failure": false,
+    "failure_tags": [
+      "routing",
+      "synthesis",
+      "coverage-honesty"
+    ],
+    "evidence_excerpts": [
+      "no adapter is registered for environment.air_quality.pm2_5",
+      "NO₂ ~4.7 µg/m³ — low relative to UK annual mean guideline levels"
+    ],
+    "issue": "Names modelled CAMS/OpenWeather centroid snapshot and variable local exposure, reports returned NO2/PM10/O3 values faithfully, and honestly handles empty peer distribution/no-timeseries response. But queries wrong PM2.5 key pm2_5 rather than available pm25 (seen in other saved cases), then turns routing failure into false product-wide absence of fine particulate coverage. AQI request likewise failed but no saved evidence establishes an available AQI alternative. Annual-mean thresholds are applied to a single current snapshot without a clear warning that NO2/PM10 annual compliance/exposure cannot be inferred; ozone alone gets an explicit time-window caution. Monitoring-station interpolation is contradictory upstream metadata: answer repeats top-level tool caveat, rather than inventing it, while per-result caveats correctly say CAMS centroid model. Cards are suitable; empty final sources event reduces public auditability globally rather than uniquely here."
+  },
+  {
+    "id": "Q19",
+    "status": "completed",
+    "duration_seconds": 25.607,
+    "cost_usd": 0.06847599999999998,
+    "question": "How physically inactive is Gateshead compared with other places?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 10,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis"
+    ],
+    "evidence_excerpts": [
+      "34th percentile for being active ... Gateshead does comparatively well here",
+      "with an above-average fully-active share"
+    ],
+    "issue": "Directly reports inactive adult proportion24.77% as24.8%, correct England296-peer context and55th-percentile higher=worse interpretation, coherent single-year/survey uncertainty caveat. Active62.08% and fairly-active13.15% also convert correctly. However, active33.9th percentile means lower active share than roughly66% of peers, so final claims better than most and above-average fully-active share reverse the explicitly described percentile direction. This contradicts the retrieved percentile but does not invent the value or count-as-rate, so no automatic hard failure. Distribution/cards appropriate; comparative synthesis must correct active-share direction."
+  },
+  {
+    "id": "Q20",
+    "status": "completed",
+    "duration_seconds": 49.796,
+    "cost_usd": 0.13006299999999982,
+    "question": "How many active companies are registered in Manchester, and is that high for its population?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 2,
+      "coverage_honesty": 2,
+      "presentation": 1
+    },
+    "total": 10,
+    "hard_failure": false,
+    "tags": [
+      "routing",
+      "synthesis",
+      "presentation"
+    ],
+    "evidence_issue": "Manchester66674 live-register stock, Nov2026, population589670 mid2024, correctly derived113.07/1000. Birmingham89245/1183618=75.40, Leeds56527/845189=66.88, Liverpool34636/508961=68.05 all trace to retrieved values and support50–70% relative difference. Explicit period mismatch and registered-office!=trading/employment caveats; stock not presented as new-company flow. Tries nonexistent active_companies_per_capita rather than existing active_companies_per_1000, then transparently derives own correctly. Raw distribution has359 covered LTLAs,6 higher values (~98th percentile), but caption incorrectly names City of London59010 and Leeds56527 as higher than Manchester, with visible self-correction \"actually the top handful\". Says all359 UK authorities rather than coverage subset. Westminster population~226000 and City tiny population not retrieved; economic-sector explanation for Manchester ratio is unverified rather than demonstrated. No invented final ratio or count-under-rate hard failure."
+  },
+  {
+    "id": "Q21",
+    "status": "completed",
+    "duration_seconds": 107.946,
+    "cost_usd": 0.3594879999999998,
+    "question": "How do Sheffield and Middlesbrough differ across population, employment, health and deprivation?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 1,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 1
+    },
+    "total": 7,
+    "hard_failure": false,
+    "tags": [
+      "upstream",
+      "synthesis",
+      "geography",
+      "coverage-honesty",
+      "presentation"
+    ],
+    "evidence_issue": "Direct comparison across all requested domains, absolute-basis charts appropriate; population582493/156161 (~3.73x), age shares, pay31816/30253, life expectancy79.2/76.9 and82.8/81.6, health19.7/20.5%, IMD27.0484/40.9287 trace to tools with like-for-like periods within each pair. Explicitly detects/refuses density==total and Middlesbrough employment/unemployment both6.9%, validating with6–11% historical series; confirmed upstream cache collision not LLM fabrication. But median-pay compare tool unit GBP per week attaches annual-sized31816/30253 (upstream metadata defect; prose omits frequency, chart may display misleading unit). Calls population percentile universe English/Welsh despite broader population coverage; IMD rank2 value grounded but denominator roughly317 unsupported vs296 coverage. Says Sheffield above average deprivation across every domain despite own health41st/education40th percentiles. Omits LTLA unweighted aggregation caveats for IDACI/income/employment proportions; health/population reference years mostly implicit in charts rather than prose. Long-documented worklessness causal/context claim unverified; no unsupported single composite score."
+  },
+  {
+    "id": "Q22",
+    "status": "completed",
+    "duration_seconds": 18.824,
+    "cost_usd": 0.08141400000000054,
+    "question": "How common is overcrowding in Birmingham?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 1,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 9,
+    "hard_failure": false,
+    "tags": [
+      "geography",
+      "synthesis"
+    ],
+    "evidence_issue": "Correct Census2021 overcrowding share0.094→9.4% of households, occupancy-rating/bedroom definition consistent with NM_2070_1 TS052 mapping. Explicit snapshot and not current/monthly; no invented trend. 91.798th percentile, social rent23.5%/88.959th, IDACI98.983th and income100th trace to profile; Newham21.6%,Brent17.8%,Ealing16.9%,Bradford7.5% match peer values. But labels318 England/Wales peers as all UK repeatedly, exaggerating geographic coverage. Birmingham9.4 vsManchester7.9% does not support strong well-above narrative; relation to poverty/social housing and household size is unverified causal/context inference rather than retrieved evidence. Card+distribution appropriate; no unsuitable choropleth or count-as-proportion failure."
+  },
+  {
+    "id": "Q23",
+    "status": "completed",
+    "duration_seconds": 95.318,
+    "cost_usd": 0.4493309999999999,
+    "question": "How affordable is housing in Bristol compared with similar places?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 1
+    },
+    "total": 8,
+    "hard_failure": false,
+    "failure_tags": [
+      "upstream",
+      "missing-data",
+      "synthesis",
+      "presentation"
+    ],
+    "findings": [
+      "Correctly rejects implausible housing.affordability_ratio values rather than treating 255734 (2015) as a real ratio. Comparator raw values match tools; no silent affordability substitution.",
+      "Overcrowding 5.0% and social-rented share 18.7%, Census 2021, and ~80th/~75th percentiles match returned evidence. Household denominators are explicit.",
+      "Uses all 318 England/Wales authorities as context, explicitly labelled in overcrowding chart, not a justified similar-place peer set. Named cities were checked only against the unusable affordability indicator.",
+      "Pay value 34051 and period 2025 trace to profile but annual/full-time interpretation is not established by profile unit=value; pay distribution returns unit=GBP per week and no observations. National-median pay claim is unsupported.",
+      "Outside-catalogue Bristol prices, normal ratio range, Bath ranking expectations, strong population growth and demand outstripping supply lack tool evidence. Population profile has no trend, and active-company absolute count percentile is not evidence of demand/supply causation.",
+      "Structured proxy distributions are appropriate and explicitly indirect; unpinned pay card risks contradictory metadata, and streamed sources list is empty despite available profile provenance.",
+      "No enumerated hard failure established: honest missing affordability is not automatically a failure; density was returned but not used in final answer."
+    ],
+    "definition_note": "Identifies affordability as house-price-to-earnings, but does not fully explain denominator/residence versus workplace basis; correctly declines interpreting malformed values."
+  },
+  {
+    "id": "Q24",
+    "status": "completed",
+    "duration_seconds": 95.835,
+    "cost_usd": 0.533085,
+    "question": "What has got noticeably worse in Sunderland in the last few years?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 1
+    },
+    "total": 8,
+    "hard_failure": false,
+    "hard_failure_note": "No enumerated hard failure established. Root confirmed actual trend renderer plots raw values with unit label and does not multiply by 100; DfE percentage/proportion mismatch is a unit-contract problem, not evidence of inflated chart values.",
+    "failure_tags": [
+      "upstream",
+      "synthesis",
+      "coverage-honesty",
+      "presentation"
+    ],
+    "findings": [
+      "Finds real multi-year school-attendance and FSM series, with exact periods and values. Absence 13.92983% (2018/19), 26.04583% (2021/22), 20.94015% (2024/25); latest is ~50% above baseline but has improved from peak. FSM 19.41576% (2015/16) to 31.91448% (2025/26), +12.50pp.",
+      "Distinguishes poor current standing from deterioration; correctly respects explicit IMD 2019/2025 methodology break and only one loaded IMD/sport observation. Correct Sunderland LTLA and England IMD comparison.",
+      "Major anomaly: tool-labelled unemployment observations 0.66–0.753 are repeated as 66–75% unemployment without plausibility caveat. This traces to upstream tool data rather than fabricated values, but inference of mild improvement is unsafe until series identity is verified.",
+      "FSM is labelled a poverty proxy, but worsening/deepening poverty conclusion exceeds eligibility-series evidence without policy/eligibility comparability caveat. Absence/FSM correlation, sustained-family-strain interpretation and longstanding enterprise weakness lack direct evidence. Active companies per 1000 is a stock registered-office measure, not business formation.",
+      "Honest crime time-series failure and empty contributed observations; no invented frontline evidence. Broad source list is empty despite tool provenance. Tool get_change declined comparison for unparsed academic and rolling windows; final manually interprets recognisable years without explaining that limitation.",
+      "Trend charts/callouts suitable; DfE returns already-percent values labelled proportion. Root verified renderer plots raw values unchanged, so no inflated-chart hard failure. Density anomalies were not used.",
+      "Root identified strong upstream cause for implausible unemployment: ons_aps cache key omits extra_params variable while employment45 and unemployment84 share NM_17_5/20599/place. Cached employment can therefore be returned as unemployment. Not LLM fabrication."
+    ]
+  },
+  {
+    "id": "Q25",
+    "status": "budget_stopped",
+    "duration_seconds": 51.991,
+    "cost_usd": 0.14364799999999978
+  },
+  {
+    "id": "Q26",
+    "status": "completed",
+    "duration_seconds": 86.581,
+    "cost_usd": 0.23257499999999998,
+    "question": "Summarise Glasgow.",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 1,
+      "context": 2,
+      "coverage_honesty": 2,
+      "presentation": 1
+    },
+    "total": 9,
+    "hard_failure": true,
+    "failure_tags": [
+      "presentation",
+      "synthesis",
+      "geography",
+      "upstream"
+    ],
+    "evidence_excerpts": [
+      "Glasgow City's population relative to all UK local authorities — darker shading indicates larger population.",
+      "2,463 charities are registered in Glasgow — the 97th percentile nationally"
+    ],
+    "issue": "Substantial UK-wide population/economy summary with clear Scottish health/deprivation/education gaps; avoids suspicious crime zeros. OSCR registered-address definition and missing financial fields are explicit. The OSCR percentile is described as national without identifying the Scotland-only register comparator; this is ambiguous rather than proven UK-wide misrepresentation. The population-total map clearly labels its measure and uses comparable LTLA cells: a cartographic presentation concern only, with no saved evidence of materially misleading interpretation, missing geometry or failed rendering. Most facts trace to tools, but commercial-centre superlative and pandemic causal suggestion are not established. Density percentile repeats suspect upstream data (density value equals population count), rather than fabricating it; under-18 uses the older insight value without its vintage. The profile establishes zero reported incomes, null income/notable fields, empty cohorts/funders/grants, but does not establish the claimed causal source limitation; those explanations are unsupported generalisations, not proven false. Do not penalise honest unavailable Scottish sources.",
+    "adjudication": "Removed automatic raw-population-choropleth hard failure: labelled absolute-count LTLA map alone does not establish material deception. No saved geometry or browser evidence establishes a harder visual failure.",
+    "data_failure_provenance": "Saved profile density650300 people/km² equals total650300 people; root independently confirmed SQL across stored paired rows. No density card emitted, but final text explicitly adopts the density percentile."
+  },
+  {
+    "id": "Q27",
+    "status": "completed",
+    "duration_seconds": 103.8,
+    "cost_usd": 0.20496500000000006,
+    "question": "Summarise Belfast.",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 1
+    },
+    "total": 9,
+    "hard_failure": true,
+    "failure_tags": [
+      "upstream",
+      "synthesis",
+      "presentation"
+    ],
+    "evidence_excerpts": [
+      "at the 92nd percentile for under-18 population share",
+      "population.density: 352390 people per km²; population.total: 352390 people"
+    ],
+    "issue": "Direct broad summary correctly identifies Belfast LGD, uses NI-covering population/Companies House/OSM data, prominently excludes NI-inapplicable indicators, and carefully marks the 13 CCEW charities as an unrepresentative operating-area slice rather than the NI sector. Main failures are corrupted upstream density adopted as a card/ranking, plus age-count percentile converted to youthful age-share interpretation. Good-by-UK-standards air-quality comparison is unsupported by benchmarks (answer itself says no percentile exists); business hub and well-provided infrastructure inferences lack direct comparison. Cause classifications overlap yet composition-chart has no overlap caption. Employment/unemployment APS cache defect is not surfaced here: both rates unavailable and neither claimed. No browser rendering verified."
+  },
+  {
+    "id": "Q28",
+    "status": "completed",
+    "duration_seconds": 21.287,
+    "cost_usd": 0.04000500000000001,
+    "question": "Which charities operate in Glasgow, and what are they focused on?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 2,
+      "context": 2,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 11,
+    "hard_failure": false,
+    "failure_tags": [
+      "synthesis"
+    ],
+    "evidence_excerpts": [
+      "they are not a count of charities actively delivering services in Glasgow",
+      "A sample of registered charities includes long-standing bodies"
+    ],
+    "issue": "An honest useful partial response: 2,463 postcode-matched OSCR registered addresses, listed charity purposes and examples trace to tools; missing income/grants/registration dates and non-equivalence to local service delivery are explicit. Heading says operating, but repeated prominent qualifications prevent treating this as silent activity substitution or national-slice hard failure. Minor unsupported embellishments call examples long-standing despite null registration dates, call James T Howat grant-making without grant evidence, and infer actual service delivery from charitable-purpose registration. Cause composition and organisation/map blocks are appropriate structured presentation; no rendered UI claim. Source-availability claim is wider than returned evidence: the returned null/empty financial and registration fields support unavailability in this response, but not a claim about OSCR source capability or all Scottish records. There is no exact contradiction to the missing-field statement in these returned records."
+  },
+  {
+    "id": "Q29",
+    "status": "completed",
+    "duration_seconds": 17.782,
+    "cost_usd": 0.03720800000000002,
+    "question": "What is the claimant count rate in Stockton-on-Tees, and how has it changed?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 2,
+      "presentation": 2
+    },
+    "total": 9,
+    "hard_failure": false,
+    "tags": [
+      "missing-data",
+      "upstream",
+      "synthesis"
+    ],
+    "evidence_issue": "Correctly refuses unavailable claimant rate/change; no count relabelled as rate. Tool returns no adapter for economy.claimant_count_rate and HTTPStatusError for universal_credit_claimants. Employment 72.3%, unemployment 5.6% (Oct 2024–Sep 2025), pay £29877 (2025) match profile. Does not explain tested denominator/derivation required or answer change. Groups median pay under APS even though pay source differs; alternative labour-market evidence is explicitly not a substitute."
+  },
+  {
+    "id": "Q30",
+    "status": "completed",
+    "duration_seconds": 22.366,
+    "cost_usd": 0.06936399999999998,
+    "question": "What proportion of children in Middlesbrough are in relative low-income families after housing costs?",
+    "scores": {
+      "question_fit": 1,
+      "grounding": 1,
+      "geography": 2,
+      "context": 1,
+      "coverage_honesty": 1,
+      "presentation": 2
+    },
+    "total": 8,
+    "hard_failure": false,
+    "tags": [
+      "missing-data",
+      "synthesis",
+      "coverage-honesty"
+    ],
+    "evidence_issue": "Explicitly says requested relative-low-income-AHC proportion unavailable and distinguishes IDACI; no CILIF count is presented as proportion. IDACI 0.5308778 (2025), 97.966th percentile match profile. However 53.1% is explicitly an unweighted LTLA average of neighbourhood scores in tool caveats, so interpreting it as just over half of all children in Middlesbrough omits a material denominator/aggregation limitation. Fails to explain tested denominator needed for requested proportion. HBAI/CLIF methodology and release-lag discussion is unverified by retrieved evidence. Exact tool caveat: \"IMD aggregated to LTLA via unweighted average.\" Response: \"meaning just over half of children in the area live in families classed as income-deprived by this measure.\" This is a material failure in measure interpretation, despite accurate number copying and explicit IDACI != requested DWP measure."
+  },
+  {
+    "id": "Q31",
+    "status": "excluded_grant_scope"
+  },
+  {
+    "id": "Q32",
+    "status": "excluded_grant_scope"
+  },
+  {
+    "id": "Q33",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q34",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q35",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q36",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q37",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q38",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q39",
+    "status": "completed",
+    "duration_seconds": 19.888,
+    "cost_usd": 0.03747299999999987,
+    "question": "Which neighbourhoods in Middlesbrough are most vulnerable to difficulties accessing affordable food?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 0,
+      "context": 2,
+      "coverage_honesty": 1,
+      "presentation": 2
+    },
+    "total": 8,
+    "hard_failure": false,
+    "failure_tags": [
+      "geography",
+      "synthesis",
+      "coverage-honesty"
+    ],
+    "evidence_excerpts": [
+      "PPFI deciles are a national ranking (England, Scotland, Wales)",
+      "both in the wider Gresham/Thorntree-area output areas"
+    ],
+    "issue": "Correct PPFI indicator, LSOA level, ascending priority order, six decile1 rows and nine decile2 rows trace to get_sub_areas. Clearly identifies July2024 static composite rather than direct/live food-insecurity prevalence, and responsibly caveats OSM provision overlay. However, repeatedly describes deciles as one national England/Scotland/Wales ranking, failing the explicit England-only/no-cross-country-comparability criterion; retrieved local values do not establish that shared comparison universe. LSOA codes/names alone do not establish Gresham/Thorntree neighbourhood locations, two spatial clusters, or wider ring: those claims are unsupported, not independently proven geographically false by saved evidence. Table and specified decile map with caveated provision overlay are appropriate structured choices; no claim to have verified map rendering. No hard-failure category is conclusively established because local measure/values are correct and cross-country benchmark/geographic claims lack evidence rather than proving invented values."
+  },
+  {
+    "id": "Q40",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q41",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q42",
+    "status": "not_attempted_budget"
+  },
+  {
+    "id": "Q43",
+    "status": "completed",
+    "duration_seconds": 72.761,
+    "cost_usd": 0.19658299999999995,
+    "question": "What should we pay attention to about food access and local response in Middlesbrough?",
+    "scores": {
+      "question_fit": 2,
+      "grounding": 1,
+      "geography": 1,
+      "context": 2,
+      "coverage_honesty": 1,
+      "presentation": 1
+    },
+    "total": 8,
+    "hard_failure": false,
+    "hard_failure_note": "No confirmed enumerated material hard failure from saved evidence; overlapping cause-area composition visual requires renderer review if whole-share semantics apply. Minor incorrect rank/median recorded as synthesis errors.",
+    "failure_tags": [
+      "synthesis",
+      "coverage-honesty",
+      "presentation"
+    ],
+    "findings": [
+      "Addresses both food vulnerability and response: PPFI neighbourhoods, poverty context, keyword-filtered charity profile, a named foodbank, empty observations and failed amenity/grant calls. Clearly distinguishes PPFI composite vulnerability from direct/live food insecurity and missing locations from zero provision.",
+      "PPFI top10 table values/IDs and July2024 period match tools; country-relative England ranking explicit. Six decile1 entries supported; four decile2 entries are only the remaining returned top10, not necessarily the total number in borough. Inner-ward clustering is not evidenced by returned geographic geometry/ward analysis.",
+      "IMD score40.9287 and99.661 percentile match tools, but claim 3rd highest is wrong: distribution has exactly one higher value, making it 2nd of296. Claimed national median~19.3 differs from actual18.9646. IDACI0.53088,~98th percentile and median~0.31 trace to tools; strong food-insecurity prediction is unsupported by these calls alone.",
+      "Charity32 operating/14 registered, buckets7 below10k/12 at10k-100k, foodbank183013 income/2013 registration, and top3 income28.208m/84.1% match tools. Full total income is33.527m; prose parenthesis ambiguously presents28.2m as total instead of top3. Whole-charity income is not local food spending/capacity. OneUmmah overseas focus is not established by returned org-level classification; only aggregate overseas-aid tag count7 returned.",
+      "Declaring local response thin/small-scale and under-resourced overreaches keyword register coverage and whole-org income; broad poverty tags may include unrelated charities and miss unregistered provision. Profile caveat warning of loose/missed keyword matches is not adequately carried through. Organisations block lacks activity filter and may show unrelated organisations despite food focus.",
+      "Empty observations is correctly limited to food theme/Middlesbrough; grant emptiness caveated, but known timeout and unavailable full GrantNav index should be explicit instead of suggesting genuine absent indexed grants. Map overlay is exploratory and partial, good caveat.",
+      "Composition-chart includes overlapping charity causes summing105 across32 charities; caption says not mutually exclusive, but part-to-whole rendering risks misleading interpretation. Map/table/distribution otherwise suitable. Empty final sources is root-confirmed shared dispatcher provenance-output defect, not absence of tool grounding. Density not used."
+    ]
+  },
+  {
+    "id": "Q44",
+    "status": "excluded_grant_scope"
+  }
+]

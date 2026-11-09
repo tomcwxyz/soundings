@@ -16,7 +16,7 @@ isolated validation; previously missing ONS display layers are populated. Ask me
 now reach the server log without question text or unrelated INFO logging.
 
 Public map and MCP checks passed. The evaluation set is now 44 questions;
-model-backed scoring awaits a budget decision. Missing historical import records
+model-backed scoring completed 30 answers within the approved £5 ceiling. Missing historical import records
 and unimplemented housing live tables remain explicit, rather than being hidden
 by synthetic success records. The grant index is outside this follow-up.
 
@@ -195,3 +195,17 @@ The old Ask timeout/choropleth branch is also superseded: its safeguards are alr
 The NSPL/recovery branches should be compared file-by-file before deletion because later fixes were layered across several branches.
 
 `claude/blog-repo-approach-96xj5i` contains unique blog/diagram draft material and should be preserved until that material is intentionally merged or discarded.
+
+## Ask evaluation — 9 November 2026
+
+Completed 30 of 40 non-grant cases; Q25 stopped before a final answer when the
+budget guard could not reserve another response; nine cases were unattempted.
+Estimated provider cost $4.514 (about £3.36); conservative tax/FX allowance £4.23,
+within the approved £5. Median manual score 9/12; three rubric hard failures.
+Median latency 32.9s; p90 96.0s, including evaluation preflight overhead.
+
+See [evaluation report](evaluation/results/2026-11-09/report.md) and its score and
+usage artifacts. Next priorities: density values, APS variable cache collision,
+unit contracts and final source propagation; then peer/denominator synthesis,
+filtered block hydration and tool payload/latency. No application changes or
+new deployment were made during the evaluation. Paid reruns need a new budget.

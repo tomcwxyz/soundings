@@ -68,3 +68,11 @@ Verification: 864 non-live server tests passed before the final country/batching
 repair, followed by four historical-place integration tests, 478 unit tests,
 strict type checking, lint, repository hooks, isolated full refreshes and public
 runtime checks. No remote push or PR merge was performed.
+
+## Paid baseline follow-up
+
+The approved £5 assessment is complete within budget: see
+[the detailed results](../../evaluation/results/2026-11-09/report.md).
+Thirty completed answers exposed upstream measure/cache errors, empty final
+source lists and synthesis/filter-preservation issues. No runtime changes were
+made during the assessment.

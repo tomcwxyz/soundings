@@ -215,3 +215,17 @@ food hygiene ratings.
 
 - Phase 4+ work — separate plan documents.
 - Anything in v1.5/v2/v3 — separate spec docs.
+
+## Ask evaluation — 9 November 2026
+
+Completed 30 of 40 non-grant cases; Q25 stopped before a final answer when the
+budget guard could not reserve another response; nine cases were unattempted.
+Estimated provider cost $4.514 (about £3.36); conservative tax/FX allowance £4.23,
+within the approved £5. Median manual score 9/12; three rubric hard failures.
+Median latency 32.9s; p90 96.0s, including evaluation preflight overhead.
+
+See [evaluation report](evaluation/results/2026-11-09/report.md) and its score and
+usage artifacts. Next priorities: density values, APS variable cache collision,
+unit contracts and final source propagation; then peer/denominator synthesis,
+filtered block hydration and tool payload/latency. No application changes or
+new deployment were made during the evaluation. Paid reruns need a new budget.
