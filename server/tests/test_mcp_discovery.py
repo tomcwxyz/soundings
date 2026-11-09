@@ -30,6 +30,4 @@ def test_mcp_indicator_discovery_is_present(monkeypatch: pytest.MonkeyPatch) -> 
     assert "list_indicators" in tools
     discovery = tools["list_indicators"]
     assert "Discover" in (discovery.description or "")
-    assert {"query", "domain", "geography_level"} <= set(
-        discovery.parameters["properties"]
-    )
+    assert {"query", "domain", "geography_level"} <= set(discovery.parameters["properties"])
