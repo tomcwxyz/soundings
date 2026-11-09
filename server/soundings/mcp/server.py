@@ -35,8 +35,8 @@ from soundings.tools.get_funder_profile import (
 )
 from soundings.tools.get_indicators import GetIndicatorsInput, get_indicators
 from soundings.tools.get_observations import get_observations
-from soundings.tools.get_place_profile import GetPlaceProfileInput, get_place_profile
 from soundings.tools.get_peer_distribution import GetPeerDistributionInput, get_peer_distribution
+from soundings.tools.get_place_profile import GetPlaceProfileInput, get_place_profile
 from soundings.tools.get_sub_areas import GetSubAreasInput, get_sub_areas
 from soundings.tools.get_trend import GetTrendInput, get_trend
 from soundings.tools.search_grants import SearchGrantsInput, search_grants
