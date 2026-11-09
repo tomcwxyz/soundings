@@ -11,8 +11,8 @@ This file is the canonical short-form statement of what is actually implemented.
 On `codex/freshness-review-followup-20261109`, scheduled imports now record their
 whole outcome and health separates failed/stale/untracked/unavailable sources.
 Stored indicator retrieval dates are preserved. Charity Commission, Companies
-House and ONS geography full refreshes completed successfully after isolated
-validation; previously missing ONS display layers are populated. Ask measurements
+House, ONS geography and IMD 2025 full refreshes completed successfully after
+isolated validation; previously missing ONS display layers are populated. Ask measurements
 now reach the server log without question text or unrelated INFO logging.
 
 Public map and MCP checks passed. The evaluation set is now 44 questions;

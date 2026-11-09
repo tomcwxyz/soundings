@@ -18,6 +18,8 @@
   interruption is consistent with the observed register/aggregate mismatch.
 - Full November Companies House refresh: 359 areas and 1,077 indicator rows;
   16,458 unresolved postcodes remain excluded and caveated.
+- A complete tracked IMD 2025 refresh was validated and applied: 238,357
+  indicator/aggregate rows, clearing the legacy verified-import warning.
 - Full ONS refresh: repaired MSOA and administrative lookup URLs; ArcGIS JSON
   errors under HTTP 200 are rejected. Country display boundaries use the now
   available BUC layer. Historical place inserts are batched below the database
