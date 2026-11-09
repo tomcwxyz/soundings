@@ -11,7 +11,6 @@ from mcp.server.fastmcp import FastMCP
 from sqlalchemy import text
 
 from soundings.ask.dispatcher import ToolDispatcher
-
 from soundings.contracts.observation import GetObservationsInput
 from soundings.tools.compare_places import ComparePlacesInput, compare_places
 from soundings.tools.detect_insights import DetectInsightsInput, detect_insights
@@ -207,7 +206,10 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
         )
         return result.model_dump(mode="json")
 
-    @mcp.tool(name="find_organisations_in_place", description=_TOOL_DESCRIPTIONS["find_organisations_in_place"])
+    @mcp.tool(
+        name="find_organisations_in_place",
+        description=_TOOL_DESCRIPTIONS["find_organisations_in_place"],
+    )
     async def _find_organisations_in_place(
         place_id: str,
         activity_filter: list[str] | None = None,
@@ -227,7 +229,10 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
         )
         return result.model_dump(mode="json")
 
-    @mcp.tool(name="get_civil_society_profile", description=_TOOL_DESCRIPTIONS["get_civil_society_profile"])
+    @mcp.tool(
+        name="get_civil_society_profile",
+        description=_TOOL_DESCRIPTIONS["get_civil_society_profile"],
+    )
     async def _get_civil_society_profile(place_id: str) -> dict[str, Any]:
         if state is None:
             raise RuntimeError("MCP get_civil_society_profile invoked without app state")
