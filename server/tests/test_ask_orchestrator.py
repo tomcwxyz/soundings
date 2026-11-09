@@ -141,6 +141,44 @@ async def test_orchestrator_streams_status_and_done() -> None:
     assert len(done_events) == 1
 
 
+
+async def test_ask_logs_model_and_tool_timings_without_query_text(
+    caplog: Any,
+) -> None:
+    """Measurements should not require paid model calls or include query text."""
+    events, callback = _collect_events()
+    fake_client = _FakeAnthropic(
+        [
+            _FakeResponse([_FakeToolUseBlock("tool_1", "find_place", {"query": "PrivatePlace"})]),
+            _FakeResponse(
+                [
+                    _FakeToolUseBlock(
+                        "tool_2",
+                        "compose_answer",
+                        {"blocks": [{"type": "text", "markdown": "Answer"}]},
+                    )
+                ]
+            ),
+        ]
+    )
+    with (
+        patch("soundings.ask.orchestrator.get_anthropic_client", return_value=fake_client),
+        caplog.at_level("INFO", logger="soundings.ask.orchestrator"),
+    ):
+        orchestrator = AskOrchestrator(
+            dispatcher=_make_dispatcher(_make_fake_state()),
+            prompt_builder=SystemPromptBuilder(),
+            api_key="fake-key",
+            model="test-model",
+        )
+        await orchestrator.run("PrivatePlace", callback)
+
+    assert any(event["type"] == "done" for event in events)
+    assert "ask_model_turn iteration=1 latency_ms=" in caplog.text
+    assert "ask_tool_call tool=find_place latency_ms=" in caplog.text
+    assert "PrivatePlace" not in caplog.text
+
+
 async def test_orchestrator_emits_sources() -> None:
     """Should emit a sources event before done."""
     events, cb = _collect_events()
