@@ -133,7 +133,6 @@ async def test_get_place_geometry_returns_feature() -> None:
     assert body["geometry"]["type"] == "MultiPolygon"
 
 
-
 async def test_small_urban_boundary_survives_geometry_route() -> None:
     """Regression: degree-based ST_Simplify(0.005) erased urban LSOAs."""
     await _seed_places_with_geometry()
