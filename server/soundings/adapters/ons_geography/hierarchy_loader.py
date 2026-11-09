@@ -17,6 +17,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.base import LoaderAdapter, LoaderResult
+from soundings.adapters.ons_geography.arcgis import feature_rows
 from soundings.db.models.geography import PlaceHierarchy
 
 PAGE_SIZE = 2000
@@ -78,7 +79,7 @@ class OnsGeographyHierarchyLoader(LoaderAdapter):
             response = await client.get(f"{chain.url}/query", params=params)
             response.raise_for_status()
             payload = response.json()
-            features = payload.get("features", [])
+            features = feature_rows(payload)
             if not features:
                 return
             for f in features:

@@ -21,7 +21,7 @@ import pytest
 
 from soundings.contracts.organisation import GrantRef, OrganisationRef
 from soundings.contracts.source_ref import SourceRef
-from soundings.orchestration.orchestrator import IndicatorOrchestrator
+from soundings.orchestration.orchestrator import FindOrganisationsResult, IndicatorOrchestrator
 
 # --- Fixtures ---------------------------------------------------------------
 
@@ -147,8 +147,10 @@ async def test_ftc_path_calls_adapter_for_source_synchronously() -> None:
     registry.adapter_for_source = MagicMock(return_value=ftc_adapter)
 
     orch = IndicatorOrchestrator(engine=MagicMock(), registry=registry)
+    # No local OSCR snapshot: legacy Scottish FTC route remains available.
+    orch._find_via_oscr = AsyncMock(return_value=FindOrganisationsResult(partial=True))
     result = await orch.find_organisations_in_place(
-        place_id="ltla24:S12000033",  # Aberdeen — routes to FTC
+        place_id="ltla24:S12000033",  # Aberdeen — FTC fallback
         enrich_grants=False,
     )
 
@@ -232,6 +234,7 @@ async def test_grants_enrichment_skips_non_cc_orgs() -> None:
     )
 
     orch = IndicatorOrchestrator(engine=MagicMock(), registry=registry)
+    orch._find_via_oscr = AsyncMock(return_value=FindOrganisationsResult(partial=True))
     await orch.find_organisations_in_place(
         place_id="ltla24:S12000033",
         enrich_grants=True,
@@ -272,3 +275,26 @@ async def test_per_org_grant_failure_surfaces_as_caveat_not_crash() -> None:
     by_id = {o.id: o for o in result.organisations}
     assert by_id["charity_commission:111"].recent_grants == []
     assert by_id["charity_commission:222"].recent_grants[0].funder == "Funder-B"
+
+
+@pytest.mark.asyncio
+async def test_scotland_prefers_imported_oscr_registered_charities() -> None:
+    org = OrganisationRef(
+        id="oscr:SC000001",
+        name="Scottish registered charity",
+        source=_source_ref(source_id="oscr"),
+    )
+    oscr_source = _source_ref(source_id="oscr")
+    registry = MagicMock()
+    orch = IndicatorOrchestrator(engine=MagicMock(), registry=registry)
+    orch._find_via_oscr = AsyncMock(
+        return_value=FindOrganisationsResult(
+            organisations=[org], sources=[oscr_source], partial=True
+        )
+    )
+    result = await orch.find_organisations_in_place(
+        place_id="ltla24:S12000033", enrich_grants=False
+    )
+    assert [r.id for r in result.organisations] == ["oscr:SC000001"]
+    assert result.partial is True
+    registry.adapter_for_source.assert_not_called()

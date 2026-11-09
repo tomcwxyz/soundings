@@ -26,6 +26,22 @@ green → conventional-commit. Block-level commit boundaries. From Phase 3 Block
 onwards each block lands as a single squash-merged PR rather than direct commits
 to `main`.
 
+## Freshness follow-up — 9 November 2026
+
+- [x] Record scheduled imports, correct freshness categories and retrieval dates.
+- [x] Repair/validate/refresh Charity Commission, Companies House and ONS geography.
+- [x] Verify public map/MCP behavior and enable privacy-preserving Ask measurements.
+- [ ] Score the current 44-question Ask baseline within an approved budget.
+- [ ] Return neighbourhood source references/caveats directly from `get_sub_areas`.
+
+See `docs/reviews/2026-11-09-runtime-review.md` for evidence and sequencing.
+
+## Local integration — 9 November 2026
+
+- [x] Combine PRs #65 and #66 on a local deployment branch and check tool defaults.
+- [x] Validate Welsh deprivation and OSCR imports against an isolated database.
+- [x] Complete Scottish geography import validation and runtime/public smoke checks.
+
 ## Tasks
 
 - [x] Phase 0 — Repo scaffolding, schema, geography spine.
@@ -199,3 +215,17 @@ food hygiene ratings.
 
 - Phase 4+ work — separate plan documents.
 - Anything in v1.5/v2/v3 — separate spec docs.
+
+## Ask evaluation — 9 November 2026
+
+Completed 30 of 40 non-grant cases; Q25 stopped before a final answer when the
+budget guard could not reserve another response; nine cases were unattempted.
+Estimated provider cost $4.514 (about £3.36); conservative tax/FX allowance £4.23,
+within the approved £5. Median manual score 9/12; three rubric hard failures.
+Median latency 32.9s; p90 96.0s, including evaluation preflight overhead.
+
+See [evaluation report](evaluation/results/2026-11-09/report.md) and its score and
+usage artifacts. Next priorities: density values, APS variable cache collision,
+unit contracts and final source propagation; then peer/denominator synthesis,
+filtered block hydration and tool payload/latency. No application changes or
+new deployment were made during the evaluation. Paid reruns need a new budget.

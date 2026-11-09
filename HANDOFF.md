@@ -1,3 +1,14 @@
+# Latest handoff — 9 November 2026
+
+Freshness/runtime fixes are deployed locally on
+`codex/freshness-review-followup-20261109`. Read STATE.md and
+`docs/reviews/2026-11-09-runtime-review.md` first. All three targeted full refreshes
+succeeded; public maps/MCP passed. Paid Ask evaluation completed 30 answers within its £5 ceiling. Do not work on the grant index in this follow-up, push or merge
+remote PRs, invent historical import successes, or enable broad INFO logging
+(the auth stub logs sensitive fields). The earlier handoff below is history.
+
+---
+
 # Handoff — 29 August 2026
 
 ## Where we are
@@ -71,3 +82,17 @@ The private `soundings-ops` repo is the place for instance-specific operations a
 A number of old branches are squash-merge artefacts. Do not assume “ahead by 1” means useful unmerged work; compare the actual files first.
 
 Preserve `claude/blog-repo-approach-96xj5i` for now because it contains unique blog/diagram drafts. Treat the NSPL/recovery branches cautiously until their differences are inspected. Other completed/superseded branches can be removed once convenient.
+
+## Ask evaluation — 9 November 2026
+
+Completed 30 of 40 non-grant cases; Q25 stopped before a final answer when the
+budget guard could not reserve another response; nine cases were unattempted.
+Estimated provider cost $4.514 (about £3.36); conservative tax/FX allowance £4.23,
+within the approved £5. Median manual score 9/12; three rubric hard failures.
+Median latency 32.9s; p90 96.0s, including evaluation preflight overhead.
+
+See [evaluation report](evaluation/results/2026-11-09/report.md) and its score and
+usage artifacts. Next priorities: density values, APS variable cache collision,
+unit contracts and final source propagation; then peer/denominator synthesis,
+filtered block hydration and tool payload/latency. No application changes or
+new deployment were made during the evaluation. Paid reruns need a new budget.

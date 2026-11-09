@@ -199,13 +199,15 @@ class OnsGeographyHistoricalPlacesLoader(LoaderAdapter):
         if not rows:
             return
         async with self._engine.begin() as conn:
-            stmt = insert(Place).values(rows)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=[Place.id],
-                set_={
-                    "name": stmt.excluded.name,
-                    "valid_from": stmt.excluded.valid_from,
-                    "valid_to": stmt.excluded.valid_to,
-                },
-            )
-            await conn.execute(stmt)
+            # Six values per place must stay below asyncpg's 32,767-parameter limit.
+            for offset in range(0, len(rows), 5_000):
+                stmt = insert(Place).values(rows[offset : offset + 5_000])
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=[Place.id],
+                    set_={
+                        "name": stmt.excluded.name,
+                        "valid_from": stmt.excluded.valid_from,
+                        "valid_to": stmt.excluded.valid_to,
+                    },
+                )
+                await conn.execute(stmt)

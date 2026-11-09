@@ -1,0 +1,4253 @@
+{
+  "usd_cap": 5.0,
+  "gbp_per_usd": 0.7453765746448674,
+  "tax_fx_buffer": 1.25,
+  "guarded_usd": 4.542037,
+  "guarded_gbp_with_buffer": 4.231909976212812,
+  "estimated_provider_usd": 4.5139945,
+  "model": "claude-sonnet-5",
+  "completed_cases": 30,
+  "budget_interrupted_cases": [
+    "Q25"
+  ],
+  "eligible_cases": 40,
+  "excluded_cases": [
+    "Q14",
+    "Q31",
+    "Q32",
+    "Q44"
+  ],
+  "calls": [
+    {
+      "case": "Q03",
+      "input_preflight": 18791,
+      "guarded_usd": 0.076222,
+      "reserved_usd": 0.25087240000000005,
+      "state": "completed",
+      "preflight_seconds": 0.7722394578158855,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 18695
+        },
+        "cache_creation_input_tokens": 18695,
+        "cache_read_input_tokens": 0,
+        "inference_geo": "global",
+        "input_tokens": 96,
+        "output_tokens": 125,
+        "output_tokens_details": {
+          "thinking_tokens": 40
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.7899444159120321,
+      "estimated_usd": 0.0481795
+    },
+    {
+      "case": "Q03",
+      "input_preflight": 19522,
+      "guarded_usd": 0.006823,
+      "reserved_usd": 0.2540888,
+      "state": "completed",
+      "preflight_seconds": 0.32259716652333736,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 827,
+        "output_tokens": 143,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.5646419171243906,
+      "estimated_usd": 0.006823
+    },
+    {
+      "case": "Q03",
+      "input_preflight": 20508,
+      "guarded_usd": 0.019225,
+      "reserved_usd": 0.2584272,
+      "state": "completed",
+      "preflight_seconds": 0.2952951695770025,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1813,
+        "output_tokens": 1186,
+        "output_tokens_details": {
+          "thinking_tokens": 46
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 10.844051381573081,
+      "estimated_usd": 0.019225
+    },
+    {
+      "case": "Q26",
+      "input_preflight": 18778,
+      "guarded_usd": 0.004965,
+      "reserved_usd": 0.2508152,
+      "state": "completed",
+      "preflight_seconds": 0.38048233464360237,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 83,
+        "output_tokens": 106,
+        "output_tokens_details": {
+          "thinking_tokens": 24
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6094551254063845,
+      "estimated_usd": 0.004965
+    },
+    {
+      "case": "Q26",
+      "input_preflight": 19079,
+      "guarded_usd": 0.006197,
+      "reserved_usd": 0.2521396,
+      "state": "completed",
+      "preflight_seconds": 0.31877683475613594,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 384,
+        "output_tokens": 169,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6281122099608183,
+      "estimated_usd": 0.006197
+    },
+    {
+      "case": "Q26",
+      "input_preflight": 32210,
+      "guarded_usd": 0.039109,
+      "reserved_usd": 0.309916,
+      "state": "completed",
+      "preflight_seconds": 0.659473666921258,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 13515,
+        "output_tokens": 834,
+        "output_tokens_details": {
+          "thinking_tokens": 476
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 8.760125003755093,
+      "estimated_usd": 0.039109
+    },
+    {
+      "case": "Q26",
+      "input_preflight": 37302,
+      "guarded_usd": 0.046653,
+      "reserved_usd": 0.3323208,
+      "state": "completed",
+      "preflight_seconds": 1.3421218749135733,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 18607,
+        "output_tokens": 570,
+        "output_tokens_details": {
+          "thinking_tokens": 385
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.019166085869074,
+      "estimated_usd": 0.046653
+    },
+    {
+      "case": "Q26",
+      "input_preflight": 64056,
+      "guarded_usd": 0.135651,
+      "reserved_usd": 0.4500384,
+      "state": "completed",
+      "preflight_seconds": 0.491713834926486,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 45361,
+        "output_tokens": 4119,
+        "output_tokens_details": {
+          "thinking_tokens": 1162
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 42.766330145299435,
+      "estimated_usd": 0.135651
+    },
+    {
+      "case": "Q28",
+      "input_preflight": 18789,
+      "guarded_usd": 0.005277,
+      "reserved_usd": 0.2508636,
+      "state": "completed",
+      "preflight_seconds": 0.33696870878338814,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 94,
+        "output_tokens": 135,
+        "output_tokens_details": {
+          "thinking_tokens": 83
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.989236293360591,
+      "estimated_usd": 0.005277
+    },
+    {
+      "case": "Q28",
+      "input_preflight": 19597,
+      "guarded_usd": 0.006993,
+      "reserved_usd": 0.2544188,
+      "state": "completed",
+      "preflight_seconds": 0.27539283595979214,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 902,
+        "output_tokens": 145,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.523146877065301,
+      "estimated_usd": 0.006993
+    },
+    {
+      "case": "Q28",
+      "input_preflight": 24113,
+      "guarded_usd": 0.027735,
+      "reserved_usd": 0.2742892,
+      "state": "completed",
+      "preflight_seconds": 0.42312533408403397,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 5418,
+        "output_tokens": 1316,
+        "output_tokens_details": {
+          "thinking_tokens": 42
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 13.700181214138865,
+      "estimated_usd": 0.027735
+    },
+    {
+      "case": "Q29",
+      "input_preflight": 18796,
+      "guarded_usd": 0.005201,
+      "reserved_usd": 0.2508944,
+      "state": "completed",
+      "preflight_seconds": 0.272218419238925,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 101,
+        "output_tokens": 126,
+        "output_tokens_details": {
+          "thinking_tokens": 38
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6144631672650576,
+      "estimated_usd": 0.005201
+    },
+    {
+      "case": "Q29",
+      "input_preflight": 19534,
+      "guarded_usd": 0.007237,
+      "reserved_usd": 0.2541416,
+      "state": "completed",
+      "preflight_seconds": 0.3295797109603882,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 839,
+        "output_tokens": 182,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.0026721227914095,
+      "estimated_usd": 0.007237
+    },
+    {
+      "case": "Q29",
+      "input_preflight": 19906,
+      "guarded_usd": 0.007361,
+      "reserved_usd": 0.2557784,
+      "state": "completed",
+      "preflight_seconds": 0.5713391676545143,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1211,
+        "output_tokens": 120,
+        "output_tokens_details": {
+          "thinking_tokens": 33
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.153455290943384,
+      "estimated_usd": 0.007361
+    },
+    {
+      "case": "Q29",
+      "input_preflight": 22405,
+      "guarded_usd": 0.017409,
+      "reserved_usd": 0.266774,
+      "state": "completed",
+      "preflight_seconds": 0.5208959616720676,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3710,
+        "output_tokens": 625,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 7.6175702549517155,
+      "estimated_usd": 0.017409
+    },
+    {
+      "case": "Q30",
+      "input_preflight": 18796,
+      "guarded_usd": 0.005131,
+      "reserved_usd": 0.2508944,
+      "state": "completed",
+      "preflight_seconds": 0.5543733332306147,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 101,
+        "output_tokens": 119,
+        "output_tokens_details": {
+          "thinking_tokens": 34
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.027293249964714,
+      "estimated_usd": 0.005131
+    },
+    {
+      "case": "Q30",
+      "input_preflight": 19521,
+      "guarded_usd": 0.006281,
+      "reserved_usd": 0.25408440000000004,
+      "state": "completed",
+      "preflight_seconds": 0.6084755416959524,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 826,
+        "output_tokens": 89,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.393963960930705,
+      "estimated_usd": 0.006281
+    },
+    {
+      "case": "Q30",
+      "input_preflight": 27301,
+      "guarded_usd": 0.024821,
+      "reserved_usd": 0.28831640000000003,
+      "state": "completed",
+      "preflight_seconds": 0.4601781237870455,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 8606,
+        "output_tokens": 387,
+        "output_tokens_details": {
+          "thinking_tokens": 247
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 5.011449668556452,
+      "estimated_usd": 0.024821
+    },
+    {
+      "case": "Q30",
+      "input_preflight": 28476,
+      "guarded_usd": 0.033131,
+      "reserved_usd": 0.29348640000000004,
+      "state": "completed",
+      "preflight_seconds": 0.32243258133530617,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 9781,
+        "output_tokens": 983,
+        "output_tokens_details": {
+          "thinking_tokens": 223
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 10.970049921423197,
+      "estimated_usd": 0.033131
+    },
+    {
+      "case": "Q01",
+      "input_preflight": 18783,
+      "guarded_usd": 0.005005,
+      "reserved_usd": 0.25083720000000004,
+      "state": "completed",
+      "preflight_seconds": 0.5391972493380308,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 88,
+        "output_tokens": 109,
+        "output_tokens_details": {
+          "thinking_tokens": 22
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.055105460807681,
+      "estimated_usd": 0.005005
+    },
+    {
+      "case": "Q01",
+      "input_preflight": 19505,
+      "guarded_usd": 0.007049,
+      "reserved_usd": 0.254014,
+      "state": "completed",
+      "preflight_seconds": 0.6921099573373795,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 810,
+        "output_tokens": 169,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.853709751740098,
+      "estimated_usd": 0.007049
+    },
+    {
+      "case": "Q01",
+      "input_preflight": 40776,
+      "guarded_usd": 0.052831,
+      "reserved_usd": 0.34760640000000004,
+      "state": "completed",
+      "preflight_seconds": 1.4259291272610426,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 22081,
+        "output_tokens": 493,
+        "output_tokens_details": {
+          "thinking_tokens": 251
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 5.820773212239146,
+      "estimated_usd": 0.052831
+    },
+    {
+      "case": "Q01",
+      "input_preflight": 56184,
+      "guarded_usd": 0.101587,
+      "reserved_usd": 0.4154016,
+      "state": "completed",
+      "preflight_seconds": 1.1117594186216593,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 37489,
+        "output_tokens": 2287,
+        "output_tokens_details": {
+          "thinking_tokens": 2194
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 26.382855052128434,
+      "estimated_usd": 0.101587
+    },
+    {
+      "case": "Q01",
+      "input_preflight": 68288,
+      "guarded_usd": 0.138735,
+      "reserved_usd": 0.4686592,
+      "state": "completed",
+      "preflight_seconds": 0.7251057904213667,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 49593,
+        "output_tokens": 3581,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 36.27314135059714,
+      "estimated_usd": 0.138735
+    },
+    {
+      "case": "Q02",
+      "input_preflight": 18782,
+      "guarded_usd": 0.005913,
+      "reserved_usd": 0.25083279999999997,
+      "state": "completed",
+      "preflight_seconds": 0.2979405838996172,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 87,
+        "output_tokens": 200,
+        "output_tokens_details": {
+          "thinking_tokens": 117
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.368143128231168,
+      "estimated_usd": 0.005913
+    },
+    {
+      "case": "Q02",
+      "input_preflight": 19574,
+      "guarded_usd": 0.006547,
+      "reserved_usd": 0.25431760000000003,
+      "state": "completed",
+      "preflight_seconds": 0.2868131250143051,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 879,
+        "output_tokens": 105,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.4055284596979618,
+      "estimated_usd": 0.006547
+    },
+    {
+      "case": "Q02",
+      "input_preflight": 37723,
+      "guarded_usd": 0.049095,
+      "reserved_usd": 0.3341732,
+      "state": "completed",
+      "preflight_seconds": 0.6216478329151869,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 19028,
+        "output_tokens": 730,
+        "output_tokens_details": {
+          "thinking_tokens": 265
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.169433293864131,
+      "estimated_usd": 0.049095
+    },
+    {
+      "case": "Q02",
+      "input_preflight": 94886,
+      "guarded_usd": 0.179121,
+      "reserved_usd": 0.5856904,
+      "state": "completed",
+      "preflight_seconds": 0.4546859171241522,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 76191,
+        "output_tokens": 2300,
+        "output_tokens_details": {
+          "thinking_tokens": 911
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 26.51688063517213,
+      "estimated_usd": 0.179121
+    },
+    {
+      "case": "Q05",
+      "input_preflight": 18785,
+      "guarded_usd": 0.004979,
+      "reserved_usd": 0.250846,
+      "state": "completed",
+      "preflight_seconds": 0.3057518322020769,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 90,
+        "output_tokens": 106,
+        "output_tokens_details": {
+          "thinking_tokens": 18
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.5384929571300745,
+      "estimated_usd": 0.004979
+    },
+    {
+      "case": "Q05",
+      "input_preflight": 19509,
+      "guarded_usd": 0.006987,
+      "reserved_usd": 0.2540316,
+      "state": "completed",
+      "preflight_seconds": 0.27155783399939537,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 814,
+        "output_tokens": 162,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6739282924681902,
+      "estimated_usd": 0.006987
+    },
+    {
+      "case": "Q05",
+      "input_preflight": 21354,
+      "guarded_usd": 0.012897,
+      "reserved_usd": 0.2621496,
+      "state": "completed",
+      "preflight_seconds": 0.2804912906140089,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2659,
+        "output_tokens": 384,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 4.141363503411412,
+      "estimated_usd": 0.012897
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 18787,
+      "guarded_usd": 0.005023,
+      "reserved_usd": 0.2508548,
+      "state": "completed",
+      "preflight_seconds": 0.2792240008711815,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 92,
+        "output_tokens": 110,
+        "output_tokens_details": {
+          "thinking_tokens": 28
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.3760315030813217,
+      "estimated_usd": 0.005023
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 19481,
+      "guarded_usd": 0.006211,
+      "reserved_usd": 0.25390840000000003,
+      "state": "completed",
+      "preflight_seconds": 0.44134850054979324,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 786,
+        "output_tokens": 90,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.2231137100607157,
+      "estimated_usd": 0.006211
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 26392,
+      "guarded_usd": 0.022193,
+      "reserved_usd": 0.2843168,
+      "state": "completed",
+      "preflight_seconds": 0.3187442924827337,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 7697,
+        "output_tokens": 306,
+        "output_tokens_details": {
+          "thinking_tokens": 121
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.984355792403221,
+      "estimated_usd": 0.022193
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 33994,
+      "guarded_usd": 0.046027,
+      "reserved_usd": 0.3177656,
+      "state": "completed",
+      "preflight_seconds": 0.3101112935692072,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 15299,
+        "output_tokens": 1169,
+        "output_tokens_details": {
+          "thinking_tokens": 1039
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 14.228691171854734,
+      "estimated_usd": 0.046027
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 35798,
+      "guarded_usd": 0.046845,
+      "reserved_usd": 0.3257032,
+      "state": "completed",
+      "preflight_seconds": 0.32413962855935097,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 17103,
+        "output_tokens": 890,
+        "output_tokens_details": {
+          "thinking_tokens": 568
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 9.470750043168664,
+      "estimated_usd": 0.046845
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 38859,
+      "guarded_usd": 0.045757,
+      "reserved_usd": 0.33917159999999996,
+      "state": "completed",
+      "preflight_seconds": 0.34643604420125484,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 20164,
+        "output_tokens": 169,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.821947917342186,
+      "estimated_usd": 0.045757
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 39577,
+      "guarded_usd": 0.057963,
+      "reserved_usd": 0.34233080000000005,
+      "state": "completed",
+      "preflight_seconds": 0.37442899867892265,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 20882,
+        "output_tokens": 1246,
+        "output_tokens_details": {
+          "thinking_tokens": 1057
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 14.872371340170503,
+      "estimated_usd": 0.057963
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 62944,
+      "guarded_usd": 0.099127,
+      "reserved_usd": 0.44514560000000003,
+      "state": "completed",
+      "preflight_seconds": 1.0054183341562748,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 44249,
+        "output_tokens": 689,
+        "output_tokens_details": {
+          "thinking_tokens": 475
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 9.906462339684367,
+      "estimated_usd": 0.099127
+    },
+    {
+      "case": "Q23",
+      "input_preflight": 63803,
+      "guarded_usd": 0.120185,
+      "reserved_usd": 0.4489252,
+      "state": "completed",
+      "preflight_seconds": 0.6427244171500206,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 45108,
+        "output_tokens": 2623,
+        "output_tokens_details": {
+          "thinking_tokens": 903
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 31.745426638051867,
+      "estimated_usd": 0.120185
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 18789,
+      "guarded_usd": 0.005317,
+      "reserved_usd": 0.2508636,
+      "state": "completed",
+      "preflight_seconds": 0.2840509992092848,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 94,
+        "output_tokens": 139,
+        "output_tokens_details": {
+          "thinking_tokens": 56
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.0029395408928394,
+      "estimated_usd": 0.005317
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 19510,
+      "guarded_usd": 0.005959,
+      "reserved_usd": 0.254036,
+      "state": "completed",
+      "preflight_seconds": 0.33977191522717476,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 815,
+        "output_tokens": 59,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 0.9762214552611113,
+      "estimated_usd": 0.005959
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 21684,
+      "guarded_usd": 0.014927,
+      "reserved_usd": 0.2636016,
+      "state": "completed",
+      "preflight_seconds": 0.279148081317544,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2989,
+        "output_tokens": 521,
+        "output_tokens_details": {
+          "thinking_tokens": 406
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 5.996308045461774,
+      "estimated_usd": 0.014927
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 43145,
+      "guarded_usd": 0.062789,
+      "reserved_usd": 0.35803,
+      "state": "completed",
+      "preflight_seconds": 0.8706700019538403,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 24450,
+        "output_tokens": 1015,
+        "output_tokens_details": {
+          "thinking_tokens": 324
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 8.018579795956612,
+      "estimated_usd": 0.062789
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 46628,
+      "guarded_usd": 0.066975,
+      "reserved_usd": 0.3733552,
+      "state": "completed",
+      "preflight_seconds": 0.31850191578269005,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 27933,
+        "output_tokens": 737,
+        "output_tokens_details": {
+          "thinking_tokens": 216
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.394997542724013,
+      "estimated_usd": 0.066975
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 54011,
+      "guarded_usd": 0.085611,
+      "reserved_usd": 0.40584040000000005,
+      "state": "completed",
+      "preflight_seconds": 0.3324556276202202,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 35316,
+        "output_tokens": 1124,
+        "output_tokens_details": {
+          "thinking_tokens": 1064
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 14.279928924515843,
+      "estimated_usd": 0.085611
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 55180,
+      "guarded_usd": 0.081099,
+      "reserved_usd": 0.410984,
+      "state": "completed",
+      "preflight_seconds": 2.052517833188176,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 36485,
+        "output_tokens": 439,
+        "output_tokens_details": {
+          "thinking_tokens": 247
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.346262251958251,
+      "estimated_usd": 0.081099
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 55883,
+      "guarded_usd": 0.086865,
+      "reserved_usd": 0.41407720000000003,
+      "state": "completed",
+      "preflight_seconds": 0.5730272475630045,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 37188,
+        "output_tokens": 875,
+        "output_tokens_details": {
+          "thinking_tokens": 779
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 10.658823795616627,
+      "estimated_usd": 0.086865
+    },
+    {
+      "case": "Q24",
+      "input_preflight": 68172,
+      "guarded_usd": 0.123543,
+      "reserved_usd": 0.46814880000000003,
+      "state": "completed",
+      "preflight_seconds": 0.40992874652147293,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 49477,
+        "output_tokens": 2085,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 23.271106969565153,
+      "estimated_usd": 0.123543
+    },
+    {
+      "case": "Q27",
+      "input_preflight": 18777,
+      "guarded_usd": 0.004783,
+      "reserved_usd": 0.2508108,
+      "state": "completed",
+      "preflight_seconds": 0.35439054295420647,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 82,
+        "output_tokens": 88,
+        "output_tokens_details": {
+          "thinking_tokens": 37
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.5034357067197561,
+      "estimated_usd": 0.004783
+    },
+    {
+      "case": "Q27",
+      "input_preflight": 19482,
+      "guarded_usd": 0.006443,
+      "reserved_usd": 0.2539128,
+      "state": "completed",
+      "preflight_seconds": 0.2873184159398079,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 787,
+        "output_tokens": 113,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.3524462506175041,
+      "estimated_usd": 0.006443
+    },
+    {
+      "case": "Q27",
+      "input_preflight": 29336,
+      "guarded_usd": 0.030471,
+      "reserved_usd": 0.29727040000000005,
+      "state": "completed",
+      "preflight_seconds": 4.158723002299666,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 10641,
+        "output_tokens": 545,
+        "output_tokens_details": {
+          "thinking_tokens": 243
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.023624420166016,
+      "estimated_usd": 0.030471
+    },
+    {
+      "case": "Q27",
+      "input_preflight": 34193,
+      "guarded_usd": 0.041275,
+      "reserved_usd": 0.3186412,
+      "state": "completed",
+      "preflight_seconds": 1.0580016262829304,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 15498,
+        "output_tokens": 654,
+        "output_tokens_details": {
+          "thinking_tokens": 420
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 7.378357546404004,
+      "estimated_usd": 0.041275
+    },
+    {
+      "case": "Q27",
+      "input_preflight": 50207,
+      "guarded_usd": 0.121993,
+      "reserved_usd": 0.3891028,
+      "state": "completed",
+      "preflight_seconds": 0.4140327088534832,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 31512,
+        "output_tokens": 5523,
+        "output_tokens_details": {
+          "thinking_tokens": 2517
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 56.82599898055196,
+      "estimated_usd": 0.121993
+    },
+    {
+      "case": "Q39",
+      "input_preflight": 18805,
+      "guarded_usd": 0.005319,
+      "reserved_usd": 0.250934,
+      "state": "completed",
+      "preflight_seconds": 0.2865734174847603,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 110,
+        "output_tokens": 136,
+        "output_tokens_details": {
+          "thinking_tokens": 51
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.7099130004644394,
+      "estimated_usd": 0.005319
+    },
+    {
+      "case": "Q39",
+      "input_preflight": 19547,
+      "guarded_usd": 0.006903,
+      "reserved_usd": 0.2541988,
+      "state": "completed",
+      "preflight_seconds": 0.26292095705866814,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 852,
+        "output_tokens": 146,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.64297466725111,
+      "estimated_usd": 0.006903
+    },
+    {
+      "case": "Q39",
+      "input_preflight": 20536,
+      "guarded_usd": 0.025251,
+      "reserved_usd": 0.2585504,
+      "state": "completed",
+      "preflight_seconds": 0.27957158349454403,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1841,
+        "output_tokens": 1783,
+        "output_tokens_details": {
+          "thinking_tokens": 59
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 15.509718423709273,
+      "estimated_usd": 0.025251
+    },
+    {
+      "case": "Q43",
+      "input_preflight": 18791,
+      "guarded_usd": 0.005491,
+      "reserved_usd": 0.25087240000000005,
+      "state": "completed",
+      "preflight_seconds": 0.30747908167541027,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 96,
+        "output_tokens": 156,
+        "output_tokens_details": {
+          "thinking_tokens": 72
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.9437889214605093,
+      "estimated_usd": 0.005491
+    },
+    {
+      "case": "Q43",
+      "input_preflight": 19554,
+      "guarded_usd": 0.009477,
+      "reserved_usd": 0.2542296,
+      "state": "completed",
+      "preflight_seconds": 0.29126204177737236,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 859,
+        "output_tokens": 402,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.6309491265565157,
+      "estimated_usd": 0.009477
+    },
+    {
+      "case": "Q43",
+      "input_preflight": 32181,
+      "guarded_usd": 0.037781,
+      "reserved_usd": 0.3097884,
+      "state": "completed",
+      "preflight_seconds": 0.6651884149760008,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 13486,
+        "output_tokens": 707,
+        "output_tokens_details": {
+          "thinking_tokens": 282
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.198880460113287,
+      "estimated_usd": 0.037781
+    },
+    {
+      "case": "Q43",
+      "input_preflight": 37191,
+      "guarded_usd": 0.049651,
+      "reserved_usd": 0.3318324,
+      "state": "completed",
+      "preflight_seconds": 0.7090196684002876,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 18496,
+        "output_tokens": 892,
+        "output_tokens_details": {
+          "thinking_tokens": 796
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 9.649865919724107,
+      "estimated_usd": 0.049651
+    },
+    {
+      "case": "Q43",
+      "input_preflight": 49497,
+      "guarded_usd": 0.094183,
+      "reserved_usd": 0.38597880000000007,
+      "state": "completed",
+      "preflight_seconds": 0.3864308726042509,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 30802,
+        "output_tokens": 2884,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 29.171464137732983,
+      "estimated_usd": 0.094183
+    },
+    {
+      "case": "Q04",
+      "input_preflight": 18792,
+      "guarded_usd": 0.005473,
+      "reserved_usd": 0.2508768,
+      "state": "completed",
+      "preflight_seconds": 0.2843210846185684,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 97,
+        "output_tokens": 154,
+        "output_tokens_details": {
+          "thinking_tokens": 72
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.074561459943652,
+      "estimated_usd": 0.005473
+    },
+    {
+      "case": "Q04",
+      "input_preflight": 19185,
+      "guarded_usd": 0.007779,
+      "reserved_usd": 0.252606,
+      "state": "completed",
+      "preflight_seconds": 0.26982483454048634,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 490,
+        "output_tokens": 306,
+        "output_tokens_details": {
+          "thinking_tokens": 160
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.2123923748731613,
+      "estimated_usd": 0.007779
+    },
+    {
+      "case": "Q04",
+      "input_preflight": 20292,
+      "guarded_usd": 0.021083,
+      "reserved_usd": 0.2574768,
+      "state": "completed",
+      "preflight_seconds": 0.45298358239233494,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1597,
+        "output_tokens": 1415,
+        "output_tokens_details": {
+          "thinking_tokens": 93
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 13.128290086984634,
+      "estimated_usd": 0.021083
+    },
+    {
+      "case": "Q06",
+      "input_preflight": 18795,
+      "guarded_usd": 0.005089,
+      "reserved_usd": 0.25089,
+      "state": "completed",
+      "preflight_seconds": 0.2984429579228163,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 100,
+        "output_tokens": 115,
+        "output_tokens_details": {
+          "thinking_tokens": 27
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.7030428368598223,
+      "estimated_usd": 0.005089
+    },
+    {
+      "case": "Q06",
+      "input_preflight": 19522,
+      "guarded_usd": 0.007023,
+      "reserved_usd": 0.2540888,
+      "state": "completed",
+      "preflight_seconds": 0.2903335001319647,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 827,
+        "output_tokens": 163,
+        "output_tokens_details": {
+          "thinking_tokens": 77
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.9467537086457014,
+      "estimated_usd": 0.007023
+    },
+    {
+      "case": "Q06",
+      "input_preflight": 22060,
+      "guarded_usd": 0.012869,
+      "reserved_usd": 0.265256,
+      "state": "completed",
+      "preflight_seconds": 0.27877674996852875,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3365,
+        "output_tokens": 240,
+        "output_tokens_details": {
+          "thinking_tokens": 54
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.3150425851345062,
+      "estimated_usd": 0.012869
+    },
+    {
+      "case": "Q06",
+      "input_preflight": 22507,
+      "guarded_usd": 0.013683,
+      "reserved_usd": 0.2672228,
+      "state": "completed",
+      "preflight_seconds": 0.28086649999022484,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3812,
+        "output_tokens": 232,
+        "output_tokens_details": {
+          "thinking_tokens": 141
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.128235002979636,
+      "estimated_usd": 0.013683
+    },
+    {
+      "case": "Q06",
+      "input_preflight": 24961,
+      "guarded_usd": 0.025491,
+      "reserved_usd": 0.2780204,
+      "state": "completed",
+      "preflight_seconds": 0.43872358463704586,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 6266,
+        "output_tokens": 922,
+        "output_tokens_details": {
+          "thinking_tokens": 385
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 11.09448942169547,
+      "estimated_usd": 0.025491
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 18786,
+      "guarded_usd": 0.005331,
+      "reserved_usd": 0.25085040000000003,
+      "state": "completed",
+      "preflight_seconds": 0.33730983175337315,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 91,
+        "output_tokens": 141,
+        "output_tokens_details": {
+          "thinking_tokens": 58
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.7119653336703777,
+      "estimated_usd": 0.005331
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 19509,
+      "guarded_usd": 0.006517,
+      "reserved_usd": 0.2540316,
+      "state": "completed",
+      "preflight_seconds": 0.26250158436596394,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 814,
+        "output_tokens": 115,
+        "output_tokens_details": {
+          "thinking_tokens": 29
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6283092088997364,
+      "estimated_usd": 0.006517
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 22004,
+      "guarded_usd": 0.011677,
+      "reserved_usd": 0.26500959999999996,
+      "state": "completed",
+      "preflight_seconds": 0.2954955007880926,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3309,
+        "output_tokens": 132,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6632999181747437,
+      "estimated_usd": 0.011677
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 22237,
+      "guarded_usd": 0.012593,
+      "reserved_usd": 0.2660348,
+      "state": "completed",
+      "preflight_seconds": 0.304233955219388,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3542,
+        "output_tokens": 177,
+        "output_tokens_details": {
+          "thinking_tokens": 49
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.259728666394949,
+      "estimated_usd": 0.012593
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 22528,
+      "guarded_usd": 0.013765,
+      "reserved_usd": 0.26731520000000003,
+      "state": "completed",
+      "preflight_seconds": 0.34847200103104115,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3833,
+        "output_tokens": 236,
+        "output_tokens_details": {
+          "thinking_tokens": 112
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.6258957497775555,
+      "estimated_usd": 0.013765
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 23167,
+      "guarded_usd": 0.020273,
+      "reserved_usd": 0.2701268,
+      "state": "completed",
+      "preflight_seconds": 0.27616070955991745,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 4472,
+        "output_tokens": 759,
+        "output_tokens_details": {
+          "thinking_tokens": 260
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 7.1143837086856365,
+      "estimated_usd": 0.020273
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 26662,
+      "guarded_usd": 0.021453,
+      "reserved_usd": 0.2855048,
+      "state": "completed",
+      "preflight_seconds": 0.405824875459075,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 7967,
+        "output_tokens": 178,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.00027016736567,
+      "estimated_usd": 0.021453
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 27447,
+      "guarded_usd": 0.022393,
+      "reserved_usd": 0.2889588,
+      "state": "completed",
+      "preflight_seconds": 0.322308961302042,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 8752,
+        "output_tokens": 115,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.9419643767178059,
+      "estimated_usd": 0.022393
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 29820,
+      "guarded_usd": 0.028919,
+      "reserved_usd": 0.2994,
+      "state": "completed",
+      "preflight_seconds": 0.41682991571724415,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 11125,
+        "output_tokens": 293,
+        "output_tokens_details": {
+          "thinking_tokens": 135
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.4192291256040335,
+      "estimated_usd": 0.028919
+    },
+    {
+      "case": "Q07",
+      "input_preflight": 30346,
+      "guarded_usd": 0.046831,
+      "reserved_usd": 0.30171440000000005,
+      "state": "completed",
+      "preflight_seconds": 0.683721374720335,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 11651,
+        "output_tokens": 1979,
+        "output_tokens_details": {
+          "thinking_tokens": 809
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 21.43888325802982,
+      "estimated_usd": 0.046831
+    },
+    {
+      "case": "Q08",
+      "input_preflight": 18788,
+      "guarded_usd": 0.005125,
+      "reserved_usd": 0.2508592,
+      "state": "completed",
+      "preflight_seconds": 0.31343320943415165,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 93,
+        "output_tokens": 120,
+        "output_tokens_details": {
+          "thinking_tokens": 37
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.5752856247127056,
+      "estimated_usd": 0.005125
+    },
+    {
+      "case": "Q08",
+      "input_preflight": 19335,
+      "guarded_usd": 0.005859,
+      "reserved_usd": 0.253266,
+      "state": "completed",
+      "preflight_seconds": 0.3044137507677078,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 640,
+        "output_tokens": 84,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.2685278356075287,
+      "estimated_usd": 0.005859
+    },
+    {
+      "case": "Q08",
+      "input_preflight": 21002,
+      "guarded_usd": 0.012203,
+      "reserved_usd": 0.26060079999999997,
+      "state": "completed",
+      "preflight_seconds": 0.2684574592858553,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2307,
+        "output_tokens": 385,
+        "output_tokens_details": {
+          "thinking_tokens": 21
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.3075801711529493,
+      "estimated_usd": 0.012203
+    },
+    {
+      "case": "Q08",
+      "input_preflight": 22799,
+      "guarded_usd": 0.014287,
+      "reserved_usd": 0.26850759999999996,
+      "state": "completed",
+      "preflight_seconds": 0.3033377919346094,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 4104,
+        "output_tokens": 234,
+        "output_tokens_details": {
+          "thinking_tokens": 96
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.5720464158803225,
+      "estimated_usd": 0.014287
+    },
+    {
+      "case": "Q08",
+      "input_preflight": 23702,
+      "guarded_usd": 0.017953,
+      "reserved_usd": 0.27248079999999997,
+      "state": "completed",
+      "preflight_seconds": 0.30444700084626675,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 5007,
+        "output_tokens": 420,
+        "output_tokens_details": {
+          "thinking_tokens": 273
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 4.522238085046411,
+      "estimated_usd": 0.017953
+    },
+    {
+      "case": "Q08",
+      "input_preflight": 24581,
+      "guarded_usd": 0.019661,
+      "reserved_usd": 0.27634840000000005,
+      "state": "completed",
+      "preflight_seconds": 0.2727373354136944,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 5886,
+        "output_tokens": 415,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.5611337944865227,
+      "estimated_usd": 0.019661
+    },
+    {
+      "case": "Q08",
+      "input_preflight": 28104,
+      "guarded_usd": 0.055297,
+      "reserved_usd": 0.2918496,
+      "state": "completed",
+      "preflight_seconds": 0.3253901246935129,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 9409,
+        "output_tokens": 3274,
+        "output_tokens_details": {
+          "thinking_tokens": 1357
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 32.74591443128884,
+      "estimated_usd": 0.055297
+    },
+    {
+      "case": "Q09",
+      "input_preflight": 18789,
+      "guarded_usd": 0.005187,
+      "reserved_usd": 0.2508636,
+      "state": "completed",
+      "preflight_seconds": 0.3267013356089592,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 94,
+        "output_tokens": 126,
+        "output_tokens_details": {
+          "thinking_tokens": 43
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.7397944182157516,
+      "estimated_usd": 0.005187
+    },
+    {
+      "case": "Q09",
+      "input_preflight": 19493,
+      "guarded_usd": 0.006835,
+      "reserved_usd": 0.2539612,
+      "state": "completed",
+      "preflight_seconds": 0.2890635821968317,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 798,
+        "output_tokens": 150,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.8886287491768599,
+      "estimated_usd": 0.006835
+    },
+    {
+      "case": "Q09",
+      "input_preflight": 21915,
+      "guarded_usd": 0.011449,
+      "reserved_usd": 0.264618,
+      "state": "completed",
+      "preflight_seconds": 0.3545202910900116,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3220,
+        "output_tokens": 127,
+        "output_tokens_details": {
+          "thinking_tokens": 41
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.8387492075562477,
+      "estimated_usd": 0.011449
+    },
+    {
+      "case": "Q09",
+      "input_preflight": 23630,
+      "guarded_usd": 0.025889,
+      "reserved_usd": 0.272164,
+      "state": "completed",
+      "preflight_seconds": 0.3225083351135254,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 4935,
+        "output_tokens": 1228,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 12.49243083782494,
+      "estimated_usd": 0.025889
+    },
+    {
+      "case": "Q10",
+      "input_preflight": 18785,
+      "guarded_usd": 0.005019,
+      "reserved_usd": 0.250846,
+      "state": "completed",
+      "preflight_seconds": 0.2766864988952875,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 90,
+        "output_tokens": 110,
+        "output_tokens_details": {
+          "thinking_tokens": 28
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.5303749572485685,
+      "estimated_usd": 0.005019
+    },
+    {
+      "case": "Q10",
+      "input_preflight": 19479,
+      "guarded_usd": 0.006147,
+      "reserved_usd": 0.2538996,
+      "state": "completed",
+      "preflight_seconds": 0.34731387346982956,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 784,
+        "output_tokens": 84,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.33503095805645,
+      "estimated_usd": 0.006147
+    },
+    {
+      "case": "Q10",
+      "input_preflight": 21253,
+      "guarded_usd": 0.011055,
+      "reserved_usd": 0.2617052,
+      "state": "completed",
+      "preflight_seconds": 0.32910449989140034,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2558,
+        "output_tokens": 220,
+        "output_tokens_details": {
+          "thinking_tokens": 32
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.142437543720007,
+      "estimated_usd": 0.011055
+    },
+    {
+      "case": "Q10",
+      "input_preflight": 22882,
+      "guarded_usd": 0.019733,
+      "reserved_usd": 0.26887279999999997,
+      "state": "completed",
+      "preflight_seconds": 0.6167852506041527,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 4187,
+        "output_tokens": 762,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 8.602151796221733,
+      "estimated_usd": 0.019733
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 18787,
+      "guarded_usd": 0.005113,
+      "reserved_usd": 0.2508548,
+      "state": "completed",
+      "preflight_seconds": 0.3119249567389488,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 92,
+        "output_tokens": 119,
+        "output_tokens_details": {
+          "thinking_tokens": 36
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.615183874964714,
+      "estimated_usd": 0.005113
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 19498,
+      "guarded_usd": 0.006725,
+      "reserved_usd": 0.2539832,
+      "state": "completed",
+      "preflight_seconds": 0.29290470853447914,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 803,
+        "output_tokens": 138,
+        "output_tokens_details": {
+          "thinking_tokens": 53
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.9637693762779236,
+      "estimated_usd": 0.006725
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 21332,
+      "guarded_usd": 0.011213,
+      "reserved_usd": 0.2620528,
+      "state": "completed",
+      "preflight_seconds": 0.3041730411350727,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2637,
+        "output_tokens": 220,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.117339001968503,
+      "estimated_usd": 0.011213
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 23443,
+      "guarded_usd": 0.015175,
+      "reserved_usd": 0.2713412,
+      "state": "completed",
+      "preflight_seconds": 0.3133687525987625,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 4748,
+        "output_tokens": 194,
+        "output_tokens_details": {
+          "thinking_tokens": 68
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.3071035016328096,
+      "estimated_usd": 0.015175
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 24034,
+      "guarded_usd": 0.020187,
+      "reserved_usd": 0.27394159999999995,
+      "state": "completed",
+      "preflight_seconds": 0.2941272482275963,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 5339,
+        "output_tokens": 577,
+        "output_tokens_details": {
+          "thinking_tokens": 219
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 5.246720962226391,
+      "estimated_usd": 0.020187
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 27273,
+      "guarded_usd": 0.023355,
+      "reserved_usd": 0.28819320000000004,
+      "state": "completed",
+      "preflight_seconds": 0.2984252516180277,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 8578,
+        "output_tokens": 246,
+        "output_tokens_details": {
+          "thinking_tokens": 42
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.404754376038909,
+      "estimated_usd": 0.023355
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 28075,
+      "guarded_usd": 0.024249,
+      "reserved_usd": 0.291722,
+      "state": "completed",
+      "preflight_seconds": 0.31786516681313515,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 9380,
+        "output_tokens": 175,
+        "output_tokens_details": {
+          "thinking_tokens": 83
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.4909392930567265,
+      "estimated_usd": 0.024249
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 28311,
+      "guarded_usd": 0.025901,
+      "reserved_usd": 0.29276040000000003,
+      "state": "completed",
+      "preflight_seconds": 0.3153849169611931,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 9616,
+        "output_tokens": 293,
+        "output_tokens_details": {
+          "thinking_tokens": 195
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.3804425839334726,
+      "estimated_usd": 0.025901
+    },
+    {
+      "case": "Q11",
+      "input_preflight": 28616,
+      "guarded_usd": 0.036451,
+      "reserved_usd": 0.29410240000000004,
+      "state": "completed",
+      "preflight_seconds": 0.3315457496792078,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 9921,
+        "output_tokens": 1287,
+        "output_tokens_details": {
+          "thinking_tokens": 159
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 14.069035921245813,
+      "estimated_usd": 0.036451
+    },
+    {
+      "case": "Q12",
+      "input_preflight": 18789,
+      "guarded_usd": 0.005107,
+      "reserved_usd": 0.2508636,
+      "state": "completed",
+      "preflight_seconds": 1.2110484167933464,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 94,
+        "output_tokens": 118,
+        "output_tokens_details": {
+          "thinking_tokens": 36
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.3079819176346064,
+      "estimated_usd": 0.005107
+    },
+    {
+      "case": "Q12",
+      "input_preflight": 19146,
+      "guarded_usd": 0.005491,
+      "reserved_usd": 0.2524344,
+      "state": "completed",
+      "preflight_seconds": 0.610663291066885,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 451,
+        "output_tokens": 85,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.4379594177007675,
+      "estimated_usd": 0.005491
+    },
+    {
+      "case": "Q12",
+      "input_preflight": 20210,
+      "guarded_usd": 0.009929,
+      "reserved_usd": 0.257116,
+      "state": "completed",
+      "preflight_seconds": 0.9226929992437363,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1515,
+        "output_tokens": 316,
+        "output_tokens_details": {
+          "thinking_tokens": 53
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.852559123188257,
+      "estimated_usd": 0.009929
+    },
+    {
+      "case": "Q12",
+      "input_preflight": 20677,
+      "guarded_usd": 0.009553,
+      "reserved_usd": 0.2591708,
+      "state": "completed",
+      "preflight_seconds": 0.396181708201766,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1982,
+        "output_tokens": 185,
+        "output_tokens_details": {
+          "thinking_tokens": 88
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.0369632076472044,
+      "estimated_usd": 0.009553
+    },
+    {
+      "case": "Q12",
+      "input_preflight": 21446,
+      "guarded_usd": 0.012321,
+      "reserved_usd": 0.2625544,
+      "state": "completed",
+      "preflight_seconds": 0.29069016687572,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2751,
+        "output_tokens": 308,
+        "output_tokens_details": {
+          "thinking_tokens": 209
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.233783168718219,
+      "estimated_usd": 0.012321
+    },
+    {
+      "case": "Q12",
+      "input_preflight": 21863,
+      "guarded_usd": 0.017785,
+      "reserved_usd": 0.2643892,
+      "state": "completed",
+      "preflight_seconds": 0.31220725178718567,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3168,
+        "output_tokens": 771,
+        "output_tokens_details": {
+          "thinking_tokens": 49
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 8.92378162778914,
+      "estimated_usd": 0.017785
+    },
+    {
+      "case": "Q13",
+      "input_preflight": 18792,
+      "guarded_usd": 0.005093,
+      "reserved_usd": 0.2508768,
+      "state": "completed",
+      "preflight_seconds": 0.2949365396052599,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 97,
+        "output_tokens": 116,
+        "output_tokens_details": {
+          "thinking_tokens": 29
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.4814915843307972,
+      "estimated_usd": 0.005093
+    },
+    {
+      "case": "Q13",
+      "input_preflight": 19521,
+      "guarded_usd": 0.006841,
+      "reserved_usd": 0.25408440000000004,
+      "state": "completed",
+      "preflight_seconds": 0.2759157922118902,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 826,
+        "output_tokens": 145,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.5332079995423555,
+      "estimated_usd": 0.006841
+    },
+    {
+      "case": "Q13",
+      "input_preflight": 25737,
+      "guarded_usd": 0.019523,
+      "reserved_usd": 0.2814348,
+      "state": "completed",
+      "preflight_seconds": 0.5621015429496765,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 7042,
+        "output_tokens": 170,
+        "output_tokens_details": {
+          "thinking_tokens": 51
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.9306755010038614,
+      "estimated_usd": 0.019523
+    },
+    {
+      "case": "Q13",
+      "input_preflight": 26047,
+      "guarded_usd": 0.042983,
+      "reserved_usd": 0.28279879999999996,
+      "state": "completed",
+      "preflight_seconds": 1.5483382511883974,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 7352,
+        "output_tokens": 2454,
+        "output_tokens_details": {
+          "thinking_tokens": 196
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 23.51144746877253,
+      "estimated_usd": 0.042983
+    },
+    {
+      "case": "Q15",
+      "input_preflight": 18782,
+      "guarded_usd": 0.005413,
+      "reserved_usd": 0.25083279999999997,
+      "state": "completed",
+      "preflight_seconds": 0.257790831848979,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 87,
+        "output_tokens": 150,
+        "output_tokens_details": {
+          "thinking_tokens": 61
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.7879493311047554,
+      "estimated_usd": 0.005413
+    },
+    {
+      "case": "Q15",
+      "input_preflight": 19549,
+      "guarded_usd": 0.006407,
+      "reserved_usd": 0.25420760000000003,
+      "state": "completed",
+      "preflight_seconds": 0.37303754314780235,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 854,
+        "output_tokens": 96,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.3018515836447477,
+      "estimated_usd": 0.006407
+    },
+    {
+      "case": "Q15",
+      "input_preflight": 19762,
+      "guarded_usd": 0.010043,
+      "reserved_usd": 0.2551448,
+      "state": "completed",
+      "preflight_seconds": 0.282690666615963,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1067,
+        "output_tokens": 417,
+        "output_tokens_details": {
+          "thinking_tokens": 283
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 4.915936293080449,
+      "estimated_usd": 0.010043
+    },
+    {
+      "case": "Q15",
+      "input_preflight": 23297,
+      "guarded_usd": 0.026353,
+      "reserved_usd": 0.27069879999999996,
+      "state": "completed",
+      "preflight_seconds": 0.29049183428287506,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 4602,
+        "output_tokens": 1341,
+        "output_tokens_details": {
+          "thinking_tokens": 561
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 15.502458341419697,
+      "estimated_usd": 0.026353
+    },
+    {
+      "case": "Q16",
+      "input_preflight": 18792,
+      "guarded_usd": 0.005043,
+      "reserved_usd": 0.2508768,
+      "state": "completed",
+      "preflight_seconds": 0.2904861681163311,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 97,
+        "output_tokens": 111,
+        "output_tokens_details": {
+          "thinking_tokens": 29
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.610740290954709,
+      "estimated_usd": 0.005043
+    },
+    {
+      "case": "Q16",
+      "input_preflight": 19487,
+      "guarded_usd": 0.006413,
+      "reserved_usd": 0.2539348,
+      "state": "completed",
+      "preflight_seconds": 0.2906487490981817,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 792,
+        "output_tokens": 109,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.2541717067360878,
+      "estimated_usd": 0.006413
+    },
+    {
+      "case": "Q16",
+      "input_preflight": 20519,
+      "guarded_usd": 0.009697,
+      "reserved_usd": 0.2584756,
+      "state": "completed",
+      "preflight_seconds": 0.30360512249171734,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1824,
+        "output_tokens": 231,
+        "output_tokens_details": {
+          "thinking_tokens": 38
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.3358590435236692,
+      "estimated_usd": 0.009697
+    },
+    {
+      "case": "Q16",
+      "input_preflight": 21011,
+      "guarded_usd": 0.014701,
+      "reserved_usd": 0.26064040000000005,
+      "state": "completed",
+      "preflight_seconds": 0.2921995837241411,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2316,
+        "output_tokens": 633,
+        "output_tokens_details": {
+          "thinking_tokens": 34
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.500693671405315,
+      "estimated_usd": 0.014701
+    },
+    {
+      "case": "Q17",
+      "input_preflight": 18782,
+      "guarded_usd": 0.005113,
+      "reserved_usd": 0.25083279999999997,
+      "state": "completed",
+      "preflight_seconds": 0.28496550023555756,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 87,
+        "output_tokens": 120,
+        "output_tokens_details": {
+          "thinking_tokens": 37
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.536692000925541,
+      "estimated_usd": 0.005113
+    },
+    {
+      "case": "Q17",
+      "input_preflight": 19494,
+      "guarded_usd": 0.008377,
+      "reserved_usd": 0.2539656,
+      "state": "completed",
+      "preflight_seconds": 0.28301816806197166,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 799,
+        "output_tokens": 304,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.518934251740575,
+      "estimated_usd": 0.008377
+    },
+    {
+      "case": "Q17",
+      "input_preflight": 43868,
+      "guarded_usd": 0.060435,
+      "reserved_usd": 0.3612112,
+      "state": "completed",
+      "preflight_seconds": 0.3117827922105789,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 25173,
+        "output_tokens": 635,
+        "output_tokens_details": {
+          "thinking_tokens": 491
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 7.801143212243915,
+      "estimated_usd": 0.060435
+    },
+    {
+      "case": "Q17",
+      "input_preflight": 45064,
+      "guarded_usd": 0.058957,
+      "reserved_usd": 0.36647359999999995,
+      "state": "completed",
+      "preflight_seconds": 0.3314007520675659,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 26369,
+        "output_tokens": 248,
+        "output_tokens_details": {
+          "thinking_tokens": 101
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.656817749142647,
+      "estimated_usd": 0.058957
+    },
+    {
+      "case": "Q17",
+      "input_preflight": 45893,
+      "guarded_usd": 0.063135,
+      "reserved_usd": 0.37012120000000004,
+      "state": "completed",
+      "preflight_seconds": 0.3732274156063795,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 27198,
+        "output_tokens": 500,
+        "output_tokens_details": {
+          "thinking_tokens": 209
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 5.181787796318531,
+      "estimated_usd": 0.063135
+    },
+    {
+      "case": "Q17",
+      "input_preflight": 47161,
+      "guarded_usd": 0.065561,
+      "reserved_usd": 0.37570040000000005,
+      "state": "completed",
+      "preflight_seconds": 0.32294033095240593,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 28466,
+        "output_tokens": 489,
+        "output_tokens_details": {
+          "thinking_tokens": 394
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 5.590295044705272,
+      "estimated_usd": 0.065561
+    },
+    {
+      "case": "Q17",
+      "input_preflight": 47705,
+      "guarded_usd": 0.079399,
+      "reserved_usd": 0.378094,
+      "state": "completed",
+      "preflight_seconds": 0.6795501671731472,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 29010,
+        "output_tokens": 1764,
+        "output_tokens_details": {
+          "thinking_tokens": 45
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 17.586856549605727,
+      "estimated_usd": 0.079399
+    },
+    {
+      "case": "Q18",
+      "input_preflight": 18785,
+      "guarded_usd": 0.005269,
+      "reserved_usd": 0.250846,
+      "state": "completed",
+      "preflight_seconds": 0.36267525143921375,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 90,
+        "output_tokens": 135,
+        "output_tokens_details": {
+          "thinking_tokens": 53
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.791281959041953,
+      "estimated_usd": 0.005269
+    },
+    {
+      "case": "Q18",
+      "input_preflight": 19504,
+      "guarded_usd": 0.006787,
+      "reserved_usd": 0.2540096,
+      "state": "completed",
+      "preflight_seconds": 0.30506571009755135,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 809,
+        "output_tokens": 143,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6843854188919067,
+      "estimated_usd": 0.006787
+    },
+    {
+      "case": "Q18",
+      "input_preflight": 21213,
+      "guarded_usd": 0.012215,
+      "reserved_usd": 0.2615292,
+      "state": "completed",
+      "preflight_seconds": 0.24918120726943016,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2518,
+        "output_tokens": 344,
+        "output_tokens_details": {
+          "thinking_tokens": 66
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.0422320421785116,
+      "estimated_usd": 0.012215
+    },
+    {
+      "case": "Q18",
+      "input_preflight": 21890,
+      "guarded_usd": 0.023089,
+      "reserved_usd": 0.264508,
+      "state": "completed",
+      "preflight_seconds": 0.30255366675555706,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3195,
+        "output_tokens": 1296,
+        "output_tokens_details": {
+          "thinking_tokens": 293
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 13.401988007128239,
+      "estimated_usd": 0.023089
+    },
+    {
+      "case": "Q19",
+      "input_preflight": 18786,
+      "guarded_usd": 0.005461,
+      "reserved_usd": 0.25085040000000003,
+      "state": "completed",
+      "preflight_seconds": 0.40173633582890034,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 91,
+        "output_tokens": 154,
+        "output_tokens_details": {
+          "thinking_tokens": 71
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.6147875003516674,
+      "estimated_usd": 0.005461
+    },
+    {
+      "case": "Q19",
+      "input_preflight": 19192,
+      "guarded_usd": 0.006073,
+      "reserved_usd": 0.2526368,
+      "state": "completed",
+      "preflight_seconds": 1.2603835836052895,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 497,
+        "output_tokens": 134,
+        "output_tokens_details": {
+          "thinking_tokens": 45
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.2129207104444504,
+      "estimated_usd": 0.006073
+    },
+    {
+      "case": "Q19",
+      "input_preflight": 22123,
+      "guarded_usd": 0.012845,
+      "reserved_usd": 0.2655332,
+      "state": "completed",
+      "preflight_seconds": 0.6089269611984491,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 3428,
+        "output_tokens": 225,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 3.0855968333780766,
+      "estimated_usd": 0.012845
+    },
+    {
+      "case": "Q19",
+      "input_preflight": 32649,
+      "guarded_usd": 0.044097,
+      "reserved_usd": 0.3118476,
+      "state": "completed",
+      "preflight_seconds": 0.9733332917094231,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 13954,
+        "output_tokens": 1245,
+        "output_tokens_details": {
+          "thinking_tokens": 339
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 14.125237964093685,
+      "estimated_usd": 0.044097
+    },
+    {
+      "case": "Q20",
+      "input_preflight": 18790,
+      "guarded_usd": 0.005089,
+      "reserved_usd": 0.250868,
+      "state": "completed",
+      "preflight_seconds": 0.31789628975093365,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 95,
+        "output_tokens": 116,
+        "output_tokens_details": {
+          "thinking_tokens": 34
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.6914103757590055,
+      "estimated_usd": 0.005089
+    },
+    {
+      "case": "Q20",
+      "input_preflight": 19494,
+      "guarded_usd": 0.006457,
+      "reserved_usd": 0.2539656,
+      "state": "completed",
+      "preflight_seconds": 0.2671782113611698,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 799,
+        "output_tokens": 112,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.3184041678905487,
+      "estimated_usd": 0.006457
+    },
+    {
+      "case": "Q20",
+      "input_preflight": 20783,
+      "guarded_usd": 0.009665,
+      "reserved_usd": 0.2596372,
+      "state": "completed",
+      "preflight_seconds": 0.28878566808998585,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 2088,
+        "output_tokens": 175,
+        "output_tokens_details": {
+          "thinking_tokens": 78
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.1550886295735836,
+      "estimated_usd": 0.009665
+    },
+    {
+      "case": "Q20",
+      "input_preflight": 32906,
+      "guarded_usd": 0.050121,
+      "reserved_usd": 0.31297840000000005,
+      "state": "completed",
+      "preflight_seconds": 0.29522237554192543,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 14211,
+        "output_tokens": 1796,
+        "output_tokens_details": {
+          "thinking_tokens": 1540
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 21.049543257802725,
+      "estimated_usd": 0.050121
+    },
+    {
+      "case": "Q20",
+      "input_preflight": 36521,
+      "guarded_usd": 0.058731,
+      "reserved_usd": 0.3288844,
+      "state": "completed",
+      "preflight_seconds": 0.33265441469848156,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 17826,
+        "output_tokens": 1934,
+        "output_tokens_details": {
+          "thinking_tokens": 706
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 21.85517675988376,
+      "estimated_usd": 0.058731
+    },
+    {
+      "case": "Q21",
+      "input_preflight": 18798,
+      "guarded_usd": 0.005815,
+      "reserved_usd": 0.2509032,
+      "state": "completed",
+      "preflight_seconds": 0.26261545717716217,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 103,
+        "output_tokens": 187,
+        "output_tokens_details": {
+          "thinking_tokens": 25
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.124950874596834,
+      "estimated_usd": 0.005815
+    },
+    {
+      "case": "Q21",
+      "input_preflight": 20231,
+      "guarded_usd": 0.008661,
+      "reserved_usd": 0.2572084,
+      "state": "completed",
+      "preflight_seconds": 0.30722041614353657,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 1536,
+        "output_tokens": 185,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.827123248949647,
+      "estimated_usd": 0.008661
+    },
+    {
+      "case": "Q21",
+      "input_preflight": 42375,
+      "guarded_usd": 0.057939,
+      "reserved_usd": 0.354642,
+      "state": "completed",
+      "preflight_seconds": 0.3532989602535963,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 23680,
+        "output_tokens": 684,
+        "output_tokens_details": {
+          "thinking_tokens": 510
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.877395793795586,
+      "estimated_usd": 0.057939
+    },
+    {
+      "case": "Q21",
+      "input_preflight": 47527,
+      "guarded_usd": 0.067493,
+      "reserved_usd": 0.37731080000000006,
+      "state": "completed",
+      "preflight_seconds": 0.35653141885995865,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 28832,
+        "output_tokens": 609,
+        "output_tokens_details": {
+          "thinking_tokens": 396
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 6.807216918095946,
+      "estimated_usd": 0.067493
+    },
+    {
+      "case": "Q21",
+      "input_preflight": 48967,
+      "guarded_usd": 0.084723,
+      "reserved_usd": 0.38364680000000007,
+      "state": "completed",
+      "preflight_seconds": 0.37468358501791954,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 30272,
+        "output_tokens": 2044,
+        "output_tokens_details": {
+          "thinking_tokens": 1844
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 22.70954622142017,
+      "estimated_usd": 0.084723
+    },
+    {
+      "case": "Q21",
+      "input_preflight": 53604,
+      "guarded_usd": 0.134857,
+      "reserved_usd": 0.40404959999999995,
+      "state": "completed",
+      "preflight_seconds": 0.37048508413136005,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 34909,
+        "output_tokens": 6130,
+        "output_tokens_details": {
+          "thinking_tokens": 3503
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 63.1284911967814,
+      "estimated_usd": 0.134857
+    },
+    {
+      "case": "Q22",
+      "input_preflight": 18783,
+      "guarded_usd": 0.005095,
+      "reserved_usd": 0.25083720000000004,
+      "state": "completed",
+      "preflight_seconds": 0.2781004551798105,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 88,
+        "output_tokens": 118,
+        "output_tokens_details": {
+          "thinking_tokens": 36
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.5858396254479885,
+      "estimated_usd": 0.005095
+    },
+    {
+      "case": "Q22",
+      "input_preflight": 19486,
+      "guarded_usd": 0.006231,
+      "reserved_usd": 0.2539304,
+      "state": "completed",
+      "preflight_seconds": 0.2869934607297182,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 791,
+        "output_tokens": 91,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.1594889592379332,
+      "estimated_usd": 0.006231
+    },
+    {
+      "case": "Q22",
+      "input_preflight": 25657,
+      "guarded_usd": 0.019143,
+      "reserved_usd": 0.28108279999999997,
+      "state": "completed",
+      "preflight_seconds": 0.26625158451497555,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 6962,
+        "output_tokens": 148,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 1.8625105004757643,
+      "estimated_usd": 0.019143
+    },
+    {
+      "case": "Q22",
+      "input_preflight": 37168,
+      "guarded_usd": 0.050945,
+      "reserved_usd": 0.3317312,
+      "state": "completed",
+      "preflight_seconds": 0.4396780449897051,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 18473,
+        "output_tokens": 1026,
+        "output_tokens_details": {
+          "thinking_tokens": 74
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 12.092912755906582,
+      "estimated_usd": 0.050945
+    },
+    {
+      "case": "Q25",
+      "input_preflight": 18788,
+      "guarded_usd": 0.005995,
+      "reserved_usd": 0.2508592,
+      "state": "completed",
+      "preflight_seconds": 0.26333554089069366,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 93,
+        "output_tokens": 207,
+        "output_tokens_details": {
+          "thinking_tokens": 119
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.2555041685700417,
+      "estimated_usd": 0.005995
+    },
+    {
+      "case": "Q25",
+      "input_preflight": 19607,
+      "guarded_usd": 0.007743,
+      "reserved_usd": 0.2544628,
+      "state": "completed",
+      "preflight_seconds": 0.2643342111259699,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 912,
+        "output_tokens": 218,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 2.115970876067877,
+      "estimated_usd": 0.007743
+    },
+    {
+      "case": "Q25",
+      "input_preflight": 40229,
+      "guarded_usd": 0.056427,
+      "reserved_usd": 0.3451996,
+      "state": "completed",
+      "preflight_seconds": 0.889396708458662,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 21534,
+        "output_tokens": 962,
+        "output_tokens_details": {
+          "thinking_tokens": 452
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 8.909549666568637,
+      "estimated_usd": 0.056427
+    },
+    {
+      "case": "Q25",
+      "input_preflight": 46862,
+      "guarded_usd": 0.073483,
+      "reserved_usd": 0.3743848000000001,
+      "state": "completed",
+      "preflight_seconds": 0.6678567491471767,
+      "usage": {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 18695,
+        "inference_geo": "global",
+        "input_tokens": 28167,
+        "output_tokens": 1341,
+        "output_tokens_details": {
+          "thinking_tokens": 1151
+        },
+        "server_tool_use": null,
+        "service_tier": "standard",
+        "speed": "standard"
+      },
+      "latency_seconds": 14.851155672222376,
+      "estimated_usd": 0.073483
+    }
+  ],
+  "latency": {
+    "median_seconds": 32.876000000000005,
+    "p90_seconds": 95.9774,
+    "includes_free_preflight": true
+  },
+  "rubric": {
+    "mean": 8.766666666666667,
+    "median": 9.0,
+    "hard_failure_cases": [
+      "Q17",
+      "Q26",
+      "Q27"
+    ]
+  },
+  "cost_field_definitions": {
+    "estimated_provider_usd": "Summed actual token usage at standard model/cache pricing; not an invoice.",
+    "guarded_usd": "Settled usage at conservative maximum cache-write rates; no outstanding reservations.",
+    "scores_cost_usd": "Per-case change in conservative guarded_usd, including partial Q25 work."
+  }
+}

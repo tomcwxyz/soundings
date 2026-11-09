@@ -194,8 +194,9 @@ def _collect_events() -> tuple[list[dict[str, Any]], Any]:
     return events, callback
 
 
-async def test_orchestrator_caches_answer_after_run(fake_cache):
+async def test_orchestrator_caches_answer_after_run(fake_cache, caplog):
     """After a successful run, the orchestrator should store events in the cache."""
+    caplog.set_level("INFO", logger="soundings.ask.orchestrator")
     events, cb = _collect_events()
     state = _make_fake_state()
     dispatcher = ToolDispatcher(state)
@@ -234,9 +235,12 @@ async def test_orchestrator_caches_answer_after_run(fake_cache):
     assert cached_messages is not None
     assert cached_messages[0]["role"] == "user"
 
+    assert "Summarise Stockton" not in caplog.text
 
-async def test_orchestrator_replays_cached_answer_without_claude(fake_cache):
+
+async def test_orchestrator_replays_cached_answer_without_claude(fake_cache, caplog):
     """On a cache hit, the orchestrator should replay events without calling Claude."""
+    caplog.set_level("INFO", logger="soundings.ask.orchestrator")
     # Pre-populate the cache
     cached_events = [
         {"type": "status", "message": "Calling find_place…"},
@@ -282,6 +286,8 @@ async def test_orchestrator_replays_cached_answer_without_claude(fake_cache):
     # But NOT re-stored (no put on a hit)
     assert len(fake_cache.put_calls) == 0
 
+    assert "Summarise Stockton" not in caplog.text
+
 
 async def test_orchestrator_cache_read_failure_falls_back_to_claude(fake_cache):
     """A broken cache must not make the Ask endpoint unavailable."""
@@ -322,8 +328,9 @@ async def test_orchestrator_cache_read_failure_falls_back_to_claude(fake_cache):
     )
 
 
-async def test_orchestrator_ignores_legacy_cache_without_messages(fake_cache):
+async def test_orchestrator_ignores_legacy_cache_without_messages(fake_cache, caplog):
     """Legacy event-only cache entries cannot seed a follow-up conversation."""
+    caplog.set_level("INFO", logger="soundings.ask.orchestrator")
     await fake_cache.put("Summarise Stockton", None, [{"type": "done"}])
 
     events, cb = _collect_events()
@@ -356,6 +363,8 @@ async def test_orchestrator_ignores_legacy_cache_without_messages(fake_cache):
 
     assert len(fake_client.messages.calls) == 1
     assert any(e.get("type") == "block" for e in events)
+
+    assert "Summarise Stockton" not in caplog.text
 
 
 async def test_orchestrator_does_not_cache_errors(fake_cache):

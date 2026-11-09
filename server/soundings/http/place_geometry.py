@@ -1,8 +1,8 @@
 """GET /v1/place/{place_id}/geometry and GET /v1/place/{place_id}/peers/geometry.
 
-Returns simplified GeoJSON for a single place or its peers (same `type`,
-excluding the place itself). Geometries are simplified with
-ST_Simplify(geom, 0.005) and serialised via ST_AsGeoJSON.
+Returns GeoJSON for a single place or its peers (same `type`, excluding
+the place itself). Stored boundaries are already generalised for display;
+never simplify again in angular degrees, which erases small urban areas.
 
 Peer geometries optionally join `data.indicator_value` to attach the
 indicator value and percentile for a given indicator/period.
@@ -16,6 +16,8 @@ import json
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
+
+from soundings.tools.get_sub_areas import resolve_sub_area_type
 
 router = APIRouter(prefix="/v1")
 
@@ -32,7 +34,7 @@ async def get_place_geometry(request: Request, place_id: str) -> dict[str, objec
                         p.id,
                         p.name,
                         p.type,
-                        ST_AsGeoJSON(ST_Simplify(p.geom, 0.005)) AS geojson
+                        ST_AsGeoJSON(p.geom) AS geojson
                     FROM geography.place p
                     WHERE p.id = :place_id
                     """
@@ -122,7 +124,7 @@ async def get_peer_geometry(
                         r.value,
                         r.rank,
                         r.n_with_values,
-                        ST_AsGeoJSON(ST_Simplify(p.geom, 0.005)) AS geojson
+                        ST_AsGeoJSON(p.geom) AS geojson
                     FROM ranked r
                     JOIN geography.place p ON p.id = r.id
                     """
@@ -169,20 +171,27 @@ async def get_children_geometry(
     place_id: str,
     indicator: str = Query(...),
     period: str | None = Query(default=None),
-    child_type: str = Query(default="lsoa21"),
+    child_type: str = Query(default="auto"),
 ) -> dict[str, object]:
-    """FeatureCollection of a place's current sub-areas (default LSOAs)
+    """FeatureCollection of current sub-areas (LSOAs or Scottish Data Zones)
     coloured by an indicator. A LATERAL join picks the latest period per child
     when `period` is omitted. Children without a value are excluded so the
     caller can detect 'no sub-area data' and fall back to peer mode."""
     engine = request.app.state.engine
     async with engine.connect() as conn:
+        available = await conn.execute(
+            text("SELECT available_at FROM catalogue.indicator WHERE key = :key"),
+            {"key": indicator},
+        )
+        indicator_row = available.first()
+        geography_types = list(indicator_row.available_at) if indicator_row else []
+        child_type = resolve_sub_area_type(place_id, child_type, geography_types)
         rows = (
             await conn.execute(
                 text(
                     """
                     SELECT c.id, c.name,
-                           ST_AsGeoJSON(ST_Simplify(c.geom, 0.005)) AS geojson,
+                           ST_AsGeoJSON(c.geom) AS geojson,
                            iv.value
                     FROM geography.current_place_hierarchy h
                     JOIN geography.place c ON c.id = h.child_id
@@ -235,10 +244,10 @@ async def get_geographies_geometry(
     indicator (value + percentile). The national counterpart to
     `peers/geometry` (which is relative to one place). Latest period per place
     when `period` is omitted. Large layers (lsoa21) require `large=true`."""
-    if place_type == "lsoa21" and not large:
+    if place_type in {"lsoa21", "dz22", "dz11"} and not large:
         raise HTTPException(
             status_code=422,
-            detail="lsoa21 is a large layer; pass large=true to confirm",
+            detail=f"{place_type} is a large layer; pass large=true to confirm",
         )
     engine = request.app.state.engine
     async with engine.connect() as conn:
@@ -267,7 +276,7 @@ async def get_geographies_geometry(
                         FROM area_values av
                     )
                     SELECT r.id, r.name, r.value, r.rank, r.n_with_values,
-                           ST_AsGeoJSON(ST_Simplify(p.geom, 0.005)) AS geojson
+                           ST_AsGeoJSON(p.geom) AS geojson
                     FROM ranked r
                     JOIN geography.place p ON p.id = r.id
                     """

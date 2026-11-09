@@ -1,10 +1,61 @@
 # Soundings — current state
 
-> Last updated: **29 September 2026**
+> Last updated: **9 November 2026**
 >
 > Current position: **Phase 6.5 started — questions before sources**. Phase 7 (Observations MVP) is shipped and merged to `main` (PR #43), together with the 360Giving grant index, temporal foundations and ONS CHD historical geography work (PRs #45–#59).
 
 This file is the canonical short-form statement of what is actually implemented. Older phase plans in `docs/plans/` are useful design history, but should not be read as the current status.
+
+## Freshness and runtime follow-up — 9 November 2026
+
+On `codex/freshness-review-followup-20261109`, scheduled imports now record their
+whole outcome and health separates failed/stale/untracked/unavailable sources.
+Stored indicator retrieval dates are preserved. Charity Commission, Companies
+House, ONS geography and IMD 2025 full refreshes completed successfully after
+isolated validation; previously missing ONS display layers are populated. Ask measurements
+now reach the server log without question text or unrelated INFO logging.
+
+Public map and MCP checks passed. The evaluation set is now 44 questions;
+model-backed scoring completed 30 answers within the approved £5 ceiling. Missing historical import records
+and unimplemented housing live tables remain explicit, rather than being hidden
+by synthetic success records. The grant index is outside this follow-up.
+
+Details and remaining priorities: `docs/reviews/2026-11-09-runtime-review.md`.
+
+## Local integration — 9 November 2026
+
+PRs #65 (Wales/Scotland coverage) and #66 (geometry, MCP discovery and Ask
+metrics) are combined on `codex/local-deploy-20261109`; neither PR has been
+merged into `main` by this deployment work.
+
+- Keep Scottish automatic sub-area selection together with the geometry fix;
+  map endpoints return stored boundaries without degree-based simplification.
+- MCP neighbourhood defaults must match the shared tool: `auto` geography
+  and `worst_first` sorting, including Welsh deprivation ranks/deciles.
+- Scottish lookup imports support the official column names and CP1252 export;
+  polygon imports repair invalid rings before storing MultiPolygons.
+- MCP preserves host protection while allowing the configured UI origin through
+  a reverse proxy, alongside loopback access.
+- Initial WIMD and OSCR imports were validated in an isolated database:
+  34,506 values across all 1,917 Welsh LSOAs; 24,990 charities, with 23,273
+  registered postcodes matched and 1,717 unmatched.
+- Scottish geography was validated and imported: 7,392 named Data Zones,
+  1,334 Intermediate Zones, 24,876 hierarchy links and 7,392 valid, nonempty
+  Data Zone boundaries. No Scottish deprivation indicator is implied by these
+  geography imports.
+- Scottish charity coverage is registered-address based. The existing place-page
+  civil-society panel still excludes Scotland; OSCR is available through tools.
+- Runtime services were rebuilt and restarted together. Local and public smoke
+  checks passed for pages, Welsh maps, Scottish profiles and MCP discovery/tool
+  calls. Verification includes 466 unit tests, 158 UI tests, lint/type checks,
+  the full non-live suite on a clean database before final import fixes, and
+  targeted PostGIS regressions after those fixes.
+- The existing health degradation remains: older sources are stale and the
+  full grant index is incomplete. The deployment-triggered GrantNav bootstrap
+  received HTTP 503 from the upstream CSV endpoint.
+- Annual source schedules require explicit initial geography/WIMD imports.
+  Deployment imports use the existing tracked-loader wrapper; scheduled loader
+  callbacks still need consistent run tracking as a follow-up.
 
 ## Repository health
 
@@ -144,3 +195,17 @@ The old Ask timeout/choropleth branch is also superseded: its safeguards are alr
 The NSPL/recovery branches should be compared file-by-file before deletion because later fixes were layered across several branches.
 
 `claude/blog-repo-approach-96xj5i` contains unique blog/diagram draft material and should be preserved until that material is intentionally merged or discarded.
+
+## Ask evaluation — 9 November 2026
+
+Completed 30 of 40 non-grant cases; Q25 stopped before a final answer when the
+budget guard could not reserve another response; nine cases were unattempted.
+Estimated provider cost $4.514 (about £3.36); conservative tax/FX allowance £4.23,
+within the approved £5. Median manual score 9/12; three rubric hard failures.
+Median latency 32.9s; p90 96.0s, including evaluation preflight overhead.
+
+See [evaluation report](evaluation/results/2026-11-09/report.md) and its score and
+usage artifacts. Next priorities: density values, APS variable cache collision,
+unit contracts and final source propagation; then peer/denominator synthesis,
+filtered block hydration and tool payload/latency. No application changes or
+new deployment were made during the evaluation. Paid reruns need a new budget.

@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.base import LoaderAdapter, LoaderResult
+from soundings.adapters.ons_geography.arcgis import feature_rows
 from soundings.adapters.ons_geography.endpoints import BOUNDARY_LAYERS, OgpLayer
 from soundings.db.models.geography import Place
 
@@ -72,7 +73,7 @@ class OnsGeographyPlacesLoader(LoaderAdapter):
         response = await client.get(url, params=params)
         response.raise_for_status()
         body = response.json()
-        return [f.get("attributes", {}) for f in body.get("features", [])]
+        return [f.get("attributes", {}) for f in feature_rows(body)]
 
     async def _upsert_features(self, layer: OgpLayer, features: list[dict[str, Any]]) -> None:
         rows = []

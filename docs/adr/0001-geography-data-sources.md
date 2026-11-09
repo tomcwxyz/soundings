@@ -29,11 +29,11 @@ All Feature Services live on `services1.arcgis.com/ESMARspQHYMw9BZ9` unless othe
 | Layer | Edition | OGP page | FeatureServer endpoint |
 |---|---|---|---|
 | LSOA 2021 (England + Wales) | BSC (BUC not published) | [LSOA Dec 2021 BSC](https://geoportal.statistics.gov.uk/search?q=LSOA+2021+BSC) | `Lower_layer_Super_Output_Areas_December_2021_Boundaries_EW_BSC` *(unverified)* |
-| MSOA 2021 (England + Wales) | BGC (BUC not published) | [MSOA Dec 2021 BGC](https://geoportal.statistics.gov.uk/search?q=MSOA+2021+BGC) | `Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC` *(unverified)* |
+| MSOA 2021 (England + Wales) | BGC (BUC not published) | [MSOA Dec 2021 BGC](https://geoportal.statistics.gov.uk/search?q=MSOA+2021+BGC) | `Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3` (verified 9 November 2026; 7,264 areas) |
 | LTLA 2024 (UK) | BUC (May 2024) | [LAD May 2024 BUC](https://geoportal.statistics.gov.uk/datasets/ons::local-authority-districts-may-2024-boundaries-uk-buc-2/about) | `Local_Authority_Districts_May_2024_Boundaries_UK_BUC` *(unverified)* |
 | UTLA 2024 (UK) | BUC (December 2024) | [CTYUA Dec 2024 BUC](https://geoportal.statistics.gov.uk/datasets/ons::counties-and-unitary-authorities-december-2024-boundaries-uk-buc-2/explore) | `Counties_and_Unitary_Authorities_December_2024_Boundaries_UK_BUC` |
 | Region 2024 (England) | BGC (BUC not published) | [Regions Dec 2024 BGC](https://geoportal.statistics.gov.uk/datasets/ons::regions-december-2024-boundaries-en-bgc-2/about) | `Regions_December_2024_Boundaries_EN_BGC` *(unverified)* |
-| Country 2024 (UK) | BFC (BUC not published) | [Countries Dec 2024 BFC](https://geoportal.statistics.gov.uk/datasets/ons::countries-december-2024-boundaries-uk-bfc-2/about) | `Countries_December_2024_Boundaries_UK_BFC` |
+| Country 2024 (UK) | BUC (verified 9 November 2026; full-resolution export timed out) | [Countries Dec 2024 BUC](https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Countries_December_2024_Boundaries_UK_BUC/FeatureServer/0) | `Countries_December_2024_Boundaries_UK_BUC` |
 | Westminster Constituency 2024 (UK) | BUC (July 2024) | [WPC July 2024 BUC](https://geoportal.statistics.gov.uk/datasets/ons::westminster-parliamentary-constituencies-july-2024-boundaries-uk-buc-2/about) | `Westminster_Parliamentary_Constituencies_July_2024_Boundaries_UK_BUC` *(unverified)* |
 | Ward 2024 (UK) | BSC (BUC not published) | [Wards May 2024 BSC](https://geoportal.statistics.gov.uk/datasets/b58c65bdad994ed3a33741eea7bb09ab_0/about) | `Wards_May_2024_Boundaries_UK_BSC` *(unverified)* |
 
@@ -47,13 +47,26 @@ https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/{ServiceName}
 
 These are the join tables that drive `place_hierarchy`. CSVs hosted on OGP; we read them via the same arcgis service backend that powers the OGP item page.
 
-| Lookup | Edition | OGP page |
+| Active lookup | Edition | Verified ArcGIS service |
 |---|---|---|
-| Postcode → OA → LSOA → MSOA → LAD | February 2025 | [link](https://geoportal.statistics.gov.uk/datasets/80592949bebd4390b2cbe29159a75ef4) |
-| Westminster Constituency → LTLA | July 2024 | [link](https://geoportal.statistics.gov.uk/datasets/6f2f35a9a0b94e7e949eeba7785911d4) |
-| Ward → LTLA → UTLA → Westminster Constituency | July 2024 | [link](https://geoportal.statistics.gov.uk/maps/ons::ward-to-westminster-parliamentary-constituency-to-lad-to-utla-july-2024-lookup-in-uk) |
+| LSOA → LTLA | 2021 LSOA / 2024 LAD | `LSOA21_WD24_LAD24_EW_LU` |
+| LTLA → UTLA → Region → Country | 2024 | `WD24_LAD24_CTYUA_RGN_CTRY_UK_LU` |
+| Ward → LTLA → UTLA | July 2024 | `WD24_PCON24_LAD24_UTLA24_UK_LU` |
 
-The loader (`server/soundings/adapters/ons_geography/hierarchy_loader.py`, Task 23) extracts the LSOA→MSOA→LTLA columns from the postcode lookup and ignores the postcode/OA columns.
+These service names were verified on 9 November 2026 against the official ONS
+ArcGIS directory above. The administrative lookup uses `CTYUA24CD`; the political
+lookup calls that same level `UTLA24CD`. Duplicate rows are deduplicated when
+building administrative hierarchy edges. ONS's current LSOA lookup has no MSOA
+column, so MSOAs remain a boundary layer without a refreshed hierarchy chain.
+
+The political lookup includes constituencies and split wards. Those are overlaps,
+not a strict administrative containment chain: constituencies can cross local
+council boundaries. The loader therefore imports only its ward/council/upper-tier
+columns. Constituency containment is deferred until overlaps can be represented
+honestly; this change does not delete any existing hierarchy edges.
+
+ArcGIS may return an error envelope under HTTP 200. All three geography fetch
+paths reject such responses instead of reporting a successful empty import.
 
 ### Code History Database
 

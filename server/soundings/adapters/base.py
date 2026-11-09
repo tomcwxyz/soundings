@@ -30,6 +30,19 @@ def _cron_to_window_days(cron: str | None) -> int:
         return 30
     _minute, _hour, dom, month, dow = parts
 
+    # A list of release months is not a single annual release (e.g. NSPL).
+    if "," in month and dom != "*":
+        try:
+            months = sorted({int(value) for value in month.split(",")})
+            if all(1 <= value <= 12 for value in months):
+                gaps = [
+                    later - earlier
+                    for earlier, later in zip(months, [*months[1:], months[0] + 12], strict=True)
+                ]
+                return max(gaps) * 30
+        except ValueError:
+            return 30
+
     # Yearly: month is a fixed value AND day-of-month is fixed.
     if month != "*" and "/" not in month and dom != "*":
         return 365
@@ -97,7 +110,7 @@ class LoaderAdapter(ABC):
             value_row = (
                 await conn.execute(
                     text(
-                        "SELECT iv.value, iv.period, iv.caveats, ind.unit "
+                        "SELECT iv.value, iv.period, iv.caveats, iv.retrieved_at, ind.unit "
                         "FROM data.indicator_value iv "
                         "JOIN catalogue.indicator ind ON ind.key = iv.indicator_key "
                         "WHERE iv.place_id = :pid AND iv.indicator_key = :ik "
@@ -130,7 +143,7 @@ class LoaderAdapter(ABC):
         if cadence_row is None:
             return None
 
-        retrieved_at = run_row.finished_at if run_row else self.now_utc()
+        retrieved_at = value_row.retrieved_at
         cache_status = self._compute_cache_status(
             run_row.finished_at if run_row else None,
             cadence_row.refresh_cadence,

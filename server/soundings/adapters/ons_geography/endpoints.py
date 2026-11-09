@@ -36,7 +36,7 @@ BOUNDARY_LAYERS: dict[str, OgpLayer] = {
         place_type="msoa21",
         code_field="MSOA21CD",
         name_field="MSOA21NM",
-        service_name="Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC",
+        service_name="Middle_layer_Super_Output_Areas_December_2021_Boundaries_EW_BGC_V3",
     ),
     "ltla24": OgpLayer(
         place_type="ltla24",
@@ -60,7 +60,7 @@ BOUNDARY_LAYERS: dict[str, OgpLayer] = {
         place_type="country",
         code_field="CTRY24CD",
         name_field="CTRY24NM",
-        service_name="Countries_December_2024_Boundaries_UK_BFC",
+        service_name="Countries_December_2024_Boundaries_UK_BUC",
     ),
     "westminster_constituency_24": OgpLayer(
         place_type="westminster_constituency_24",

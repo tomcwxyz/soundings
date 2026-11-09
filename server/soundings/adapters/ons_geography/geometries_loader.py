@@ -15,6 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.base import LoaderAdapter, LoaderResult
+from soundings.adapters.ons_geography.arcgis import feature_rows
 from soundings.adapters.ons_geography.endpoints import BOUNDARY_LAYERS, OgpLayer
 
 PAGE_SIZE = 1000
@@ -79,7 +80,7 @@ class OnsGeographyGeometriesLoader(LoaderAdapter):
         }
         response = await client.get(f"{layer.feature_url}/query", params=params)
         response.raise_for_status()
-        features: list[dict[str, Any]] = response.json().get("features", [])
+        features = feature_rows(response.json())
         return features
 
     async def _update_geometries(

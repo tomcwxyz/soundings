@@ -1,0 +1,172 @@
+"""Isolated-DB OSCR import: idempotence, source safety, registered vs operating."""
+
+import io
+import zipfile
+from datetime import UTC, datetime
+from unittest.mock import MagicMock
+
+import pytest
+import pytest_asyncio
+from sqlalchemy import text
+
+from soundings.adapters.oscr.loader import (
+    OscrLoader,
+    build_organisation_rows,
+    normalise_area,
+)
+from soundings.adapters.oscr.parser import parse_register_csv
+from soundings.db.engine import get_engine
+from soundings.orchestration.orchestrator import IndicatorOrchestrator
+
+CSV = (
+    b"Charity Number,Charity Name,Charity Status,Postcode,Registration Date,"
+    b"Main Operating Location,Geographical Spread,Income,Expenditure,Purposes\n"
+    b"SC000001,Local Example,Active,EH47 8BY,26/06/1986,West Lothian,"
+    b"Local,1000,50,Community\n"
+    b"SC000002,Other Group,Not Monitored,EH1 2XY,03/04/2004,City of Edinburgh,"
+    b"Scotland and UK,,100,Education\n"
+)
+
+
+def zip_csv(data: bytes) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as archive:
+        archive.writestr("ScottishRegister.csv", data)
+    return buf.getvalue()
+
+
+def test_registered_address_not_assumed_to_be_operating_area() -> None:
+    records = parse_register_csv(CSV)
+    orgs = build_organisation_rows(
+        records,
+        {"EH478BY": "ltla24:S12000040"},
+        {"edinburgh": "ltla24:S12000036"},
+        datetime.now(tz=UTC),
+    )
+    assert orgs[0]["registered_address_place_id"] == "ltla24:S12000040"
+    assert orgs[0]["raw"]["main_operating_place_id"] is None
+    assert orgs[1]["registered_address_place_id"] is None
+    assert orgs[1]["raw"]["main_operating_place_id"] == "ltla24:S12000036"
+    assert normalise_area("City of Edinburgh") == "edinburgh"
+
+
+@pytest_asyncio.fixture
+async def clean_oscr_rows():
+    """Restore shared test DB even if a source importer assertion fails."""
+    engine = get_engine()
+
+    async def clean() -> None:
+        async with engine.begin() as conn:
+            await conn.execute(text("DELETE FROM data.indicator_value WHERE source_id = 'oscr'"))
+            await conn.execute(text("DELETE FROM data.organisation WHERE source_id = 'oscr'"))
+            await conn.execute(
+                text("DELETE FROM data.organisation WHERE id = 'charity_commission:999999'")
+            )
+            await conn.execute(text("DELETE FROM geography.postcode WHERE postcode = 'EH478BY'"))
+            await conn.execute(text("DELETE FROM geography.place WHERE id = 'ltla24:S12000040'"))
+
+    await clean()
+    try:
+        yield
+    finally:
+        await clean()
+
+
+@pytest.mark.integration
+async def test_oscr_import_is_idempotent_and_does_not_touch_ccew(clean_oscr_rows) -> None:
+    engine = get_engine()
+    now = datetime.now(tz=UTC)
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO geography.place (id,type,code,name) VALUES "
+                "('ltla24:S12000040','ltla24','S12000040','West Lothian') "
+                "ON CONFLICT (id) DO NOTHING"
+            )
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO geography.postcode "
+                "(postcode,ltla24,latitude,longitude,retrieved_at) "
+                "VALUES ('EH478BY','ltla24:S12000040',55.8,-3.5,:now) "
+                "ON CONFLICT (postcode) DO UPDATE SET ltla24 = EXCLUDED.ltla24"
+            ),
+            {"now": now},
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO data.organisation "
+                "(id,name,classification,source_id,retrieved_at,raw) "
+                "VALUES ('charity_commission:999999','Independent CCEW',"
+                "ARRAY[]::varchar[],'charity_commission',:now,'{}'::jsonb) "
+                "ON CONFLICT (id) DO NOTHING"
+            ),
+            {"now": now},
+        )
+    loader = OscrLoader(engine, minimum_charities=2)
+    first = await loader.load_from_bytes(zip_csv(CSV))
+    second = await loader.load_from_bytes(zip_csv(CSV))
+    assert first.rows_written == second.rows_written == 2
+    async with engine.connect() as conn:
+        rows = (
+            await conn.execute(
+                text(
+                    "SELECT id,source_id,registered_address_place_id,raw "
+                    "FROM data.organisation WHERE id IN "
+                    "('oscr:SC000001','oscr:SC000002','charity_commission:999999')"
+                )
+            )
+        ).all()
+    assert len(rows) == 3
+    west = next(row for row in rows if row.id == "oscr:SC000001")
+    assert west.registered_address_place_id == "ltla24:S12000040"
+    assert west.raw["in_current_extract"] is True
+    cc = next(row for row in rows if row.id == "charity_commission:999999")
+    assert cc.source_id == "charity_commission"
+
+    orch = IndicatorOrchestrator(engine, MagicMock())
+    result = await orch.find_organisations_in_place(
+        place_id="ltla24:S12000040", activity_filter=["local"], enrich_grants=False
+    )
+    assert [org.id for org in result.organisations] == ["oscr:SC000001"]
+    assert result.organisations[0].latest_income == 1000.0
+    assert result.organisations[0].operates_in_place_ids == []
+    assert any("registered-address" in caveat for caveat in result.caveats)
+    assert result.partial is True
+
+    profile = await orch.compute_civil_society_profile(
+        place_id="ltla24:S12000040", keywords=["local"]
+    )
+    assert profile.coverage_basis == "registered_address"
+    assert profile.total_organisations == profile.registered_address_count == 1
+    assert profile.with_reported_income == 1
+    assert profile.median_income == 1000
+    assert profile.notable.oldest is not None
+    assert profile.notable.oldest.id == "oscr:SC000001"
+    assert profile.registration_cohort[0].year == 1986
+    assert profile.partial is True
+    assert "registered addresses" in profile.caveats[0]
+
+    # No postcode-to-Data-Zone OSCR mapping is claimed.
+    neighbourhood = await orch.compute_civil_society_profile("dz22:S01099999")
+    assert neighbourhood.coverage_basis == "unavailable"
+    assert neighbourhood.total_organisations == 0
+    assert any("not measured" in caveat for caveat in neighbourhood.caveats)
+
+
+@pytest.mark.integration
+async def test_scottish_profile_before_source_import_is_unavailable(clean_oscr_rows) -> None:
+    engine = get_engine()
+    orch = IndicatorOrchestrator(engine, MagicMock())
+    result = await orch.compute_civil_society_profile("ltla24:S12000036")
+    assert result.coverage_basis == "unavailable"
+    assert result.total_organisations == 0
+    assert result.partial is True
+    assert any("not measured" in caveat for caveat in result.caveats)
+
+
+@pytest.mark.integration
+async def test_incomplete_oscr_snapshot_does_not_touch_database() -> None:
+    loader = OscrLoader(get_engine(), minimum_charities=10)
+    with pytest.raises(ValueError, match="Incomplete"):
+        await loader.load_from_bytes(zip_csv(CSV))

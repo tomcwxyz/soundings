@@ -52,8 +52,9 @@ TOOL_NAME = "get_civil_society_profile"
 TOOL_DESCRIPTION = (
     "Aggregate civil society profile for a UK place — total registered "
     "charities, annual-income distribution (with median + mean), and a "
-    "year-by-year registration cohort series. Coverage: England + Wales "
-    "(via the Charity Commission bulk register)."
+    "year-by-year registration cohort series. England/Wales use declared "
+    "CC operating areas. Scotland uses a partial OSCR registered-address "
+    "postcode count with an explicit coverage_basis and warnings."
 )
 
 
