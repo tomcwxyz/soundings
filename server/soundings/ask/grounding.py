@@ -43,11 +43,25 @@ _COUNT_NOUN = re.compile(
     re.IGNORECASE,
 )
 # Source metadata, coordinates, paging controls and geometry are not observations.
-_NON_EVIDENCE_KEYS = frozenset({
-    "lat", "lon", "lng", "latitude", "longitude", "coordinates",
-    "geometry", "bbox", "bounding_box", "limit", "offset",
-    "page", "page_size", "total_pages", "retrieved_at",
-})
+_NON_EVIDENCE_KEYS = frozenset(
+    {
+        "lat",
+        "lon",
+        "lng",
+        "latitude",
+        "longitude",
+        "coordinates",
+        "geometry",
+        "bbox",
+        "bounding_box",
+        "limit",
+        "offset",
+        "page",
+        "page_size",
+        "total_pages",
+        "retrieved_at",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -89,7 +103,7 @@ def extract_figures(markdown: str) -> list[Figure]:
             if _YEAR_RANGE[0] <= abs(value) <= _YEAR_RANGE[1]:
                 continue
             if abs(value) <= _SMALL_COUNT_MAX and not _COUNT_NOUN.match(
-                markdown[m.end():].lstrip()
+                markdown[m.end() :].lstrip()
             ):
                 continue
 
