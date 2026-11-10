@@ -26,7 +26,7 @@ from typing import Any
 # quarter labels (Q1) and period halves (2019/20) out.
 _FIGURE = re.compile(
     r"(?<![\w./-])"
-    r"(?P<sign>[+\-−]?)"
+    r"(?P<sign>[+\-\u2212]?)"
     r"(?P<int>\d{1,3}(?:,\d{3})+|\d+)"
     r"(?:\.(?P<dec>\d+))?"
     r"(?P<ord>st|nd|rd|th)?"
@@ -81,7 +81,7 @@ def extract_figures(markdown: str) -> list[Figure]:
             is_percent = False
         scale = _SCALES.get(suffix, 1.0)
         value = float(int_part.replace(",", "") + ("." + dec_part if dec_part else ""))
-        if m.group("sign") in ("-", "−"):
+        if m.group("sign") in ("-", "\u2212"):
             value = -value
 
         bare_integer = not dec_part and not suffix
