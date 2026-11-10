@@ -85,6 +85,32 @@ def test_percentage_points_cannot_be_laundered_from_proportions() -> None:
     assert ev.traces(extract_figures("Up 3.5 percentage points.")[0])
 
 
+def test_scoped_evidence_cannot_validate_another_place_or_indicator() -> None:
+    ev = EvidenceSet()
+    ev.add_result({
+        "indicator_key": "education.fsm_eligibility_share",
+        "period": "2025",
+        "sub_areas": [{"place_id": "lsoa21:A", "value": 0.324}],
+        "parent_place_id": "ltla24:X", "parent_value": 0.247,
+    })
+    assert ev.supports_in_context(
+        0.324, indicator_key="education.fsm_eligibility_share",
+        place_id="lsoa21:A", period="2025",
+    )
+    assert not ev.supports_in_context(
+        0.324, indicator_key="education.fsm_eligibility_share",
+        place_id="lsoa21:B", period="2025",
+    )
+    assert not ev.supports_in_context(
+        0.324, indicator_key="population.total",
+        place_id="lsoa21:A", period="2025",
+    )
+    assert ev.supports_in_context(
+        0.247, indicator_key="education.fsm_eligibility_share",
+        place_id="ltla24:X", period="2025",
+    )
+
+
 def test_metadata_coordinates_are_not_evidence() -> None:
     ev = EvidenceSet()
     ev.add_result({"lat": 54.3, "coordinates": [32.4, 12.3], "value": 0.247})
