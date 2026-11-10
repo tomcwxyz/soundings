@@ -453,6 +453,27 @@ class ToolDispatcher:
         if claims:
             missing.extend(self._check_claims(statements, claims))
         else:
+            # Block-wide refs are ambiguous when prose combines statistics
+            # from different observation contexts. Require passage-level refs
+            # rather than letting an arbitrary matching value justify them.
+            figures = [figure for statement in statements for figure in extract_figures(statement)]
+            observed = [
+                figure
+                for figure in figures
+                if any(
+                    self.evidence.traces_with_refs(figure, [ref_id])
+                    for ref_id in self.evidence.reference_facts
+                )
+            ]
+            contexts = {
+                (fact.indicator_key, fact.place_id, fact.period)
+                for fact in self.evidence.reference_facts.values()
+                if any(self.evidence.traces_with_refs(figure, [fact.ref_id or ""]) for figure in observed)
+            }
+            if len(observed) > 1 and len(contexts) > 1:
+                missing.append(
+                    "Multiple observations require evidence_claims with exact passages"
+                )
             for statement in statements:
                 for figure in extract_figures(statement):
                     if ref_ids:
