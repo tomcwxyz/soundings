@@ -240,6 +240,18 @@ async def get_sub_areas(
                 caveats.append(caveat)
     if withheld_caveat is not None:
         caveats.append(withheld_caveat)
+    # Do not silently label a mixed-vintage neighbourhood set with the period
+    # of whichever source row happened to come first.
+    valid_periods = sorted({
+        str(r.period) for r in value_rows
+        if guarded.get(r.place_id) is not None and r.period is not None
+    })
+    if len(valid_periods) > 1:
+        caveats.append(
+            "MIXED_INDICATOR_PERIODS: Sub-areas use different reference "
+            "periods (" + ", ".join(valid_periods) + "); do not aggregate "
+            "them as a single-period statistic."
+        )
     if truncated:
         caveats.append(
             f"Showing {len(sub_areas)} of {with_values} {child_type} areas with a value, "
