@@ -10,13 +10,16 @@ not execute it — the orchestrator owns that step.
 """
 
 import logging
+from collections.abc import Iterator
 from typing import Any
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 from sqlalchemy import text
 
 from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs
+from soundings.ask.grounding import EvidenceSet
 from soundings.contracts.observation import GetObservationsInput
+from soundings.contracts.source_ref import SourceRef
 from soundings.tools.compare_places import (
     ComparePlacesInput,
     compare_places,
@@ -150,6 +153,12 @@ COMPOSE_ANSWER_DESCRIPTION = (
 )
 
 
+class FinalisedAnswer(BaseModel):
+    answer: ComposeAnswerArgs
+    # Figures in the answer that no tool result supports, as shown.
+    untraced: list[str] = Field(default_factory=list)
+
+
 class ToolDispatcher:
     """Map Anthropic tool_use blocks to in-process Python handlers."""
 
@@ -157,7 +166,12 @@ class ToolDispatcher:
         self._state = state
         self._fetch_cache: dict[tuple[str, str], Any] = {}
         self._compare_cache: dict[tuple[str, frozenset[str]], Any] = {}
-        self._sources: list[Any] = []
+        # Provenance for every number a tool returned this run, one entry per
+        # source, dated by the stalest retrieval used.
+        self._sources: dict[str, SourceRef] = {}
+        # Every number a tool returned this run; the answer's figures are
+        # checked against it before anything is streamed.
+        self.evidence = EvidenceSet()
         self._known_indicator_keys: set[str] | None = None
 
     def tool_specs(self) -> list[dict[str, object]]:
@@ -274,7 +288,40 @@ class ToolDispatcher:
         if handler is None:
             raise ValueError(f"Unknown tool: {tool_name}")
         result: dict[str, Any] = await handler(tool_input)
+        self._record(result)
         return result
+
+    def _record(self, result: Any) -> None:
+        """Collect provenance and evidence from a tool result."""
+        self.evidence.add_result(result)
+        for ref in _iter_source_dicts(result):
+            try:
+                source = SourceRef.model_validate(ref)
+            except ValidationError:
+                continue
+            held = self._sources.get(source.source_id)
+            if held is None or source.retrieved_at < held.retrieved_at:
+                self._sources[source.source_id] = source
+
+    async def finalise_answer(self, tool_input: dict[str, Any]) -> FinalisedAnswer:
+        """Parse, sanitise and grounding-check a compose_answer call."""
+        parsed = self._parse_compose_answer(tool_input)
+        await self._sanitise_blocks(parsed)
+        return FinalisedAnswer(answer=parsed, untraced=self._untraced(parsed))
+
+    def _untraced(self, parsed: ComposeAnswerArgs) -> list[str]:
+        missing: list[str] = []
+        for block in parsed.blocks:
+            if block.type == "text":
+                missing.extend(f.text for f in self.evidence.untraced(block.markdown))
+                continue
+            # Values the model typed into a chart must have come from a tool.
+            for value in _typed_values(block):
+                if not self.evidence.supports(
+                    value, is_percent=True, decimals=_shown_decimals(value)
+                ):
+                    missing.append(f"{value:g} ({block.type})")
+        return list(dict.fromkeys(missing))
 
     @property
     def _handlers(self) -> dict[str, Any]:
@@ -374,6 +421,45 @@ class ToolDispatcher:
         return result.model_dump(mode="json")
 
     @property
-    def sources(self) -> list[Any]:
-        """Accumulated SourceRefs from tool calls. Read-only view."""
-        return list(self._sources)
+    def sources(self) -> list[SourceRef]:
+        """Sources behind this run's tool results, in first-seen order."""
+        return list(self._sources.values())
+
+
+def _iter_source_dicts(node: Any) -> Iterator[dict[str, Any]]:
+    """Every dict under a "source" or "sources" key, at any depth."""
+    if isinstance(node, dict):
+        for key, child in node.items():
+            if key == "source" and isinstance(child, dict):
+                yield child
+            elif key == "sources" and isinstance(child, list):
+                yield from (c for c in child if isinstance(c, dict))
+            else:
+                yield from _iter_source_dicts(child)
+    elif isinstance(node, list):
+        for child in node:
+            yield from _iter_source_dicts(child)
+
+
+def _typed_values(block: Any) -> list[float]:
+    """Numbers the model typed into a block (not ones the UI will fetch)."""
+    if block.type == "bar-chart":
+        return [b.value for b in block.bars]
+    if block.type == "composition-chart":
+        return [s.value for s in block.segments]
+    if block.type == "sub-area-table":
+        values = [e.value for e in block.sub_areas if e.value is not None]
+        return values + ([block.parent_value] if block.parent_value is not None else [])
+    return []
+
+
+def _shown_decimals(value: float) -> int:
+    text_value = repr(float(value))
+    if "e" in text_value:
+        return 6
+    whole, _, frac = text_value.partition(".")
+    frac = frac.rstrip("0")
+    if frac:
+        return len(frac)
+    digits = whole.lstrip("-")
+    return -(len(digits) - len(digits.rstrip("0"))) if digits.strip("0") else 0

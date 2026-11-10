@@ -25,6 +25,7 @@ from typing import Any
 from anthropic import Anthropic
 from anthropic.types import ThinkingConfigAdaptiveParam
 
+from soundings.ask.blocks import TextBlock
 from soundings.ask.dispatcher import ToolDispatcher
 from soundings.ask.grants_guidance import GRANTS_GUIDANCE
 from soundings.ask.prompts import SystemPromptBuilder
@@ -209,6 +210,7 @@ class AskOrchestrator:
                 "cache_control": {"type": "ephemeral"},
             }
         ]
+        grounding_revised = False
         for _iteration in range(self._max_iterations):
             # The Anthropic client is synchronous; calling it directly would
             # block the event loop for the whole request, stalling the SSE
@@ -337,9 +339,36 @@ class AskOrchestrator:
                 tool_input = tb["input"]
 
                 if self._dispatcher.is_terminal_tool(name):
-                    # compose_answer — parse blocks and emit
-                    parsed = self._dispatcher._parse_compose_answer(tool_input)
-                    for block in parsed.blocks:
+                    finalised = await self._dispatcher.finalise_answer(tool_input)
+                    if finalised.untraced and not grounding_revised:
+                        # One chance to fix figures no tool returned before
+                        # anything reaches the reader.
+                        grounding_revised = True
+                        logger.info("ask_grounding_revision untraced=%d", len(finalised.untraced))
+                        tool_results.append(
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": tb["id"],
+                                "is_error": True,
+                                "content": _revision_request(finalised.untraced),
+                            }
+                        )
+                        continue
+
+                    blocks = list(finalised.answer.blocks)
+                    if finalised.untraced:
+                        blocks.append(
+                            TextBlock(
+                                type="text",
+                                markdown=(
+                                    "_Some figures above could not be matched to a source "
+                                    "value and may be the model's own calculation: "
+                                    + ", ".join(finalised.untraced)
+                                    + ". Treat them with caution._"
+                                ),
+                            )
+                        )
+                    for block in blocks:
                         await _emit(
                             callback,
                             {
@@ -351,9 +380,6 @@ class AskOrchestrator:
                     # Append a synthetic tool_result for compose_answer (and
                     # any earlier non-terminal tools in this iteration) so the
                     # message history is valid for follow-up questions.
-                    # Without this, messages ends with an assistant tool_use
-                    # block but no matching tool_result — the API rejects the
-                    # next call when the history is replayed.
                     tool_results.append(
                         {
                             "type": "tool_result",
@@ -365,6 +391,14 @@ class AskOrchestrator:
 
                     sources = [s.model_dump(mode="json") for s in self._dispatcher.sources]
                     await _emit(callback, {"type": "sources", "sources": sources})
+                    await _emit(
+                        callback,
+                        {
+                            "type": "grounding",
+                            "untraced": finalised.untraced,
+                            "revised": grounding_revised,
+                        },
+                    )
                     await _emit(callback, {"type": "done"})
                     return
 
@@ -420,6 +454,19 @@ class AskOrchestrator:
                 "message": f"Exceeded max iterations ({self._max_iterations})",
             },
         )
+
+
+def _revision_request(untraced: list[str]) -> str:
+    return (
+        "GROUNDING_CHECK_FAILED: these figures in your answer do not match any value "
+        "returned by a tool in this conversation: "
+        + ", ".join(untraced)
+        + ". Every number you state must come from a tool result. If it is a share, "
+        "an average across places, a difference or a ranking, compute it with "
+        "calculate_share, calculate_weighted_average or calculate_difference and "
+        "quote the result; otherwise remove the figure or describe it without a "
+        "number. Then call compose_answer again."
+    )
 
 
 async def _emit(callback: SSECallback, event: dict[str, Any]) -> None:
