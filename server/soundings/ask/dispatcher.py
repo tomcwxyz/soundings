@@ -429,9 +429,7 @@ class ToolDispatcher:
                     and self.evidence.traces_with_refs(figure, [claim.ref_id])
                     for claim in matches
                 ):
-                    missing.append(
-                        f"{figure.text} (not supported by its claim's observation)"
-                    )
+                    missing.append(f"{figure.text} (not supported by its claim's observation)")
         return missing
 
     def untraced_block(self, block: AnswerBlock) -> list[str]:
@@ -474,9 +472,7 @@ class ToolDispatcher:
                 )
             }
             if len(observed) > 1 and len(contexts) > 1:
-                missing.append(
-                    "Multiple observations require evidence_claims with exact passages"
-                )
+                missing.append("Multiple observations require evidence_claims with exact passages")
             for statement in statements:
                 for figure in extract_figures(statement):
                     if ref_ids:
