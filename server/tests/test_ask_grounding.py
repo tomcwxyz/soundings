@@ -124,18 +124,28 @@ def test_scoped_evidence_cannot_validate_another_place_or_indicator() -> None:
 
 def test_evidence_references_bind_value_to_place_indicator_and_period() -> None:
     ev = EvidenceSet()
-    ev.add_result({
-        "results": [
-            {"place_id": "ltla24:BRADFORD",
-             "indicator": "education.fsm_eligibility_share",
-             "period": "2024/25", "unit": "proportion",
-             "value": 0.324, "source": {"source_id": "dfe.explore"}},
-            {"place_id": "ltla24:LEEDS",
-             "indicator": "education.fsm_eligibility_share",
-             "period": "2024/25", "unit": "proportion",
-             "value": 0.324, "source": {"source_id": "dfe.explore"}},
-        ],
-    })
+    ev.add_result(
+        {
+            "results": [
+                {
+                    "place_id": "ltla24:BRADFORD",
+                    "indicator": "education.fsm_eligibility_share",
+                    "period": "2024/25",
+                    "unit": "proportion",
+                    "value": 0.324,
+                    "source": {"source_id": "dfe.explore"},
+                },
+                {
+                    "place_id": "ltla24:LEEDS",
+                    "indicator": "education.fsm_eligibility_share",
+                    "period": "2024/25",
+                    "unit": "proportion",
+                    "value": 0.324,
+                    "source": {"source_id": "dfe.explore"},
+                },
+            ],
+        }
+    )
     refs = ev.reference_metadata()
     assert len(refs) == 2
     assert refs[0]["ref_id"] == "obs:1"
