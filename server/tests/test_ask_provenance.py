@@ -6,6 +6,7 @@ it. It also found figures in answers that no tool had returned. These tests
 drive the real dispatcher and loop with a fake model.
 """
 
+import json
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
@@ -220,6 +221,24 @@ async def test_unverified_figures_in_callout_evidence_are_removed() -> None:
         }
     )
     assert finalised.untraced == ["29.1%"]
+
+
+def test_follow_up_rehydrates_only_prior_tool_results() -> None:
+    dispatcher = ToolDispatcher(_state())
+    source = _source("dfe.explore")
+    data = _indicators_result(0.324, source).model_dump(mode="json")
+    history = [
+        {"role": "assistant", "content": [{"type": "text", "text": "99.9%"}]},
+        {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": "t1", "content": json.dumps(data)},
+        ]},
+        {"role": "user", "content": "What about this place next year?"},
+    ]
+    dispatcher.restore_prior_results(history)
+    assert dispatcher.evidence.supports(32.4, is_percent=True, decimals=1)
+    assert [s.source_id for s in dispatcher.sources] == ["dfe.explore"]
+    assert dispatcher.evidence.reference_metadata()[0]["place_id"] == "ltla24:E08000032"
+    assert not dispatcher.evidence.supports(99.9, is_percent=True, decimals=1)
 
 
 async def test_numeric_prose_requires_explicit_ref_when_observation_is_ambiguous() -> None:
