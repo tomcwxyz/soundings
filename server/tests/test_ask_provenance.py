@@ -296,6 +296,112 @@ async def test_numeric_prose_requires_explicit_ref_when_observation_is_ambiguous
     assert any("cited" in issue for issue in wrong.untraced)
 
 
+async def test_atomic_claims_bind_matching_values_to_the_right_place_and_period() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    indicator = "education.fsm_eligibility_share"
+    dispatcher._record(
+        {
+            "results": [
+                {
+                    "place_id": "ltla24:BRADFORD",
+                    "indicator": indicator,
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+                {
+                    "place_id": "ltla24:LEEDS",
+                    "indicator": indicator,
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+            ]
+        }
+    )
+    passage = "Bradford: 32.4%. Leeds: 32.4%."
+    first = {
+        "quote": "Bradford: 32.4%",
+        "ref_id": "obs:1",
+        "indicator_key": indicator,
+        "place_id": "ltla24:BRADFORD",
+        "period": "2024/25",
+    }
+    second = {
+        "quote": "Leeds: 32.4%",
+        "ref_id": "obs:2",
+        "indicator_key": indicator,
+        "place_id": "ltla24:LEEDS",
+        "period": "2024/25",
+    }
+
+    accepted = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": passage, "evidence_claims": [first, second]}]}
+    )
+    assert accepted.untraced == []
+
+    # Two identical percentages cannot be justified by block-wide refs.
+    broad = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": passage, "evidence_refs": ["obs:1", "obs:2"]}]}
+    )
+    assert any("evidence_claims" in issue for issue in broad.untraced)
+
+    # A claim for Bradford cannot borrow Leeds's observation even when
+    # the percentage is numerically identical.
+    swapped = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": passage,
+                    "evidence_claims": [
+                        {**first, "ref_id": "obs:2"},
+                        second,
+                    ],
+                }
+            ]
+        }
+    )
+    assert any("context mismatch" in issue for issue in swapped.untraced)
+
+    # A citation for one occurrence cannot automatically cover another.
+    incomplete = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": passage, "evidence_claims": [first]}]}
+    )
+    assert any("no evidence claim covers" in issue for issue in incomplete.untraced)
+
+    stale = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": passage,
+                    "evidence_claims": [
+                        {**first, "period": "2023/24"},
+                        second,
+                    ],
+                }
+            ]
+        }
+    )
+    assert any("context mismatch" in issue for issue in stale.untraced)
+
+    invented_quote = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": passage,
+                    "evidence_claims": [
+                        {**first, "quote": "Bradford: 70%"},
+                        second,
+                    ],
+                }
+            ]
+        }
+    )
+    assert any("quote is absent" in issue for issue in invented_quote.untraced)
+
+
 async def test_dispatch_gives_the_model_ref_ids_without_modifying_public_tools() -> None:
     dispatcher = ToolDispatcher(_state())
     data = _indicators_result(0.324, _source("dfe.explore"))
