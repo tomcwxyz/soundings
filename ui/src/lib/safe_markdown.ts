@@ -12,8 +12,8 @@ function escapeHTML(text: string): string {
 
 function safeURL(href: string): boolean {
   const value = href.trim();
-  if (/[\\u0000-\\u001f\\u007f]/.test(value)) return false;
-  return /^(https?:\\/\\/|mailto:|\\/(?!\\/)|#)/i.test(value);
+  if (/[\u0000-\u001f\u007f]/.test(value)) return false;
+  return /^(https?:\/\/|mailto:|\/(?!\/)|#)/i.test(value);
 }
 
 const renderer = new marked.Renderer();
