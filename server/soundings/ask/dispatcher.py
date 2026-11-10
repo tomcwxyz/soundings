@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 from sqlalchemy import text
 
 from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs
-from soundings.ask.grounding import EvidenceSet, shown_decimals
+from soundings.ask.grounding import EvidenceSet, extract_figures, shown_decimals
 from soundings.contracts.observation import GetObservationsInput
 from soundings.contracts.source_ref import SourceRef
 from soundings.tools.aggregate_sub_areas import (
@@ -326,7 +326,15 @@ class ToolDispatcher:
         if handler is None:
             raise ValueError(f"Unknown tool: {tool_name}")
         result: dict[str, Any] = await handler(tool_input)
+        previous_count = len(self.evidence.reference_facts)
         self._record(result)
+        # Ask-only metadata: the model can cite the actual observation it used.
+        # Never attach this to the underlying public HTTP/MCP tool results.
+        new_count = len(self.evidence.reference_facts) - previous_count
+        if new_count:
+            result["_evidence_facts"] = self.evidence.reference_metadata(after=previous_count)
+            if new_count > 80:
+                result["_evidence_facts_omitted"] = new_count - 80
         return result
 
     def _record(self, result: Any) -> None:
@@ -350,10 +358,35 @@ class ToolDispatcher:
     def untraced_block(self, block: AnswerBlock) -> list[str]:
         """Check figures in narrative fields and model-supplied chart/table values."""
         missing: list[str] = []
+        ref_ids = getattr(block, "evidence_refs", [])
+        if ref_ids:
+            missing.extend(
+                f"Unknown evidence reference: {ref_id}"
+                for ref_id in ref_ids
+                if ref_id not in self.evidence.reference_facts
+            )
         for text_field in ("markdown", "headline", "evidence", "title", "caption", "y_label"):
             statement = getattr(block, text_field, None)
-            if isinstance(statement, str):
-                missing.extend(f.text for f in self.evidence.untraced(statement))
+            if not isinstance(statement, str):
+                continue
+            for figure in extract_figures(statement):
+                if ref_ids:
+                    if not self.evidence.traces_with_refs(figure, ref_ids):
+                        missing.append(f"{figure.text} (not supported by cited observations)")
+                    continue
+                # Legacy uncited prose remains available for tool results that
+                # do not expose observation refs (e.g. calculation tools), but
+                # matching figures from multiple distinct places or measures
+                # cannot be accepted without an explicit reference.
+                matches = {
+                    (fact.indicator_key, fact.place_id, fact.period)
+                    for fact in self.evidence.reference_facts.values()
+                    if self.evidence.traces_with_refs(figure, [fact.ref_id or ""])
+                }
+                if len(matches) > 1:
+                    missing.append(f"{figure.text} (ambiguous observation; cite evidence_refs)")
+                elif not self.evidence.traces(figure):
+                    missing.append(figure.text)
         if block.type == "sub-area-table":
             # The same number in a different place/indicator is not evidence
             # for the supplied neighbourhood row.
