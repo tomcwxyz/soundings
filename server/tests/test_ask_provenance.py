@@ -216,6 +216,21 @@ async def test_unverified_figures_in_callout_evidence_are_removed() -> None:
     assert finalised.untraced == ["29.1%"]
 
 
+async def test_sub_area_table_does_not_accept_another_places_number() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value={"population.total"})  # type: ignore[method-assign]
+    dispatcher._record({
+        "indicator_key": "population.total", "period": "2024",
+        "sub_areas": [{"place_id": "lsoa21:A", "value": 323.0}],
+    })
+    answer = await dispatcher.finalise_answer({"blocks": [{
+        "type": "sub-area-table", "indicator_key": "population.total",
+        "parent_place_id": "ltla24:X", "period": "2024",
+        "sub_areas": [{"place_id": "lsoa21:B", "name": "B", "value": 323.0}],
+    }]})
+    assert any("lsoa21:B" in figure for figure in answer.untraced)
+
+
 async def test_raw_html_is_escaped_from_text_answers() -> None:
     dispatcher = ToolDispatcher(_state())
     dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
