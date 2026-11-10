@@ -157,6 +157,21 @@ def test_evidence_references_bind_value_to_place_indicator_and_period() -> None:
     assert not ev.traces_with_refs(extract_figures("32.4%")[0], ["obs:999"])
 
 
+def test_single_dataset_source_is_inherited_by_sub_area_observations() -> None:
+    ev = EvidenceSet()
+    ev.add_result(
+        {
+            "indicator_key": "deprivation.imd.decile",
+            "period": "2025",
+            "sources": [{"source_id": "mhclg.imd2025"}],
+            "sub_areas": [
+                {"place_id": "lsoa21:E01000001", "value": 2.0},
+            ],
+        }
+    )
+    assert ev.reference_metadata()[0]["source_id"] == "mhclg.imd2025"
+
+
 def test_evidence_refs_are_stable_across_duplicate_tool_results() -> None:
     ev = EvidenceSet()
     observation = {
