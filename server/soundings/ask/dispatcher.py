@@ -353,9 +353,32 @@ class ToolDispatcher:
             statement = getattr(block, text_field, None)
             if isinstance(statement, str):
                 missing.extend(f.text for f in self.evidence.untraced(statement))
-        for value in _typed_values(block):
-            if not self.evidence.supports(value, is_percent=True, decimals=shown_decimals(value)):
-                missing.append(f"{value:g} ({block.type})")
+        if block.type == "sub-area-table":
+            # The same number in a different place/indicator is not evidence
+            # for the supplied neighbourhood row.
+            for entry in block.sub_areas:
+                if entry.value is not None and not self.evidence.supports_in_context(
+                    entry.value,
+                    indicator_key=block.indicator_key,
+                    place_id=entry.place_id,
+                    period=block.period,
+                    decimals=shown_decimals(entry.value),
+                ):
+                    missing.append(f"{entry.value:g} ({block.type}: {entry.place_id})")
+            if block.parent_value is not None and not self.evidence.supports_in_context(
+                block.parent_value,
+                indicator_key=block.indicator_key,
+                place_id=block.parent_place_id,
+                period=block.period,
+                decimals=shown_decimals(block.parent_value),
+            ):
+                missing.append(f"{block.parent_value:g} ({block.type}: parent)")
+        else:
+            for value in _typed_values(block):
+                if not self.evidence.supports(
+                    value, is_percent=True, decimals=shown_decimals(value)
+                ):
+                    missing.append(f"{value:g} ({block.type})")
         return list(dict.fromkeys(missing))
 
     def _untraced(self, parsed: ComposeAnswerArgs) -> list[str]:
