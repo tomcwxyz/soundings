@@ -155,7 +155,16 @@ class EvidenceSet:
     _sorted: list[float] | None = field(default=None, repr=False)
 
     def add_result(self, result: Any) -> None:
-        self._walk(result)
+        # Sub-area tools return one shared source at the top level; their
+        # individual rows do not repeat it. Inherit it only when unambiguous.
+        source_id: str | None = None
+        if isinstance(result, dict):
+            sources = result.get("sources")
+            if isinstance(sources, list) and len(sources) == 1 and isinstance(sources[0], dict):
+                candidate = sources[0].get("source_id")
+                if isinstance(candidate, str):
+                    source_id = candidate
+        self._walk(result, source_id=source_id)
         self._sorted = None
 
     def add_value(self, value: float) -> None:
