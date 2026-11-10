@@ -69,7 +69,7 @@ def test_ignores_years_codes_ordinals_and_small_counts(markdown: str) -> None:
     [
         ("Unemployment fell by -3.5 percentage points.", -3.5),
         ("Employment increased +2.4%.", 2.4),
-        ("The rate is −0.8%.", -0.8),
+        ("The rate is \u22120.8%.", -0.8),
         ("There are 3 schools.", 3.0),
         ("There are 0 charities.", 0.0),
     ],
