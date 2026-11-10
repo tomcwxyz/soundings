@@ -268,7 +268,7 @@ class EvidenceSet:
         Narrative remains weaker until each claim carries an explicit fact ID.
         """
         tolerance = 0.5 * 10.0 ** (-decimals)
-        for fact in self.facts:
+        for fact in self.reference_facts.values():
             if fact.indicator_key != indicator_key or fact.place_id != place_id:
                 continue
             if period and fact.period != period:
