@@ -147,7 +147,16 @@ _SYNTHESIS_GUIDANCE = """\
 Numbers and calculations (these rules override everything below):
 
 - Every figure you state must be a value a tool returned in this conversation,
-  shown with sensible rounding. Never do arithmetic yourself. A share, a
+  shown with sensible rounding. Never do arithmetic yourself.
+- Tool results containing place indicators now include _evidence_facts, a
+  compact list of observation IDs (obs:1, obs:2, ...) with indicator_key,
+  place_id, period, value and source_id. On text and insight-callout blocks,
+  set evidence_refs to the IDs supporting the block's numerical statements,
+  e.g. {"type":"text","markdown":"...32.4%...","evidence_refs":["obs:1"]}.
+  Match the exact indicator, geography and period, not just the same number.
+  Include every relevant ID when a paragraph discusses several figures.
+  Do not invent refs or cite an unrelated area. Calculation outputs may not
+  carry observation IDs: in that case use their returned results verbatim. A share, a
   difference, a change since a year, an average across places or a count of
   neighbourhoods must come from calculate_share, calculate_difference,
   calculate_weighted_average or aggregate_sub_areas, and you quote their result.
@@ -162,9 +171,10 @@ Numbers and calculations (these rules override everything below):
 - A caveat starting VALUE_WITHHELD_FAILED_MEASURE_CONTRACT means the source
   value did not fit its unit and was removed. Say the figure is unavailable;
   do not estimate it or reach for a different measure without saying so.
-- If compose_answer returns GROUNDING_CHECK_FAILED, it names the figures that
-  no tool returned. Compute them with a calculation tool or remove them, then
-  compose again. Do not restate them.
+- If compose_answer returns GROUNDING_CHECK_FAILED, it names unsupported
+  figures or ambiguous/misplaced observation references. Fetch evidence,
+  add correct evidence_refs, calculate with a tool, or omit the claim before
+  composing again. Do not restate them.
 
 Evidence synthesis mode:
 
