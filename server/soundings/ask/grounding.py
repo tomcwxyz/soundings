@@ -131,12 +131,15 @@ def extract_figures(markdown: str) -> list[Figure]:
 
 @dataclass(frozen=True)
 class EvidenceFact:
-    """A tool-returned value with its observed measure and geography."""
+    """A tool-returned value, bound to a measure, place and reference period."""
 
     value: float
     indicator_key: str | None = None
     place_id: str | None = None
     period: str | None = None
+    ref_id: str | None = None
+    unit: str | None = None
+    source_id: str | None = None
 
 
 @dataclass
@@ -145,6 +148,10 @@ class EvidenceSet:
 
     values: set[float] = field(default_factory=set)
     facts: list[EvidenceFact] = field(default_factory=list)
+    reference_facts: dict[str, EvidenceFact] = field(default_factory=dict)
+    _reference_keys: set[tuple[str, str, str | None, float, str | None]] = field(
+        default_factory=set, repr=False
+    )
     _sorted: list[float] | None = field(default=None, repr=False)
 
     def add_result(self, result: Any) -> None:
@@ -161,16 +168,40 @@ class EvidenceSet:
         indicator_key: str | None = None,
         place_id: str | None = None,
         period: str | None = None,
+        unit: str | None = None,
+        source_id: str | None = None,
+        value_key: str | None = None,
     ) -> None:
         if isinstance(node, bool):
             return
         if isinstance(node, (int, float)):
             self.values.add(float(node))
             self.facts.append(EvidenceFact(float(node), indicator_key, place_id, period))
+            if (
+                value_key == "value"
+                and indicator_key is not None
+                and place_id is not None
+                and len(self.reference_facts) < 1500
+            ):
+                key = (indicator_key, place_id, period, float(node), source_id)
+                if key not in self._reference_keys:
+                    self._reference_keys.add(key)
+                    ref_id = f"obs:{len(self.reference_facts) + 1}"
+                    self.reference_facts[ref_id] = EvidenceFact(
+                        float(node), indicator_key, place_id, period,
+                        ref_id, unit, source_id,
+                    )
         elif isinstance(node, dict):
             candidate_indicator = node.get("indicator_key") or node.get("indicator")
             candidate_place = node.get("place_id")
             candidate_period = node.get("period")
+            candidate_unit = node.get("unit")
+            candidate_source = node.get("source_id")
+            if not isinstance(candidate_source, str):
+                source = node.get("source")
+                candidate_source = source.get("source_id") if isinstance(source, dict) else None
+            next_unit = candidate_unit if isinstance(candidate_unit, str) else unit
+            next_source = candidate_source if isinstance(candidate_source, str) else source_id
             next_indicator = (
                 candidate_indicator if isinstance(candidate_indicator, str) else indicator_key
             )
@@ -180,12 +211,18 @@ class EvidenceSet:
                 if key in _NON_EVIDENCE_KEYS:
                     continue
                 if key == "parent_value" and isinstance(node.get("parent_place_id"), str):
-                    self._walk(child, next_indicator, node["parent_place_id"], next_period)
+                    self._walk(
+                        child, next_indicator, node["parent_place_id"], next_period,
+                        next_unit, next_source, key,
+                    )
                 else:
-                    self._walk(child, next_indicator, next_place, next_period)
+                    self._walk(
+                        child, next_indicator, next_place, next_period,
+                        next_unit, next_source, key,
+                    )
         elif isinstance(node, (list, tuple)):
             for child in node:
-                self._walk(child, indicator_key, place_id, period)
+                self._walk(child, indicator_key, place_id, period, unit, source_id)
 
     def _near(self, target: float, tolerance: float) -> bool:
         if self._sorted is None:
@@ -225,6 +262,36 @@ class EvidenceSet:
                 return True
             if is_percent and abs(fact.value - value / 100) <= (
                 tolerance / 100 + abs(value) * 1e-11
+            ):
+                return True
+        return False
+
+    def reference_metadata(self, after: int = 0, limit: int = 80) -> list[dict[str, Any]]:
+        """Compact IDs and provenance for the model, without duplicating entire tool payloads."""
+        return [
+            {
+                "ref_id": ref_id,
+                "indicator_key": fact.indicator_key,
+                "place_id": fact.place_id,
+                "period": fact.period,
+                "value": fact.value,
+                "unit": fact.unit,
+                "source_id": fact.source_id,
+            }
+            for ref_id, fact in list(self.reference_facts.items())[after : after + limit]
+        ]
+
+    def traces_with_refs(self, figure: Figure, ref_ids: list[str]) -> bool:
+        """A cited figure must match the cited observation, not an arbitrary tool number."""
+        for ref_id in ref_ids:
+            fact = self.reference_facts.get(ref_id)
+            if fact is None:
+                continue
+            tolerance = figure.tolerance + abs(figure.value) * 1e-9
+            if abs(fact.value - figure.value) <= tolerance:
+                return True
+            if figure.is_percent and abs(fact.value - figure.value / 100) <= (
+                tolerance / 100
             ):
                 return True
         return False
