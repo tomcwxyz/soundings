@@ -320,11 +320,14 @@ class AskOrchestrator:
                     finalised = await self._dispatcher.finalise_answer(
                         {"blocks": [{"type": "text", "markdown": raw}]}
                     )
+                    safe_block = finalised.answer.blocks[0]
+                    if not isinstance(safe_block, TextBlock):
+                        raise ValueError("Fallback answer is not a text block")
                     safe_text = (
                         "I couldn't verify the figures needed for this answer, "
                         "so I have not published them. Please try a narrower question."
                         if finalised.untraced
-                        else finalised.answer.blocks[0].markdown
+                        else safe_block.markdown
                     )
                     await _emit(
                         callback,
