@@ -64,6 +64,34 @@ def test_ignores_years_codes_ordinals_and_small_counts(markdown: str) -> None:
     assert extract_figures(markdown) == []
 
 
+@pytest.mark.parametrize(
+    ("statement", "value"),
+    [
+        ("Unemployment fell by -3.5 percentage points.", -3.5),
+        ("Employment increased +2.4%.", 2.4),
+        ("The rate is −0.8%.", -0.8),
+        ("There are 3 schools.", 3.0),
+        ("There are 0 charities.", 0.0),
+    ],
+)
+def test_extracts_signed_figures_and_small_real_counts(statement: str, value: float) -> None:
+    assert extract_figures(statement)[0].value == value
+
+
+def test_percentage_points_cannot_be_laundered_from_proportions() -> None:
+    ev = _evidence(0.035)
+    assert not ev.traces(extract_figures("Up 3.5 percentage points.")[0])
+    ev.add_value(3.5)
+    assert ev.traces(extract_figures("Up 3.5 percentage points.")[0])
+
+
+def test_metadata_coordinates_are_not_evidence() -> None:
+    ev = EvidenceSet()
+    ev.add_result({"lat": 54.3, "coordinates": [32.4, 12.3], "value": 0.247})
+    assert not ev.traces(extract_figures("54.3%")[0])
+    assert ev.traces(extract_figures("24.7%")[0])
+
+
 def test_percent_traces_to_a_proportion_within_display_rounding() -> None:
     ev = _evidence(0.32449)
     (fig,) = extract_figures("32.4%")
