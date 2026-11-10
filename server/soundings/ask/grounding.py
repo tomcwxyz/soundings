@@ -26,6 +26,7 @@ from typing import Any
 # quarter labels (Q1) and period halves (2019/20) out.
 _FIGURE = re.compile(
     r"(?<![\w./-])"
+    r"(?P<sign>[+\-−]?)"
     r"(?P<int>\d{1,3}(?:,\d{3})+|\d+)"
     r"(?:\.(?P<dec>\d+))?"
     r"(?P<ord>st|nd|rd|th)?"
@@ -35,6 +36,18 @@ _FIGURE = re.compile(
 _SCALES = {"million": 1_000_000.0, "bn": 1_000_000_000.0, "billion": 1_000_000_000.0}
 _SMALL_COUNT_MAX = 10
 _YEAR_RANGE = (1900, 2100)
+# Some small integers are substantive counts, not list numbers or ranks.
+_COUNT_NOUN = re.compile(
+    r"^(?:people|residents|households|children|pupils|schools|charities|"
+    r"organisations|jobs|wards|lsoas|neighbourhoods|sub-areas|cases)\b",
+    re.IGNORECASE,
+)
+# Source metadata, coordinates, paging controls and geometry are not observations.
+_NON_EVIDENCE_KEYS = frozenset({
+    "lat", "lon", "lng", "latitude", "longitude", "coordinates",
+    "geometry", "bbox", "bounding_box", "limit", "offset",
+    "page", "page_size", "total_pages", "retrieved_at",
+})
 
 
 @dataclass(frozen=True)
@@ -68,12 +81,16 @@ def extract_figures(markdown: str) -> list[Figure]:
             is_percent = False
         scale = _SCALES.get(suffix, 1.0)
         value = float(int_part.replace(",", "") + ("." + dec_part if dec_part else ""))
+        if m.group("sign") in ("-", "−"):
+            value = -value
 
         bare_integer = not dec_part and not suffix
         if bare_integer and "," not in int_part:
-            if _YEAR_RANGE[0] <= value <= _YEAR_RANGE[1]:
+            if _YEAR_RANGE[0] <= abs(value) <= _YEAR_RANGE[1]:
                 continue
-            if value <= _SMALL_COUNT_MAX:
+            if abs(value) <= _SMALL_COUNT_MAX and not _COUNT_NOUN.match(
+                markdown[m.end():].lstrip()
+            ):
                 continue
 
         if dec_part:
@@ -119,8 +136,9 @@ class EvidenceSet:
         if isinstance(node, (int, float)):
             self.values.add(float(node))
         elif isinstance(node, dict):
-            for child in node.values():
-                self._walk(child)
+            for key, child in node.items():
+                if key not in _NON_EVIDENCE_KEYS:
+                    self._walk(child)
         elif isinstance(node, (list, tuple)):
             for child in node:
                 self._walk(child)
@@ -142,7 +160,7 @@ class EvidenceSet:
     def traces(self, figure: Figure) -> bool:
         return self.supports(
             figure.value,
-            is_percent=figure.is_percent or figure.points,
+            is_percent=figure.is_percent,
             decimals=figure.decimals,
         )
 
