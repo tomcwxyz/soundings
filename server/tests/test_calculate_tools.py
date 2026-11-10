@@ -46,7 +46,7 @@ def test_share_refuses_an_operand_no_tool_returned() -> None:
 
 @pytest.mark.parametrize(("num", "denom"), [(11, 10), (-1, 10), (2, -10)])
 def test_share_rejects_impossible_values(num: float, denom: float) -> None:
-    with pytest.raises(ValueError, match="share|denominator"):
+    with pytest.raises(ValueError, match=r"share|denominator"):
         calculate_share(numerator=num, denominator=denom, evidence=_evidence(num, denom))
 
 
