@@ -53,7 +53,8 @@ def test_share_rejects_impossible_values(num: float, denom: float) -> None:
 def test_weighted_average_rejects_negative_weights() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         calculate_weighted_average(
-            values=[0.2, 0.4], weights=[100, -50],
+            values=[0.2, 0.4],
+            weights=[100, -50],
             evidence=_evidence(0.2, 0.4, 100, -50),
         )
 
