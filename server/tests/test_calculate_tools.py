@@ -44,6 +44,20 @@ def test_share_refuses_an_operand_no_tool_returned() -> None:
         calculate_share(numerator=8, denominator=10, evidence=_evidence(6, 10))
 
 
+@pytest.mark.parametrize(("num", "denom"), [(11, 10), (-1, 10), (2, -10)])
+def test_share_rejects_impossible_values(num: float, denom: float) -> None:
+    with pytest.raises(ValueError, match="share|denominator"):
+        calculate_share(numerator=num, denominator=denom, evidence=_evidence(num, denom))
+
+
+def test_weighted_average_rejects_negative_weights() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        calculate_weighted_average(
+            values=[0.2, 0.4], weights=[100, -50],
+            evidence=_evidence(0.2, 0.4, 100, -50),
+        )
+
+
 def test_share_refuses_zero_denominator() -> None:
     with pytest.raises(ValueError, match="zero"):
         calculate_share(numerator=6, denominator=0, evidence=_evidence(6, 0))
