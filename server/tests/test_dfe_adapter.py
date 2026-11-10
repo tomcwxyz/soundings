@@ -228,3 +228,69 @@ def test_dfe_mapping_pydantic_model_round_trips() -> None:
     assert mapping.indicator_key == "education.fsm_eligibility_share"
     assert mapping.filters == {"f1": "o1"}
     assert mapping.caveats == ["test caveat"]
+
+
+@pytest.mark.integration
+async def test_cache_entry_is_specific_to_filters_and_scale(tmp_path: Path) -> None:
+    """The cache stores materialised points, so its key must cover everything
+    that shapes them. Two indicators can share a dataset and indicator id and
+    differ only in the filter option picked; and a scale added to a mapping
+    must not be bypassed by points cached before it existed."""
+    import yaml
+
+    await _seed_dfe_source()
+    shared = {
+        "data_set_id": "ds-shared",
+        "indicator_id": "pct",
+        "filters": {},
+        "location_level": "LA",
+        "time_period_code": "AY",
+        "place_type": "ltla24",
+        "unit": "proportion",
+        "value_scale": 0.01,
+    }
+    (tmp_path / "dfe-mapping.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "mappings": [
+                    {
+                        **shared,
+                        "indicator_key": "education.fsm_eligibility_share",
+                        "filter_selection": {"f": "fsm"},
+                    },
+                    {
+                        **shared,
+                        "indicator_key": "education.persistent_absence_share",
+                        "filter_selection": {"f": "absence"},
+                    },
+                ]
+            }
+        )
+    )
+    payload = {
+        "results": [
+            {
+                "timePeriod": {"period": "2024/2025"},
+                "filters": {"f": option},
+                "values": {"pct": value},
+            }
+            for option, value in (("fsm", "32.4"), ("absence", "21.7"))
+        ]
+    }
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
+    async with httpx.AsyncClient(transport=transport) as http:
+        adapter = DfeExploreAdapter(
+            get_engine(),
+            dfe_client=DfeExploreClient(http_client=http),
+            mapping_path=tmp_path / "dfe-mapping.yaml",
+        )
+        fsm = await adapter.fetch_indicator(
+            "education.fsm_eligibility_share", "ltla24:E06000004", period=None
+        )
+        absence = await adapter.fetch_indicator(
+            "education.persistent_absence_share", "ltla24:E06000004", period=None
+        )
+
+    assert fsm is not None and absence is not None
+    assert fsm.value == pytest.approx(0.324)
+    assert absence.value == pytest.approx(0.217)

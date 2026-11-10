@@ -25,3 +25,36 @@ def test_fsm_entry_carries_dataset_and_indicator_ids() -> None:
     assert fsm.time_period_code == "AY"
     assert fsm.place_type == "ltla24"
     assert fsm.unit == "proportion"
+
+
+def test_percentage_indicators_are_scaled_to_the_proportion_unit() -> None:
+    """DfE publishes these as percentages (Bradford FSM arrives as 32.x).
+
+    The catalogue unit is "proportion", so without a scale the values break
+    the indicator's measure contract; the 9 November 2026 evaluation found
+    them served as proportions of 21-32.
+    """
+    by_key = {m.indicator_key: m for m in load_dfe_mapping()}
+    assert by_key["education.fsm_eligibility_share"].value_scale == 0.01
+    assert by_key["education.persistent_absence_share"].value_scale == 0.01
+    assert by_key["education.ks4_attainment_8"].value_scale is None
+
+
+def test_materialised_values_apply_the_scale() -> None:
+    from soundings.adapters.dfe_explore.adapter import _materialise_points
+    from soundings.adapters.dfe_explore.mapping import DfeMapping
+
+    mapping = DfeMapping(
+        indicator_key="education.fsm_eligibility_share",
+        data_set_id="d",
+        indicator_id="empgu",
+        location_level="LA",
+        place_type="ltla24",
+        unit="proportion",
+        value_scale=0.01,
+    )
+    payload = {"results": [{"timePeriod": {"period": "2024/2025"}, "values": {"empgu": "32.4"}}]}
+
+    points = _materialise_points(payload, mapping)
+
+    assert points == [{"period": "2024/2025", "value": 0.324}]

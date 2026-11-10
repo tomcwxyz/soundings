@@ -231,3 +231,82 @@ async def test_place_type_not_in_mapping_returns_none(tmp_path: Path) -> None:
             "economy.employment_rate", "lsoa21:E01001234", period=None
         )
     assert iv is None
+
+
+async def test_series_sharing_a_dataset_do_not_share_a_cache_entry(tmp_path: Path) -> None:
+    """Employment (variable 45) and unemployment (variable 84) both query
+    NM_17_5 / measures 20599 for the same place. The cache key used to omit
+    the variable, so whichever was fetched first was served for both: the
+    9 November 2026 evaluation saw unemployment "rates" of 66-75%.
+    """
+    await _seed_aps_source()
+    shared = {
+        "source_id": "ons.aps",
+        "dataset_id": "NM_17_5",
+        "measures": "20599",
+        "geography_type_codes": {"ltla24": "TYPE424"},
+        "value_scale": 0.01,
+    }
+    path = tmp_path / "nomis-mapping.yaml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "mappings": [
+                    {
+                        **shared,
+                        "indicator_key": "economy.employment_rate",
+                        "extra_params": {"variable": "45"},
+                    },
+                    {
+                        **shared,
+                        "indicator_key": "economy.unemployment_rate",
+                        "extra_params": {"variable": "84"},
+                    },
+                ]
+            }
+        )
+    )
+    by_variable = {"45": 71.4, "84": 4.9}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        variable = request.url.params["variable"]
+        return httpx.Response(
+            200, json=_sample_payload([("Apr 2023-Mar 2024", by_variable[variable])])
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        adapter = OnsApsAdapter(
+            get_engine(), nomis_client=NomisClient(http_client=http), mapping_path=path
+        )
+        employment = await adapter.fetch_indicator(
+            "economy.employment_rate", "ltla24:E06000004", period=None
+        )
+        unemployment = await adapter.fetch_indicator(
+            "economy.unemployment_rate", "ltla24:E06000004", period=None
+        )
+
+    assert employment is not None and unemployment is not None
+    assert employment.value == pytest.approx(0.714)
+    assert unemployment.value == pytest.approx(0.049)
+
+
+async def test_values_carry_the_catalogue_unit_not_a_generic_one(tmp_path: Path) -> None:
+    """Median pay was served with unit "value" while the catalogue says
+    "GBP per week"; answers could not tell which was right."""
+    await _seed_aps_source()
+    mapping_path = _stub_mapping(tmp_path)
+    transport = httpx.MockTransport(
+        lambda req: httpx.Response(200, json=_sample_payload([("Apr 2023-Mar 2024", 75.2)]))
+    )
+    async with httpx.AsyncClient(transport=transport) as http:
+        adapter = OnsApsAdapter(
+            get_engine(), nomis_client=NomisClient(http_client=http), mapping_path=mapping_path
+        )
+        iv = await adapter.fetch_indicator(
+            "economy.employment_rate", "ltla24:E06000004", period=None
+        )
+        trend = await adapter.fetch_trend("economy.employment_rate", "ltla24:E06000004")
+
+    assert iv is not None and trend is not None
+    assert iv.unit == "proportion"
+    assert trend.unit == "proportion"

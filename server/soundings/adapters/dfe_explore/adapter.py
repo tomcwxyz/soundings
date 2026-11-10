@@ -115,7 +115,7 @@ class DfeExploreAdapter(PassthroughAdapter):
 
     async def _fetch_points(self, mapping: DfeMapping, place_id: str) -> list[dict[str, Any]]:
         place_code = _strip_type_prefix(place_id)
-        cache_key = f"dfe:{mapping.data_set_id}:{mapping.indicator_id}:{place_code}"
+        cache_key = _cache_key(mapping, place_code)
         cached = await self._cache.get(self.source_id, cache_key)
         if cached is not None and isinstance(cached, list):
             return cached
@@ -147,6 +147,22 @@ def _strip_type_prefix(place_id: str) -> str:
     if ":" in place_id:
         return place_id.split(":", 1)[1]
     return place_id
+
+
+def _cache_key(mapping: DfeMapping, place_code: str) -> str:
+    """One cache entry per distinct set of materialised points.
+
+    The cache holds post-filter, post-scale points, so the filter selection
+    and the scale are part of the key: indicators that share a dataset must
+    not share an entry, and points cached before a scale was added must not
+    be served after it.
+    """
+    selection = ",".join(f"{k}={v}" for k, v in sorted(mapping.filter_selection.items()))
+    scale = "raw" if mapping.value_scale is None else f"x{mapping.value_scale:g}"
+    return (
+        f"dfe:{mapping.data_set_id}:{mapping.indicator_id}:"
+        f"{selection or 'all'}:{scale}:{place_code}"
+    )
 
 
 def _materialise_points(payload: dict[str, Any], mapping: DfeMapping) -> list[dict[str, Any]]:
@@ -183,6 +199,9 @@ def _materialise_points(payload: dict[str, Any], mapping: DfeMapping) -> list[di
             value = float(raw)
         except (TypeError, ValueError):
             continue
+        if mapping.value_scale is not None:
+            # round() keeps 32.4 * 0.01 at 0.324 rather than 0.32400000000000003.
+            value = round(value * mapping.value_scale, 10)
         out.append({"period": str(period), "value": value})
     return out
 

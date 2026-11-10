@@ -4,6 +4,36 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field
 
+MeasureKind = Literal[
+    "count",
+    "currency",
+    "proportion",
+    "rate",
+    "ratio",
+    "per_person",
+    "density",
+    "score",
+    "rank",
+    "decile",
+    "duration",
+    "concentration",
+    "unclassified",
+]
+
+
+class MeasureContract(BaseModel):
+    """What a value of this indicator means and the range it can take."""
+
+    kind: MeasureKind
+    numerator: str | None = None
+    denominator: str | None = None
+    universe: str | None = None
+    minimum: float | None = None
+    maximum: float | None = None
+    # Indicators whose stored series this one must not simply repeat. Catches
+    # a derived measure that was never derived (density == population).
+    must_differ_from: list[str] = Field(default_factory=list)
+
 
 class SourceModel(BaseModel):
     id: str
@@ -29,6 +59,9 @@ class IndicatorModel(BaseModel):
     refresh_cadence: str | None = None
     caveats: list[str] = Field(default_factory=list)
     related_keys: list[str] = Field(default_factory=list)
+    # What kind of number this is. Bounds default from the unit; shares and
+    # rates must also name their numerator and denominator.
+    contract: MeasureContract | None = None
 
 
 def load_sources_yaml(path: Path) -> list[SourceModel]:

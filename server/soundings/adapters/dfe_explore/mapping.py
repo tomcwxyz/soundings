@@ -27,6 +27,9 @@ class DfeMapping(BaseModel):
     time_period_code: str = "AY"  # academic year by default
     place_type: str  # the soundings place type, e.g. "ltla24"
     unit: str = "value"
+    # Post-fetch multiplier. DfE publishes shares as percentages (0-100);
+    # set 0.01 where the catalogue unit is "proportion" (0-1).
+    value_scale: float | None = None
     caveats: list[str] = Field(default_factory=list)
 
 

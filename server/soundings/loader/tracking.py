@@ -9,6 +9,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from soundings.adapters.base import LoaderResult
+from soundings.catalogue.contracts import ContractRegistry, get_contract_registry
+from soundings.loader.contract_audit import MeasureContractError, audit_source
 
 _log = logging.getLogger(__name__)
 
@@ -17,6 +19,8 @@ async def run_tracked_loader(
     engine: AsyncEngine,
     source_id: str,
     load: Callable[[], Awaitable[LoaderResult]],
+    *,
+    contracts: ContractRegistry | None = None,
 ) -> LoaderResult:
     run_id = uuid.uuid4()
     async with engine.begin() as conn:
@@ -30,6 +34,13 @@ async def run_tracked_loader(
         )
     try:
         result = await load()
+        # A loader that returns cleanly can still have written values that
+        # make no sense for their unit. Those must not leave an 'ok' record.
+        violations = await audit_source(engine, source_id, contracts or get_contract_registry())
+        if violations:
+            shown = "; ".join(violations[:5])
+            more = f" (+{len(violations) - 5} more)" if len(violations) > 5 else ""
+            raise MeasureContractError(f"measure contract audit failed: {shown}{more}")
         async with engine.begin() as conn:
             await conn.execute(
                 text(
