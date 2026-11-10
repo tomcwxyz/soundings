@@ -26,7 +26,7 @@ def _require_traced(evidence: EvidenceSet, **operands: float) -> None:
     missing = [
         f"{name}={value:g}"
         for name, value in operands.items()
-        if not evidence.supports(value, is_percent=True, decimals=shown_decimals(value))
+        if not evidence.supports(value, is_percent=True, decimals=max(0, shown_decimals(value)))
     ]
     if missing:
         raise UntracedOperandError(
