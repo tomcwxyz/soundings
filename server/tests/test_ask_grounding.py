@@ -122,6 +122,44 @@ def test_scoped_evidence_cannot_validate_another_place_or_indicator() -> None:
     )
 
 
+def test_evidence_references_bind_value_to_place_indicator_and_period() -> None:
+    ev = EvidenceSet()
+    ev.add_result({
+        "results": [
+            {"place_id": "ltla24:BRADFORD",
+             "indicator": "education.fsm_eligibility_share",
+             "period": "2024/25", "unit": "proportion",
+             "value": 0.324, "source": {"source_id": "dfe.explore"}},
+            {"place_id": "ltla24:LEEDS",
+             "indicator": "education.fsm_eligibility_share",
+             "period": "2024/25", "unit": "proportion",
+             "value": 0.324, "source": {"source_id": "dfe.explore"}},
+        ],
+    })
+    refs = ev.reference_metadata()
+    assert len(refs) == 2
+    assert refs[0]["ref_id"] == "obs:1"
+    assert refs[0]["place_id"] == "ltla24:BRADFORD"
+    assert refs[1]["ref_id"] == "obs:2"
+    assert refs[1]["place_id"] == "ltla24:LEEDS"
+    assert ev.traces_with_refs(extract_figures("32.4%")[0], ["obs:1"])
+    assert not ev.traces_with_refs(extract_figures("51.2%")[0], ["obs:1"])
+    assert not ev.traces_with_refs(extract_figures("32.4%")[0], ["obs:999"])
+
+
+def test_evidence_refs_are_stable_across_duplicate_tool_results() -> None:
+    ev = EvidenceSet()
+    observation = {
+        "place_id": "ltla24:BRADFORD",
+        "indicator": "education.fsm_eligibility_share",
+        "period": "2024/25",
+        "value": 0.324,
+    }
+    ev.add_result(observation)
+    ev.add_result(observation)
+    assert len(ev.reference_metadata()) == 1
+
+
 def test_metadata_coordinates_are_not_evidence() -> None:
     ev = EvidenceSet()
     ev.add_result({"lat": 54.3, "coordinates": [32.4, 12.3], "value": 0.247})
