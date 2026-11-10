@@ -291,6 +291,15 @@ class ToolDispatcher:
         known = await self._known_keys()
         kept: list[Any] = []
         for block in parsed.blocks:
+            # Reader-facing text may be rendered as Markdown. Escape raw HTML
+            # before it reaches the UI; formatting such as **bold** survives.
+            for text_field in ("markdown", "caption", "headline", "evidence", "title"):
+                raw_text = getattr(block, text_field, None)
+                if isinstance(raw_text, str):
+                    setattr(
+                        block, text_field,
+                        raw_text.replace("<", "&lt;").replace(">", "&gt;"),
+                    )
             key = getattr(block, "indicator_key", None)
             if key is None:
                 kept.append(block)
@@ -337,19 +346,22 @@ class ToolDispatcher:
         await self._sanitise_blocks(parsed)
         return FinalisedAnswer(answer=parsed, untraced=self._untraced(parsed))
 
-    def _untraced(self, parsed: ComposeAnswerArgs) -> list[str]:
+    def untraced_block(self, block: AnswerBlock) -> list[str]:
+        """Check figures in narrative fields and model-supplied chart/table values."""
         missing: list[str] = []
-        for block in parsed.blocks:
-            if block.type == "text":
-                missing.extend(f.text for f in self.evidence.untraced(block.markdown))
-                continue
-            # Values the model typed into a chart must have come from a tool.
-            for value in _typed_values(block):
-                if not self.evidence.supports(
-                    value, is_percent=True, decimals=shown_decimals(value)
-                ):
-                    missing.append(f"{value:g} ({block.type})")
+        for text_field in ("markdown", "headline", "evidence", "title", "caption", "y_label"):
+            statement = getattr(block, text_field, None)
+            if isinstance(statement, str):
+                missing.extend(f.text for f in self.evidence.untraced(statement))
+        for value in _typed_values(block):
+            if not self.evidence.supports(value, is_percent=True, decimals=shown_decimals(value)):
+                missing.append(f"{value:g} ({block.type})")
         return list(dict.fromkeys(missing))
+
+    def _untraced(self, parsed: ComposeAnswerArgs) -> list[str]:
+        return list(dict.fromkeys(
+            figure for block in parsed.blocks for figure in self.untraced_block(block)
+        ))
 
     @property
     def _handlers(self) -> dict[str, Any]:
