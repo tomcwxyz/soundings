@@ -187,7 +187,7 @@ class EvidenceSet:
             self.values.add(float(node))
             self.facts.append(EvidenceFact(float(node), indicator_key, place_id, period))
             if (
-                value_key == "value"
+                value_key in ("value", "parent_value")
                 and indicator_key is not None
                 and place_id is not None
                 and len(self.reference_facts) < 1500
