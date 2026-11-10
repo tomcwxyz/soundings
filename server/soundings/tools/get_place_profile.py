@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from soundings.catalogue.contracts import get_contract_registry
 from soundings.contracts.indicator_value import IndicatorValue
 from soundings.contracts.observation import (
     ObservationSummary,
@@ -16,6 +17,7 @@ from soundings.contracts.observation import (
 )
 from soundings.contracts.source_ref import SourceRef
 from soundings.orchestration.errors import GeographyNotFoundError
+from soundings.orchestration.measure_guard import value_bounds
 from soundings.orchestration.orchestrator import IndicatorOrchestrator
 
 
@@ -126,14 +128,21 @@ async def _compute_percentiles(
 
     keys = [k for k, _ in keys_with_values]
     values = [v for _, v in keys_with_values]
+    # Peers whose stored value breaks the indicator's measure contract are
+    # left out, so one bad row cannot move every other place's percentile.
+    contracts = get_contract_registry()
+    bounds = [value_bounds(contracts, k) for k in keys]
+    los = [lo for lo, _ in bounds]
+    his = [hi for _, hi in bounds]
     async with engine.connect() as conn:
         rows = (
             await conn.execute(
                 text(
                     """
                     WITH queried AS (
-                        SELECT * FROM unnest(:keys ::text[], :vals ::float8[])
-                            AS t(indicator_key, value)
+                        SELECT * FROM unnest(
+                            :keys ::text[], :vals ::float8[], :los ::float8[], :his ::float8[]
+                        ) AS t(indicator_key, value, lo, hi)
                     ),
                     ptype AS (
                         SELECT type FROM geography.place WHERE id = :place_id
@@ -153,10 +162,12 @@ async def _compute_percentiles(
                         COUNT(p.value) AS total
                     FROM queried q
                     LEFT JOIN peers p ON p.indicator_key = q.indicator_key
+                        AND (q.lo IS NULL OR p.value >= q.lo)
+                        AND (q.hi IS NULL OR p.value <= q.hi)
                     GROUP BY q.indicator_key
                     """
                 ),
-                {"keys": keys, "vals": values, "place_id": place_id},
+                {"keys": keys, "vals": values, "los": los, "his": his, "place_id": place_id},
             )
         ).all()
     return {r.indicator_key: (r.below / r.total) * 100 for r in rows if r.total and r.total > 0}

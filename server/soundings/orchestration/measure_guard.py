@@ -65,3 +65,17 @@ def guard_values(
         len(values),
     )
     return cleaned, withheld_caveat(indicator_key, contracts.unit(indicator_key), count=withheld)
+
+
+def value_bounds(
+    contracts: ContractRegistry, indicator_key: str
+) -> tuple[float | None, float | None]:
+    """(minimum, maximum) for SQL that reads values straight from the table.
+
+    Pass as ``:lo`` / ``:hi`` (NULL = unbounded) so peer sets, percentiles and map colours are
+    computed only from servable values.
+    """
+    contract = contracts.contract(indicator_key)
+    if contract is None:
+        return None, None
+    return contract.minimum, contract.maximum
