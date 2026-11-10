@@ -222,6 +222,51 @@ async def test_unverified_figures_in_callout_evidence_are_removed() -> None:
     assert finalised.untraced == ["29.1%"]
 
 
+async def test_numeric_prose_requires_explicit_ref_when_observation_is_ambiguous() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    dispatcher._record({"results": [
+        {"place_id": "ltla24:BRADFORD", "indicator": "education.fsm_eligibility_share",
+         "period": "2024/25", "value": 0.324},
+        {"place_id": "ltla24:LEEDS", "indicator": "education.fsm_eligibility_share",
+         "period": "2024/25", "value": 0.324},
+    ]})
+    uncited = await dispatcher.finalise_answer({
+        "blocks": [{"type": "text", "markdown": "Bradford is at 32.4%."}]
+    })
+    assert any("ambiguous" in issue for issue in uncited.untraced)
+
+    cited = await dispatcher.finalise_answer({
+        "blocks": [{
+            "type": "text", "markdown": "Bradford is at 32.4%.",
+            "evidence_refs": ["obs:1"],
+        }]
+    })
+    assert cited.untraced == []
+    wrong = await dispatcher.finalise_answer({
+        "blocks": [{
+            "type": "text", "markdown": "Bradford is at 37.8%.",
+            "evidence_refs": ["obs:1"],
+        }]
+    })
+    assert any("cited" in issue for issue in wrong.untraced)
+
+
+async def test_dispatch_gives_the_model_ref_ids_without_modifying_public_tools() -> None:
+    dispatcher = ToolDispatcher(_state())
+    data = _indicators_result(0.324, _source("dfe.explore"))
+    with patch("soundings.ask.dispatcher.get_indicators", AsyncMock(return_value=data)):
+        returned = await dispatcher.dispatch(
+            "get_indicators", {"place_id": "ltla24:E08000032", "indicators": ["x"]}
+        )
+    (reference,) = returned["_evidence_facts"]
+    assert reference["ref_id"] == "obs:1"
+    assert reference["indicator_key"] == "education.fsm_eligibility_share"
+    assert reference["place_id"] == "ltla24:E08000032"
+    assert reference["period"] == "2024/2025"
+    assert reference["source_id"] == "dfe.explore"
+
+
 async def test_sub_area_table_does_not_accept_another_places_number() -> None:
     dispatcher = ToolDispatcher(_state())
     dispatcher._known_keys = AsyncMock(return_value={"population.total"})  # type: ignore[method-assign]
