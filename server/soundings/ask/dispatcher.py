@@ -17,7 +17,7 @@ from typing import Any
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 from sqlalchemy import text
 
-from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs
+from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs, EvidenceClaim
 from soundings.ask.grounding import EvidenceSet, extract_figures, shown_decimals
 from soundings.contracts.observation import GetObservationsInput
 from soundings.contracts.source_ref import SourceRef
@@ -376,41 +376,103 @@ class ToolDispatcher:
         await self._sanitise_blocks(parsed)
         return FinalisedAnswer(answer=parsed, untraced=self._untraced(parsed))
 
+    def _claim_context_issue(self, claim: EvidenceClaim) -> str | None:
+        """Check the claimed observation really has this geography and measure."""
+        fact = self.evidence.reference_facts.get(claim.ref_id)
+        if fact is None:
+            return f"Unknown evidence reference: {claim.ref_id}"
+        if (
+            fact.indicator_key != claim.indicator_key
+            or fact.place_id != claim.place_id
+            or fact.period != claim.period
+        ):
+            return (
+                f"Evidence context mismatch for {claim.ref_id}: "
+                "indicator, place or period differs from the observation"
+            )
+        return None
+
+    def _check_claims(self, statements: list[str], claims: list[EvidenceClaim]) -> list[str]:
+        """Verify each numeric occurrence against its own exact quoted passage.
+
+        A shared value such as 32.4% appearing for two places must be
+        supported twice, with two separately contextualised claims.
+        """
+        missing: list[str] = []
+        quote_locations: list[tuple[int, int, int, EvidenceClaim]] = []
+        for claim in claims:
+            issue = self._claim_context_issue(claim)
+            if issue:
+                missing.append(issue)
+            locations = [
+                (index, statement.find(claim.quote))
+                for index, statement in enumerate(statements)
+                if claim.quote in statement
+            ]
+            if len(locations) != 1 or statements[locations[0][0]].count(claim.quote) != 1:
+                missing.append(f"Evidence quote is absent or repeated: {claim.quote[:80]}")
+                continue
+            index, start = locations[0]
+            quote_locations.append((index, start, start + len(claim.quote), claim))
+
+        for index, statement in enumerate(statements):
+            for figure in extract_figures(statement):
+                matches = [
+                    claim
+                    for field_index, start, end, claim in quote_locations
+                    if field_index == index and start <= figure.start and figure.end <= end
+                ]
+                if not matches:
+                    missing.append(f"{figure.text} (no evidence claim covers this occurrence)")
+                elif not any(
+                    self._claim_context_issue(claim) is None
+                    and self.evidence.traces_with_refs(figure, [claim.ref_id])
+                    for claim in matches
+                ):
+                    missing.append(
+                        f"{figure.text} (not supported by its claim's observation)"
+                    )
+        return missing
+
     def untraced_block(self, block: AnswerBlock) -> list[str]:
-        """Check figures in narrative fields and model-supplied chart/table values."""
+        """Check scoped claims, narrative figures and model-typed charts/tables."""
         missing: list[str] = []
         ref_ids = getattr(block, "evidence_refs", [])
+        claims: list[EvidenceClaim] = getattr(block, "evidence_claims", [])
         if ref_ids:
             missing.extend(
                 f"Unknown evidence reference: {ref_id}"
                 for ref_id in ref_ids
                 if ref_id not in self.evidence.reference_facts
             )
-        for text_field in ("markdown", "headline", "evidence", "title", "caption", "y_label"):
-            statement = getattr(block, text_field, None)
-            if not isinstance(statement, str):
-                continue
-            for figure in extract_figures(statement):
-                if ref_ids:
-                    if not self.evidence.traces_with_refs(figure, ref_ids):
-                        missing.append(f"{figure.text} (not supported by cited observations)")
-                    continue
-                # Legacy uncited prose remains available for tool results that
-                # do not expose observation refs (e.g. calculation tools), but
-                # matching figures from multiple distinct places or measures
-                # cannot be accepted without an explicit reference.
-                matches = {
-                    (fact.indicator_key, fact.place_id, fact.period)
-                    for fact in self.evidence.reference_facts.values()
-                    if self.evidence.traces_with_refs(figure, [fact.ref_id or ""])
-                }
-                if len(matches) > 1:
-                    missing.append(f"{figure.text} (ambiguous observation; cite evidence_refs)")
-                elif not self.evidence.traces(figure):
-                    missing.append(figure.text)
+        statements = [
+            statement
+            for text_field in ("markdown", "headline", "evidence", "title", "caption", "y_label")
+            if isinstance((statement := getattr(block, text_field, None)), str)
+        ]
+        if claims:
+            missing.extend(self._check_claims(statements, claims))
+        else:
+            for statement in statements:
+                for figure in extract_figures(statement):
+                    if ref_ids:
+                        if not self.evidence.traces_with_refs(figure, ref_ids):
+                            missing.append(f"{figure.text} (not supported by cited observations)")
+                        continue
+                    # Legacy uncited calculation results remain valid. Ambiguous
+                    # raw observations need an explicit reference.
+                    matches = {
+                        (fact.indicator_key, fact.place_id, fact.period)
+                        for fact in self.evidence.reference_facts.values()
+                        if self.evidence.traces_with_refs(figure, [fact.ref_id or ""])
+                    }
+                    if len(matches) > 1:
+                        missing.append(
+                            f"{figure.text} (ambiguous observation; cite evidence_claims)"
+                        )
+                    elif not self.evidence.traces(figure):
+                        missing.append(figure.text)
         if block.type == "sub-area-table":
-            # The same number in a different place/indicator is not evidence
-            # for the supplied neighbourhood row.
             for entry in block.sub_areas:
                 if entry.value is not None and not self.evidence.supports_in_context(
                     entry.value,
