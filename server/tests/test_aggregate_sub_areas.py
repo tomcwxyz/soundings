@@ -111,9 +111,13 @@ async def test_population_weighted_mean_uses_each_neighbourhoods_population() ->
 
 async def test_incomplete_sub_area_set_is_not_aggregated() -> None:
     mocked = GetSubAreasOutput(
-        parent_place_id=PARENT, indicator_key=DECILE, child_type="lsoa21",
+        parent_place_id=PARENT,
+        indicator_key=DECILE,
+        child_type="lsoa21",
         sub_areas=[SubAreaValue(place_id="lsoa21:A", name="A", value=1.0)],
-        total_sub_areas=5500, sub_areas_with_values=5500, truncated=True,
+        total_sub_areas=5500,
+        sub_areas_with_values=5500,
+        truncated=True,
     )
     with patch(
         "soundings.tools.aggregate_sub_areas.get_sub_areas",
@@ -121,10 +125,13 @@ async def test_incomplete_sub_area_set_is_not_aggregated() -> None:
     ):
         out = await aggregate_sub_areas(
             AggregateSubAreasInput(
-                place_id=PARENT, indicator_key=DECILE,
-                statistic="count_at_or_below", threshold=1,
+                place_id=PARENT,
+                indicator_key=DECILE,
+                statistic="count_at_or_below",
+                threshold=1,
             ),
-            _orchestrator(), MagicMock(),
+            _orchestrator(),
+            MagicMock(),
         )
     assert out.result is None
     assert any(c.startswith("INCOMPLETE_SUB_AREA_SET") for c in out.caveats)
@@ -132,9 +139,12 @@ async def test_incomplete_sub_area_set_is_not_aggregated() -> None:
 
 async def test_mixed_indicator_periods_are_not_aggregated() -> None:
     mocked = GetSubAreasOutput(
-        parent_place_id=PARENT, indicator_key=DECILE, child_type="lsoa21",
+        parent_place_id=PARENT,
+        indicator_key=DECILE,
+        child_type="lsoa21",
         sub_areas=[SubAreaValue(place_id="lsoa21:A", name="A", value=1.0)],
-        total_sub_areas=1, sub_areas_with_values=1,
+        total_sub_areas=1,
+        sub_areas_with_values=1,
         caveats=["MIXED_INDICATOR_PERIODS: 2024 and 2025"],
     )
     with patch(
@@ -143,7 +153,8 @@ async def test_mixed_indicator_periods_are_not_aggregated() -> None:
     ):
         out = await aggregate_sub_areas(
             AggregateSubAreasInput(place_id=PARENT, indicator_key=DECILE, statistic="mean"),
-            _orchestrator(), MagicMock(),
+            _orchestrator(),
+            MagicMock(),
         )
     assert out.result is None
     assert any(c.startswith("MIXED_INDICATOR_PERIODS") for c in out.caveats)
