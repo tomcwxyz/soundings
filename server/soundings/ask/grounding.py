@@ -163,7 +163,11 @@ class EvidenceSet:
             next_place = candidate_place if isinstance(candidate_place, str) else place_id
             next_period = candidate_period if isinstance(candidate_period, str) else period
             for key, child in node.items():
-                if key not in _NON_EVIDENCE_KEYS:
+                if key in _NON_EVIDENCE_KEYS:
+                    continue
+                if key == "parent_value" and isinstance(node.get("parent_place_id"), str):
+                    self._walk(child, next_indicator, node["parent_place_id"], next_period)
+                else:
                     self._walk(child, next_indicator, next_place, next_period)
         elif isinstance(node, (list, tuple)):
             for child in node:
