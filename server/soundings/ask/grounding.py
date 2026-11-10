@@ -75,6 +75,8 @@ class Figure:
     # -5 for "1.2 million". Tolerance is half a unit in that place.
     decimals: int
     points: bool = False
+    start: int = 0
+    end: int = 0
 
     @property
     def tolerance(self) -> float:
@@ -124,6 +126,8 @@ def extract_figures(markdown: str) -> list[Figure]:
                 is_percent=is_percent,
                 decimals=decimals,
                 points=points,
+                start=m.start(),
+                end=m.end(),
             )
         )
     return figures
