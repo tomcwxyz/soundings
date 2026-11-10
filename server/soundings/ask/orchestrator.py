@@ -323,7 +323,8 @@ class AskOrchestrator:
                     safe_text = (
                         "I couldn't verify the figures needed for this answer, "
                         "so I have not published them. Please try a narrower question."
-                        if finalised.untraced else finalised.answer.blocks[0].markdown
+                        if finalised.untraced
+                        else finalised.answer.blocks[0].markdown
                     )
                     await _emit(
                         callback,
@@ -331,8 +332,7 @@ class AskOrchestrator:
                     )
                     await _emit(
                         callback,
-                        {"type": "grounding", "untraced": finalised.untraced,
-                         "revised": False},
+                        {"type": "grounding", "untraced": finalised.untraced, "revised": False},
                     )
                 await _emit(
                     callback,
@@ -372,8 +372,7 @@ class AskOrchestrator:
                         # Never publish an unsupported claim merely because
                         # the model's one correction attempt failed.
                         blocks = [
-                            block for block in blocks
-                            if not self._dispatcher.untraced_block(block)
+                            block for block in blocks if not self._dispatcher.untraced_block(block)
                         ]
                         blocks.append(
                             TextBlock(
