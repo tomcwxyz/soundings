@@ -229,9 +229,12 @@ def test_follow_up_rehydrates_only_prior_tool_results() -> None:
     data = _indicators_result(0.324, source).model_dump(mode="json")
     history = [
         {"role": "assistant", "content": [{"type": "text", "text": "99.9%"}]},
-        {"role": "user", "content": [
-            {"type": "tool_result", "tool_use_id": "t1", "content": json.dumps(data)},
-        ]},
+        {
+            "role": "user",
+            "content": [
+                {"type": "tool_result", "tool_use_id": "t1", "content": json.dumps(data)},
+            ],
+        },
         {"role": "user", "content": "What about this place next year?"},
     ]
     dispatcher.restore_prior_results(history)
@@ -244,30 +247,52 @@ def test_follow_up_rehydrates_only_prior_tool_results() -> None:
 async def test_numeric_prose_requires_explicit_ref_when_observation_is_ambiguous() -> None:
     dispatcher = ToolDispatcher(_state())
     dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
-    dispatcher._record({"results": [
-        {"place_id": "ltla24:BRADFORD", "indicator": "education.fsm_eligibility_share",
-         "period": "2024/25", "value": 0.324},
-        {"place_id": "ltla24:LEEDS", "indicator": "education.fsm_eligibility_share",
-         "period": "2024/25", "value": 0.324},
-    ]})
-    uncited = await dispatcher.finalise_answer({
-        "blocks": [{"type": "text", "markdown": "Bradford is at 32.4%."}]
-    })
+    dispatcher._record(
+        {
+            "results": [
+                {
+                    "place_id": "ltla24:BRADFORD",
+                    "indicator": "education.fsm_eligibility_share",
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+                {
+                    "place_id": "ltla24:LEEDS",
+                    "indicator": "education.fsm_eligibility_share",
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+            ]
+        }
+    )
+    uncited = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": "Bradford is at 32.4%."}]}
+    )
     assert any("ambiguous" in issue for issue in uncited.untraced)
 
-    cited = await dispatcher.finalise_answer({
-        "blocks": [{
-            "type": "text", "markdown": "Bradford is at 32.4%.",
-            "evidence_refs": ["obs:1"],
-        }]
-    })
+    cited = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": "Bradford is at 32.4%.",
+                    "evidence_refs": ["obs:1"],
+                }
+            ]
+        }
+    )
     assert cited.untraced == []
-    wrong = await dispatcher.finalise_answer({
-        "blocks": [{
-            "type": "text", "markdown": "Bradford is at 37.8%.",
-            "evidence_refs": ["obs:1"],
-        }]
-    })
+    wrong = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": "Bradford is at 37.8%.",
+                    "evidence_refs": ["obs:1"],
+                }
+            ]
+        }
+    )
     assert any("cited" in issue for issue in wrong.untraced)
 
 
