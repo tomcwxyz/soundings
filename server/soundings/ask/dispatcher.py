@@ -297,7 +297,8 @@ class ToolDispatcher:
                 raw_text = getattr(block, text_field, None)
                 if isinstance(raw_text, str):
                     setattr(
-                        block, text_field,
+                        block,
+                        text_field,
                         raw_text.replace("<", "&lt;").replace(">", "&gt;"),
                     )
             key = getattr(block, "indicator_key", None)
@@ -382,9 +383,11 @@ class ToolDispatcher:
         return list(dict.fromkeys(missing))
 
     def _untraced(self, parsed: ComposeAnswerArgs) -> list[str]:
-        return list(dict.fromkeys(
-            figure for block in parsed.blocks for figure in self.untraced_block(block)
-        ))
+        return list(
+            dict.fromkeys(
+                figure for block in parsed.blocks for figure in self.untraced_block(block)
+            )
+        )
 
     @property
     def _handlers(self) -> dict[str, Any]:
