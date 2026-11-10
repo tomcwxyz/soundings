@@ -25,7 +25,7 @@ def _tool_names() -> set[str]:
 
 def test_question_set_has_curated_baseline() -> None:
     question_set = load_question_set()
-    assert len(question_set.questions) == 44
+    assert len(question_set.questions) == 48
     assert {
         "Q31",
         "Q32",
@@ -41,6 +41,11 @@ def test_question_set_has_curated_baseline() -> None:
         "Q42",
         "Q43",
         "Q44",
+        # Calculation-tool questions, added 10 November 2026.
+        "Q45",
+        "Q46",
+        "Q47",
+        "Q48",
     } <= {case.id for case in question_set.questions}
     assert {case.expected for case in question_set.questions} == {
         "supported",

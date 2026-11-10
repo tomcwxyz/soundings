@@ -17,7 +17,18 @@ import json
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
 
+from soundings.catalogue.contracts import get_contract_registry
+from soundings.orchestration.measure_guard import value_bounds
 from soundings.tools.get_sub_areas import resolve_sub_area_type
+
+
+def _bounds(indicator: str | None) -> dict[str, float | None]:
+    """Map colours come only from values that fit the indicator's unit."""
+    if not indicator:
+        return {"lo": None, "hi": None}
+    lo, hi = value_bounds(get_contract_registry(), indicator)
+    return {"lo": lo, "hi": hi}
+
 
 router = APIRouter(prefix="/v1")
 
@@ -102,6 +113,8 @@ async def get_peer_geometry(
                             FROM data.indicator_value v
                             WHERE v.place_id = p.id
                               AND v.indicator_key = :indicator
+                              AND (CAST(:lo AS float8) IS NULL OR v.value >= CAST(:lo AS float8))
+                              AND (CAST(:hi AS float8) IS NULL OR v.value <= CAST(:hi AS float8))
                               AND (COALESCE(:period, v.period) = v.period)
                             ORDER BY v.period DESC
                             LIMIT 1
@@ -133,6 +146,7 @@ async def get_peer_geometry(
                     "place_id": place_id,
                     "place_type": place_type,
                     "indicator": indicator,
+                    **_bounds(indicator),
                     "period": period,
                 },
             )
@@ -200,6 +214,8 @@ async def get_children_geometry(
                         FROM data.indicator_value v
                         WHERE v.place_id = c.id
                           AND v.indicator_key = :indicator
+                          AND (CAST(:lo AS float8) IS NULL OR v.value >= CAST(:lo AS float8))
+                          AND (CAST(:hi AS float8) IS NULL OR v.value <= CAST(:hi AS float8))
                           AND (COALESCE(:period, v.period) = v.period)
                         ORDER BY v.period DESC
                         LIMIT 1
@@ -212,6 +228,7 @@ async def get_children_geometry(
                 {
                     "place_id": place_id,
                     "indicator": indicator,
+                    **_bounds(indicator),
                     "period": period,
                     "child_type": child_type,
                 },
@@ -263,6 +280,8 @@ async def get_geographies_geometry(
                             FROM data.indicator_value v
                             WHERE v.place_id = p.id
                               AND v.indicator_key = :indicator
+                              AND (CAST(:lo AS float8) IS NULL OR v.value >= CAST(:lo AS float8))
+                              AND (CAST(:hi AS float8) IS NULL OR v.value <= CAST(:hi AS float8))
                               AND (COALESCE(:period, v.period) = v.period)
                             ORDER BY v.period DESC
                             LIMIT 1
@@ -281,7 +300,12 @@ async def get_geographies_geometry(
                     JOIN geography.place p ON p.id = r.id
                     """
                 ),
-                {"place_type": place_type, "indicator": indicator, "period": period},
+                {
+                    "place_type": place_type,
+                    "indicator": indicator,
+                    "period": period,
+                    **_bounds(indicator),
+                },
             )
         ).all()
 

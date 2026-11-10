@@ -30,6 +30,7 @@ mappings:
     time_period_code: "AY"
     place_type: ltla24
     unit: "proportion"
+    value_scale: 0.01   # DfE publishes a percentage (0-100)
     caveats:
       - "FSM eligibility based on school census; uses 6-year-extended definition where available."
 
@@ -69,3 +70,4 @@ mappings:
     time_period_code: "AY"
     place_type: ltla24
     unit: "proportion"
+    value_scale: 0.01   # DfE publishes a percentage (0-100)

@@ -52,6 +52,11 @@ and civil society. You have these tools:
   so the reader can weigh it. When place_id is supplied the tool also returns
   a per-theme summary — use it to give an overview of what themes have
   contributed evidence before drilling into individual records.
+- aggregate_sub_areas: a count, mean, population-weighted mean, min or max
+  over EVERY sub-area of a place (e.g. how many LSOAs are in IMD decile 1).
+  get_sub_areas returns a ranked slice; never count or average its rows.
+- calculate_share, calculate_difference, calculate_weighted_average: do the
+  arithmetic on numbers tools have already returned, and show the working.
 - compose_answer: terminal — compose the final answer from typed blocks
 
 Notes on specific data and geography:
@@ -139,6 +144,44 @@ Infer the user's intent from their question — there are no explicit modes:
 """
 
 _SYNTHESIS_GUIDANCE = """\
+Numbers and calculations (these rules override everything below):
+
+- Every figure you state must be a value a tool returned in this conversation,
+  shown with sensible rounding. Never do arithmetic yourself.
+- Tool results containing place indicators include _evidence_facts:
+  observation IDs (obs:1, obs:2, ...) with indicator_key, place_id, period,
+  value and source_id. For any text or insight-callout block with multiple
+  numerical claims, use evidence_claims: one entry per quoted numerical
+  passage. Each entry MUST supply an exact substring from the block's text:
+  {"quote":"Bradford is 32.4%","ref_id":"obs:1",
+   "indicator_key":"education.fsm_eligibility_share",
+   "place_id":"ltla24:E08000032","period":"2024/25"}.
+  Use the actual indicator, geography and period printed by the tool.
+  Two places with identical figures need separate passages and claims.
+  For a simple block with one observation you may instead use evidence_refs
+  (e.g. ["obs:1"]); for multi-figure comparisons use evidence_claims.
+  All figures must be covered by the quoted passages. Do not invent references.
+  Calculation outputs may not carry observation IDs: in that case use
+  their returned results verbatim. A share, a
+  difference, a change since a year, an average across places or a count of
+  neighbourhoods must come from calculate_share, calculate_difference,
+  calculate_weighted_average or aggregate_sub_areas, and you quote their result.
+- A simple mean of local rates is not an area's rate. To describe several
+  places as one area, use calculate_weighted_average with their populations.
+- A count is not a share. Age-band and household counts must be divided by the
+  right total with calculate_share before you call them a proportion.
+- Comparisons and distributions carry a peer_universe field saying what the
+  rank or percentile is against. Use its wording. Unless a tool says otherwise,
+  peers are every place at that level, not similar places: never describe them
+  as "similar places", "comparable areas" or "statistical neighbours".
+- A caveat starting VALUE_WITHHELD_FAILED_MEASURE_CONTRACT means the source
+  value did not fit its unit and was removed. Say the figure is unavailable;
+  do not estimate it or reach for a different measure without saying so.
+- If compose_answer returns GROUNDING_CHECK_FAILED, it names unsupported
+  figures or ambiguous/misplaced observation references. Fetch evidence,
+  add correct evidence_refs, calculate with a tool, or omit the claim before
+  composing again. Do not restate them.
+
 Evidence synthesis mode:
 
 For broad place summaries, insight questions, "what should we pay attention to?"

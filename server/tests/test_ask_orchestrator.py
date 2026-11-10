@@ -1,7 +1,7 @@
 """Unit tests for the AskOrchestrator with mocked Claude responses."""
 
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from soundings.ask.dispatcher import ToolDispatcher
 from soundings.ask.orchestrator import AskOrchestrator
@@ -182,21 +182,28 @@ async def test_orchestrator_emits_sources() -> None:
     state = _make_fake_state()
     dispatcher = _make_dispatcher(state)
 
-    # Manually add a source to the dispatcher
+    # Record a source as a tool result would. (This test used to append to
+    # the private list directly, which is how the dispatcher shipped with
+    # nothing ever populating it.)
     from datetime import UTC, datetime
 
     from soundings.contracts.source_ref import SourceRef
 
-    dispatcher._sources.append(
-        SourceRef(
-            source_id="ons.mid_year_estimates",
-            source_label="ONS Mid-Year Estimates",
-            publisher="ONS",
-            retrieved_at=datetime.now(tz=UTC),
-            cache_status="cached",
-            licence="OGL",
-        )
+    dispatcher._record(
+        {
+            "sources": [
+                SourceRef(
+                    source_id="ons.mid_year_estimates",
+                    source_label="ONS Mid-Year Estimates",
+                    publisher="ONS",
+                    retrieved_at=datetime.now(tz=UTC),
+                    cache_status="cached",
+                    licence="OGL",
+                ).model_dump(mode="json")
+            ]
+        }
     )
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
 
     prompt_builder = SystemPromptBuilder()
 

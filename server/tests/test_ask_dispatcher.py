@@ -7,6 +7,7 @@ import pytest
 
 from soundings.ask.blocks import ComposeAnswerArgs
 from soundings.ask.dispatcher import ToolDispatcher
+from soundings.catalogue.contracts import ContractRegistry
 
 # --- Fake service objects -------------------------------------------------
 
@@ -21,7 +22,30 @@ class FakeGeographyService:
         return []
 
 
+class _FakeAdapter:
+    def get_source_ref(self, *, retrieved_at: Any, cache_status: str) -> Any:
+        from soundings.contracts.source_ref import SourceRef
+
+        return SourceRef(
+            source_id="fake.source",
+            source_label="Fake",
+            publisher="Test",
+            retrieved_at=retrieved_at,
+            cache_status="cached",
+            licence="CC0",
+        )
+
+
+class _FakeRegistry:
+    async def adapter_for_indicator(self, indicator_key: str) -> _FakeAdapter:
+        return _FakeAdapter()
+
+
 class FakeOrchestrator:
+    # No measure contracts: these tests cover dispatch plumbing.
+    _contracts = ContractRegistry([])
+    _registry = _FakeRegistry()
+
     async def fetch(self, **kwargs: Any) -> Any:
         return SimpleNamespace(values=[], sources=[], caveats=[], partial=False)
 

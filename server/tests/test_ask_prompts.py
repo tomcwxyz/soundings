@@ -196,3 +196,27 @@ def test_prompt_prefers_combined_need_and_provision_maps():
     prompt = SystemPromptBuilder().build()
     assert "combined choropleth" in prompt.lower()
     assert "need and provision" in prompt.lower()
+
+
+def test_prompt_forbids_mental_arithmetic_and_names_the_tools():
+    prompt = SystemPromptBuilder().build()
+    for tool in (
+        "calculate_share",
+        "calculate_difference",
+        "calculate_weighted_average",
+        "aggregate_sub_areas",
+    ):
+        assert tool in prompt
+    assert "Never do arithmetic yourself" in prompt
+
+
+def test_prompt_rules_out_calling_the_peer_universe_similar():
+    prompt = SystemPromptBuilder().build()
+    assert "peer_universe" in prompt
+    assert "similar places" in prompt
+
+
+def test_prompt_explains_withheld_values_and_grounding_check():
+    prompt = SystemPromptBuilder().build()
+    assert "VALUE_WITHHELD_FAILED_MEASURE_CONTRACT" in prompt
+    assert "GROUNDING_CHECK_FAILED" in prompt

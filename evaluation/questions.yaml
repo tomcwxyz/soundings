@@ -556,3 +556,65 @@ questions:
       - "Surfaces alignment, tensions or evidence gaps and ends with evidence-backed things worth paying attention to."
       - "Treats the combined need/provision map as exploratory rather than proof of service adequacy or causality."
     known_gap: "PPFI is a static July 2024 snapshot, so this synthesis does not have a like-for-like PPFI time series."
+
+  # Q45-Q48 were added on 10 November 2026 with the calculation tools. They
+  # target the synthesis failures in the 9 November baseline: counts read off
+  # a ranked slice, differences worked out by the model, simple means of
+  # local rates and counts described as shares. Score them separately when
+  # comparing with that baseline, which did not include them.
+
+  - id: Q45
+    question: "How many of Middlesbrough's neighbourhoods are among the most deprived tenth in England?"
+    places: ["Middlesbrough"]
+    intent: neighbourhood
+    expected: supported
+    tags: [deprivation, neighbourhood, calculation]
+    required_tools: [find_place, aggregate_sub_areas]
+    required_indicators: [deprivation.imd.decile]
+    candidate_indicator_keys: []
+    expected_blocks: [text, map]
+    success_criteria:
+      - "Counts every Middlesbrough LSOA, not a ranked slice, and states how many had a value."
+      - "Gives the count and the share, both taken from the tool result."
+
+  - id: Q46
+    question: "How much has free school meal eligibility in Bradford changed since 2015/16?"
+    places: ["Bradford"]
+    intent: trend
+    expected: supported
+    tags: [education, trend, calculation]
+    required_tools: [find_place, get_trend, calculate_difference]
+    required_indicators: [education.fsm_eligibility_share]
+    candidate_indicator_keys: []
+    expected_blocks: [text, trend-chart]
+    success_criteria:
+      - "States the change in percentage points from calculate_difference, not from mental arithmetic."
+      - "Does not claim a rise in every year when the series has a fall."
+
+  - id: Q47
+    question: "What is the employment rate across the five Tees Valley local authorities taken together?"
+    places: ["Darlington", "Hartlepool", "Middlesbrough", "Redcar and Cleveland", "Stockton-on-Tees"]
+    intent: compare
+    expected: supported
+    tags: [economy, aggregation, calculation]
+    required_tools: [find_place, get_indicators, calculate_weighted_average]
+    required_indicators: [economy.employment_rate, population.total]
+    candidate_indicator_keys: []
+    expected_blocks: [text, bar-chart]
+    success_criteria:
+      - "Weights by population rather than taking a simple mean of the five rates."
+      - "Notes that population.total covers all ages while the rate is for ages 16-64, so the weighting is approximate."
+
+  - id: Q48
+    question: "What share of Stockton-on-Tees residents are aged 65 and over?"
+    places: ["Stockton-on-Tees"]
+    intent: indicator
+    expected: supported
+    tags: [population, calculation]
+    required_tools: [find_place, get_indicators, calculate_share]
+    required_indicators: [population.age_structure.over_65, population.total]
+    candidate_indicator_keys: []
+    expected_blocks: [text, indicator-card]
+    success_criteria:
+      - "Divides the 65+ count by total population with calculate_share and quotes the result."
+      - "Uses the same period for numerator and denominator, or says when they differ."

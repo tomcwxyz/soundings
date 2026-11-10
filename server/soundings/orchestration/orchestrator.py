@@ -14,6 +14,7 @@ from typing import Any, Literal
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from soundings.catalogue.contracts import ContractRegistry, get_contract_registry
 from soundings.civil_society.oscr_profile import build_oscr_civil_society_profile
 from soundings.contracts.civil_society import (
     CauseAreaCount,
@@ -35,6 +36,13 @@ from soundings.orchestration.errors import (
     IndicatorNotRegisteredError,
     OrchestrationError,
 )
+from soundings.orchestration.measure_guard import (
+    WITHHELD_CODE,
+    guard_value,
+    guard_values,
+    withheld_caveat,
+)
+from soundings.orchestration.peer_universe import describe_peer_universe
 from soundings.orchestration.registry import AdapterRegistry
 
 DEFAULT_TIMEOUT = 10.0
@@ -104,9 +112,18 @@ INCOME_BUCKETS: list[tuple[str, float, float | None]] = [
 
 
 class IndicatorOrchestrator:
-    def __init__(self, engine: AsyncEngine, registry: AdapterRegistry) -> None:
+    def __init__(
+        self,
+        engine: AsyncEngine,
+        registry: AdapterRegistry,
+        *,
+        contracts: ContractRegistry | None = None,
+    ) -> None:
         self._engine = engine
         self._registry = registry
+        # Every number this class returns passes the catalogue's measure
+        # contracts first. Tests inject their own registry.
+        self._contracts = contracts or get_contract_registry()
 
     async def fetch(
         self,
@@ -152,6 +169,11 @@ class IndicatorOrchestrator:
             if outcome is None:
                 partial = True
                 caveats.append(f"No value for indicator {indicator_key} at {place_id}")
+                continue
+            _, withheld = guard_value(self._contracts, indicator_key, outcome.value)
+            if withheld is not None:
+                partial = True
+                caveats.append(withheld)
                 continue
             values.append(outcome)
 
@@ -273,6 +295,8 @@ class IndicatorOrchestrator:
             comparisons.append(comparison)
             sources.append(comparison.source)
             caveats.extend(ind_caveats)
+            if any(c.startswith(WITHHELD_CODE) for c in ind_caveats):
+                partial = True
 
         return CompareResult(
             comparisons=comparisons,
@@ -308,10 +332,13 @@ class IndicatorOrchestrator:
                 continue
             if result is None:
                 continue
+            value, withheld = guard_value(self._contracts, indicator_key, result.value)
+            if withheld is not None:
+                continue
             context_values.append(
                 ComparisonValue(
                     place_id=cid,
-                    value=result.value,
+                    value=value,
                     rank=None,
                     percentile=None,
                 )
@@ -363,6 +390,10 @@ class IndicatorOrchestrator:
         if not peer_values:
             return None, ind_caveats
 
+        peer_values, withheld = guard_values(self._contracts, indicator_key, peer_values)
+        if withheld is not None:
+            ind_caveats.append(withheld)
+
         # Rate basis: divide each peer's value by population.total × 1000.
         if basis == "rate":
             populations = await self._peer_populations(peer_type=peer_type)
@@ -408,6 +439,7 @@ class IndicatorOrchestrator:
             period=period_used,
             values=comparison_values,
             source=source_ref,
+            peer_universe=describe_peer_universe(peer_type, n_with_values),
             caveats=ind_caveats,
         )
         return comparison, ind_caveats
@@ -571,14 +603,27 @@ class IndicatorOrchestrator:
                 partial=True,
             )
 
+        servable = [
+            p for p in trend.points if self._contracts.violation(indicator_key, p.value) is None
+        ]
+        withheld_count = len(trend.points) - len(servable)
+        trend.points = servable
+
         catalogue_caveats = await self._load_indicator_caveats(indicator_key)
         general, breaks = _split_series_breaks(catalogue_caveats)
         trend.breaks_in_series = breaks
+        caveats = [f"{indicator_key}: {c}" for c in general] if general else []
+        if withheld_count:
+            caveats.append(
+                withheld_caveat(
+                    indicator_key, self._contracts.unit(indicator_key), count=withheld_count
+                )
+            )
         return GetTrendResult(
             trend=trend,
             sources=[trend.source],
-            caveats=[f"{indicator_key}: {c}" for c in general] if general else [],
-            partial=False,
+            caveats=caveats,
+            partial=bool(withheld_count),
         )
 
     async def _loader_trend(

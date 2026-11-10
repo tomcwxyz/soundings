@@ -227,3 +227,51 @@ async def test_get_place_profile_benchmark_none_when_no_peers() -> None:
     assert len(result.indicators) == 1
     assert result.indicators[0].benchmark_percentile is None
     assert result.indicators[0].higher_is == "better"
+
+
+@pytest.mark.integration
+async def test_profile_percentiles_ignore_peer_values_that_break_their_contract() -> None:
+    from datetime import UTC, datetime
+
+    from sqlalchemy import text
+
+    from soundings.tools.get_place_profile import _compute_percentiles
+
+    engine = get_engine()
+    now = datetime.now(tz=UTC)
+    async with engine.begin() as conn:
+        await conn.execute(text("DELETE FROM data.trend_point"))
+        await conn.execute(text("DELETE FROM data.indicator_value"))
+        await conn.execute(text("DELETE FROM geography.postcode"))
+        await conn.execute(text("DELETE FROM geography.place_hierarchy"))
+        await conn.execute(text("DELETE FROM geography.place"))
+        for i, rate in enumerate([0.60, 0.70, 66.0, 71.0, 75.0]):
+            pid = f"ltla24:PROF{i:02d}"
+            await conn.execute(
+                text(
+                    "INSERT INTO geography.place (id, type, code, name) "
+                    "VALUES (:id, 'ltla24', :code, 'p')"
+                ),
+                {"id": pid, "code": f"E2{i:07d}"},
+            )
+            await conn.execute(
+                text(
+                    "INSERT INTO data.indicator_value "
+                    "(place_id, indicator_key, period, value, source_id, retrieved_at, caveats) "
+                    "VALUES (:pid, 'economy.employment_rate', '2024', :v, 'ons.aps', :ret, "
+                    "'[]'::jsonb)"
+                ),
+                {"pid": pid, "v": rate, "ret": now},
+            )
+        await conn.execute(
+            text(
+                "INSERT INTO geography.place (id, type, code, name) "
+                "VALUES ('ltla24:PROF09', 'ltla24', 'E2PROF09', 'queried')"
+            )
+        )
+
+    # The queried place is 0.65: above one valid peer and below the other.
+    # Counting the three bad peers would put it at 25.
+    out = await _compute_percentiles(engine, "ltla24:PROF09", [("economy.employment_rate", 0.65)])
+
+    assert out["economy.employment_rate"] == pytest.approx(50.0)

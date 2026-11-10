@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from soundings.adapters.nomis.client import NomisClient
 from soundings.adapters.nomis.mapping import NomisMapping, load_nomis_mapping
 from soundings.adapters.passthrough_base import PassthroughAdapter
+from soundings.catalogue.contracts import get_contract_registry
 from soundings.contracts.indicator_value import IndicatorValue
 from soundings.contracts.trend import Trend, TrendPoint
 
@@ -33,7 +34,24 @@ DEFAULT_MAPPING_PATH = (
 # APS quarterly cadence over 5 years ≈ 20 periods. Nomis exposes this as
 # a relative range against the latest observation.
 TIME_RANGE = "latestMINUS19-latest"
-DEFAULT_UNIT = "value"
+# Only used for an indicator the catalogue does not know; every catalogued
+# indicator is served with its catalogue unit.
+FALLBACK_UNIT = "value"
+
+
+def _unit_for(indicator_key: str) -> str:
+    return get_contract_registry().unit(indicator_key) or FALLBACK_UNIT
+
+
+def _cache_key(mapping: NomisMapping, place_code: str) -> str:
+    """One cache entry per distinct upstream query.
+
+    Several indicators share a dataset and measure and differ only in a
+    dimension filter (employment is variable 45, unemployment variable 84),
+    so every extra parameter is part of the key.
+    """
+    dimensions = ",".join(f"{k}={v}" for k, v in sorted(mapping.extra_params.items()))
+    return f"aps:{mapping.dataset_id}:{mapping.measures or 'na'}:{dimensions or 'na'}:{place_code}"
 
 
 class OnsApsAdapter(PassthroughAdapter):
@@ -79,7 +97,7 @@ class OnsApsAdapter(PassthroughAdapter):
             place_id=place_id,
             indicator=indicator_key,
             value=chosen["value"],
-            unit=DEFAULT_UNIT,
+            unit=_unit_for(indicator_key),
             period=chosen["period"],
             source=source_ref,
             confidence="official",
@@ -109,7 +127,7 @@ class OnsApsAdapter(PassthroughAdapter):
         return Trend(
             place_id=place_id,
             indicator=indicator_key,
-            unit=DEFAULT_UNIT,
+            unit=_unit_for(indicator_key),
             points=in_window,
             source=source_ref,
         )
@@ -119,7 +137,7 @@ class OnsApsAdapter(PassthroughAdapter):
         if place_type not in mapping.geography_type_codes:
             return []
 
-        cache_key = f"aps:{mapping.dataset_id}:{mapping.measures or 'na'}:{place_code}"
+        cache_key = _cache_key(mapping, place_code)
         cached = await self._cache.get(self.source_id, cache_key)
         if cached is not None and isinstance(cached, list):
             return cached

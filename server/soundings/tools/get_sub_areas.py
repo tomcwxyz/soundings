@@ -14,7 +14,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from soundings.adapters.source_ref_factory import SourceRefFactory
+from soundings.catalogue.contracts import get_contract_registry
 from soundings.contracts.source_ref import SourceRef
+from soundings.orchestration.measure_guard import guard_values
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,12 @@ class GetSubAreasOutput(BaseModel):
     parent_value: float | None = None
     parent_percentile: float | None = None
     period: str = ""
+    # How much of the parent the list covers. `sub_areas` may be a ranked
+    # slice (see `limit`), so averages or shares must not be read off it.
+    total_sub_areas: int = 0
+    sub_areas_with_values: int = 0
+    truncated: bool = False
+    unit: str | None = None
     sources: list[SourceRef] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
 
@@ -55,7 +64,11 @@ TOOL_DESCRIPTION = (
     "Returns each child's value, name, and percentile within the parent's "
     "peer universe, plus the parent's own value for "
     "context. Use this to answer 'what are the most deprived neighbourhoods "
-    "in X?' or 'show me neighbourhood-level [indicator] for X'."
+    "in X?' or 'show me neighbourhood-level [indicator] for X'. The list is "
+    "capped at `limit` and ranked: check `truncated`, `total_sub_areas` and "
+    "`sub_areas_with_values` before describing it as the whole place, and "
+    "use aggregate_sub_areas for an average or a count above a threshold "
+    "rather than working one out from this list."
 )
 
 
@@ -122,7 +135,9 @@ async def get_sub_areas(
                     # value per place.
                     """
                     SELECT DISTINCT ON (iv.place_id)
-                        iv.place_id, iv.value, iv.period, ind.higher_is
+                        iv.place_id, iv.value, iv.period, ind.higher_is,
+                        ind.unit, ind.caveats AS indicator_caveats,
+                        iv.source_id, iv.retrieved_at, iv.caveats AS value_caveats
                     FROM data.indicator_value iv
                     JOIN catalogue.indicator ind ON ind.key = iv.indicator_key
                     WHERE iv.place_id = ANY(:child_ids)
@@ -139,7 +154,14 @@ async def get_sub_areas(
             )
         ).all()
 
-    value_map = {r.place_id: (r.value, r.period) for r in value_rows}
+    # Values that break the indicator's measure contract are withheld here,
+    # as they are everywhere else a number is served.
+    guarded, withheld_caveat = guard_values(
+        get_contract_registry(),
+        input.indicator_key,
+        {r.place_id: (float(r.value) if r.value is not None else None) for r in value_rows},
+    )
+    value_map = {r.place_id: (guarded[r.place_id], r.period) for r in value_rows}
 
     # 3. Fetch parent's value and percentile (context only)
     parent_value: float | None = None
@@ -184,13 +206,66 @@ async def get_sub_areas(
     else:
         sub_areas.sort(key=lambda s: s.name)
 
-    # 6. Cap at limit
+    # 6. Cap at limit, and say so
+    with_values = len(sub_areas)
+    truncated = with_values > input.limit
     sub_areas = sub_areas[: input.limit]
 
     # 7. Determine period used
     period_used = ""
     if value_rows:
         period_used = value_rows[0].period or ""
+
+    # 8. Provenance and caveats come from the same rows as the values, so a
+    #    neighbourhood answer can cite its own source, period and limits.
+    sources: list[SourceRef] = []
+    caveats: list[str] = []
+    if value_rows:
+        factory = SourceRefFactory(engine)
+        for source_id in sorted({r.source_id for r in value_rows}):
+            # The oldest retrieval among the rows used: never claim the data
+            # is fresher than its stalest part.
+            retrieved_at = min(r.retrieved_at for r in value_rows if r.source_id == source_id)
+            ref = await factory.build(source_id, retrieved_at=retrieved_at, cache_status="cached")
+            if ref is not None:
+                sources.append(ref)
+        seen: set[str] = set()
+        for raw in [
+            *(value_rows[0].indicator_caveats or []),
+            *(c for r in value_rows for c in (r.value_caveats or [])),
+        ]:
+            caveat = str(raw)
+            if caveat not in seen:
+                seen.add(caveat)
+                caveats.append(caveat)
+    if withheld_caveat is not None:
+        caveats.append(withheld_caveat)
+    # Do not silently label a mixed-vintage neighbourhood set with the period
+    # of whichever source row happened to come first.
+    valid_periods = sorted(
+        {
+            str(r.period)
+            for r in value_rows
+            if guarded.get(r.place_id) is not None and r.period is not None
+        }
+    )
+    if len(valid_periods) > 1:
+        caveats.append(
+            "MIXED_INDICATOR_PERIODS: Sub-areas use different reference "
+            "periods (" + ", ".join(valid_periods) + "); do not aggregate "
+            "them as a single-period statistic."
+        )
+    if truncated:
+        caveats.append(
+            f"Showing {len(sub_areas)} of {with_values} {child_type} areas with a value, "
+            f"ranked by '{input.sort_by}'. This is a slice, not the whole of {input.place_id}."
+        )
+    missing = len(child_rows) - with_values
+    if missing:
+        caveats.append(
+            f"{missing} of {len(child_rows)} {child_type} areas have no value for "
+            f"{input.indicator_key} and are left out."
+        )
 
     return GetSubAreasOutput(
         parent_place_id=input.place_id,
@@ -200,6 +275,12 @@ async def get_sub_areas(
         parent_value=parent_value,
         parent_percentile=parent_percentile,
         period=period_used,
+        total_sub_areas=len(child_rows),
+        sub_areas_with_values=with_values,
+        truncated=truncated,
+        unit=value_rows[0].unit if value_rows else None,
+        sources=sources,
+        caveats=caveats,
     )
 
 

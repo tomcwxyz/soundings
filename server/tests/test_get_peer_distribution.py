@@ -1,8 +1,12 @@
 """Unit tests for the get_peer_distribution tool."""
 
+from datetime import datetime
+
 import pytest
 from pydantic import ValidationError
 
+from soundings.catalogue.contracts import ContractRegistry
+from soundings.contracts.source_ref import SourceRef
 from soundings.tools.get_peer_distribution import (
     TOOL_NAME,
     GetPeerDistributionInput,
@@ -112,6 +116,23 @@ def test_output_model_peer_place_values_defaults_empty() -> None:
 # --- async function with mocked orchestrator -----------------------------
 
 
+class _FakeAdapter:
+    def get_source_ref(self, *, retrieved_at: datetime, cache_status: str) -> SourceRef:
+        return SourceRef(
+            source_id="fake.source",
+            source_label="Fake",
+            publisher="Test",
+            retrieved_at=retrieved_at,
+            cache_status="cached",
+            licence="CC0",
+        )
+
+
+class _FakeRegistry:
+    async def adapter_for_indicator(self, indicator_key: str) -> _FakeAdapter:
+        return _FakeAdapter()
+
+
 class _FakeOrchestrator:
     def __init__(
         self,
@@ -125,6 +146,9 @@ class _FakeOrchestrator:
         self.enforce_level_called = False
         self.peer_values_loader_called = False
         self.load_indicator_meta_called = False
+        # No contracts: these tests are about plumbing, not value checks.
+        self._contracts = ContractRegistry([])
+        self._registry = _FakeRegistry()
 
     async def _enforce_level(self, indicator_key: str, place_id: str) -> None:
         self.enforce_level_called = True

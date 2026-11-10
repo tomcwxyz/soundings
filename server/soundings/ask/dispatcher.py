@@ -9,14 +9,36 @@ function against the shared state, and returns ``model_dump(mode="json")``.
 not execute it — the orchestrator owns that step.
 """
 
+import json
 import logging
+from collections.abc import Iterator
 from typing import Any
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 from sqlalchemy import text
 
-from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs
+from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs, EvidenceClaim
+from soundings.ask.grounding import EvidenceSet, extract_figures, shown_decimals
 from soundings.contracts.observation import GetObservationsInput
+from soundings.contracts.source_ref import SourceRef
+from soundings.tools.aggregate_sub_areas import (
+    AggregateSubAreasInput,
+    aggregate_sub_areas,
+)
+from soundings.tools.aggregate_sub_areas import (
+    tool_spec as aggregate_sub_areas_spec,
+)
+from soundings.tools.calculate import (
+    CalculateDifferenceInput,
+    CalculateShareInput,
+    CalculateWeightedAverageInput,
+    calculate_difference,
+    calculate_share,
+    calculate_weighted_average,
+)
+from soundings.tools.calculate import (
+    tool_specs as calculation_specs,
+)
 from soundings.tools.compare_places import (
     ComparePlacesInput,
     compare_places,
@@ -150,6 +172,20 @@ COMPOSE_ANSWER_DESCRIPTION = (
 )
 
 
+# Tools that check their operands against this conversation's evidence. MCP
+# calls are stateless, so these exist only inside Ask; an MCP client does its
+# own arithmetic on the values the other tools return.
+ASK_ONLY_TOOLS = frozenset(
+    {"calculate_share", "calculate_difference", "calculate_weighted_average"}
+)
+
+
+class FinalisedAnswer(BaseModel):
+    answer: ComposeAnswerArgs
+    # Figures in the answer that no tool result supports, as shown.
+    untraced: list[str] = Field(default_factory=list)
+
+
 class ToolDispatcher:
     """Map Anthropic tool_use blocks to in-process Python handlers."""
 
@@ -157,7 +193,12 @@ class ToolDispatcher:
         self._state = state
         self._fetch_cache: dict[tuple[str, str], Any] = {}
         self._compare_cache: dict[tuple[str, frozenset[str]], Any] = {}
-        self._sources: list[Any] = []
+        # Provenance for every number a tool returned this run, one entry per
+        # source, dated by the stalest retrieval used.
+        self._sources: dict[str, SourceRef] = {}
+        # Every number a tool returned this run; the answer's figures are
+        # checked against it before anything is streamed.
+        self.evidence = EvidenceSet()
         self._known_indicator_keys: set[str] | None = None
 
     def tool_specs(self) -> list[dict[str, object]]:
@@ -184,6 +225,8 @@ class ToolDispatcher:
             get_peer_dist_spec(),
             get_sub_areas_spec(),
             get_observations_spec(),
+            aggregate_sub_areas_spec(),
+            *calculation_specs(),
             {
                 "name": TERMINAL_TOOL,
                 "description": COMPOSE_ANSWER_DESCRIPTION,
@@ -249,6 +292,16 @@ class ToolDispatcher:
         known = await self._known_keys()
         kept: list[Any] = []
         for block in parsed.blocks:
+            # Reader-facing text may be rendered as Markdown. Escape raw HTML
+            # before it reaches the UI; formatting such as **bold** survives.
+            for text_field in ("markdown", "caption", "headline", "evidence", "title"):
+                raw_text = getattr(block, text_field, None)
+                if isinstance(raw_text, str):
+                    setattr(
+                        block,
+                        text_field,
+                        raw_text.replace("<", "&lt;").replace(">", "&gt;"),
+                    )
             key = getattr(block, "indicator_key", None)
             if key is None:
                 kept.append(block)
@@ -274,7 +327,203 @@ class ToolDispatcher:
         if handler is None:
             raise ValueError(f"Unknown tool: {tool_name}")
         result: dict[str, Any] = await handler(tool_input)
+        previous_count = len(self.evidence.reference_facts)
+        self._record(result)
+        # Ask-only metadata: the model can cite the actual observation it used.
+        # Never attach this to the underlying public HTTP/MCP tool results.
+        new_count = len(self.evidence.reference_facts) - previous_count
+        if new_count:
+            result["_evidence_facts"] = self.evidence.reference_metadata(after=previous_count)
+            if new_count > 80:
+                result["_evidence_facts_omitted"] = new_count - 80
         return result
+
+    def restore_prior_results(self, messages: list[dict[str, Any]]) -> None:
+        """Restore evidence from persisted tool results for follow-up questions.
+
+        Earlier assistant prose must never become evidence.
+        """
+        for message in messages:
+            if message.get("role") != "user" or not isinstance(message.get("content"), list):
+                continue
+            for block in message["content"]:
+                if not isinstance(block, dict) or block.get("type") != "tool_result":
+                    continue
+                if block.get("is_error") or not isinstance(block.get("content"), str):
+                    continue
+                try:
+                    result = json.loads(block["content"])
+                except (ValueError, TypeError):
+                    continue
+                if isinstance(result, dict) and "error" not in result:
+                    self._record(result)
+
+    def _record(self, result: Any) -> None:
+        """Collect provenance and evidence from a tool result."""
+        self.evidence.add_result(result)
+        for ref in _iter_source_dicts(result):
+            try:
+                source = SourceRef.model_validate(ref)
+            except ValidationError:
+                continue
+            held = self._sources.get(source.source_id)
+            if held is None or source.retrieved_at < held.retrieved_at:
+                self._sources[source.source_id] = source
+
+    async def finalise_answer(self, tool_input: dict[str, Any]) -> FinalisedAnswer:
+        """Parse, sanitise and grounding-check a compose_answer call."""
+        parsed = self._parse_compose_answer(tool_input)
+        await self._sanitise_blocks(parsed)
+        return FinalisedAnswer(answer=parsed, untraced=self._untraced(parsed))
+
+    def _claim_context_issue(self, claim: EvidenceClaim) -> str | None:
+        """Check the claimed observation really has this geography and measure."""
+        fact = self.evidence.reference_facts.get(claim.ref_id)
+        if fact is None:
+            return f"Unknown evidence reference: {claim.ref_id}"
+        if (
+            fact.indicator_key != claim.indicator_key
+            or fact.place_id != claim.place_id
+            or fact.period != claim.period
+        ):
+            return (
+                f"Evidence context mismatch for {claim.ref_id}: "
+                "indicator, place or period differs from the observation"
+            )
+        return None
+
+    def _check_claims(self, statements: list[str], claims: list[EvidenceClaim]) -> list[str]:
+        """Verify each numeric occurrence against its own exact quoted passage.
+
+        A shared value such as 32.4% appearing for two places must be
+        supported twice, with two separately contextualised claims.
+        """
+        missing: list[str] = []
+        quote_locations: list[tuple[int, int, int, EvidenceClaim]] = []
+        for claim in claims:
+            issue = self._claim_context_issue(claim)
+            if issue:
+                missing.append(issue)
+            locations = [
+                (index, statement.find(claim.quote))
+                for index, statement in enumerate(statements)
+                if claim.quote in statement
+            ]
+            if len(locations) != 1 or statements[locations[0][0]].count(claim.quote) != 1:
+                missing.append(f"Evidence quote is absent or repeated: {claim.quote[:80]}")
+                continue
+            index, start = locations[0]
+            quote_locations.append((index, start, start + len(claim.quote), claim))
+
+        for index, statement in enumerate(statements):
+            for figure in extract_figures(statement):
+                matches = [
+                    claim
+                    for field_index, start, end, claim in quote_locations
+                    if field_index == index and start <= figure.start and figure.end <= end
+                ]
+                if not matches:
+                    missing.append(f"{figure.text} (no evidence claim covers this occurrence)")
+                elif not any(
+                    self._claim_context_issue(claim) is None
+                    and self.evidence.traces_with_refs(figure, [claim.ref_id])
+                    for claim in matches
+                ):
+                    missing.append(f"{figure.text} (not supported by its claim's observation)")
+        return missing
+
+    def untraced_block(self, block: AnswerBlock) -> list[str]:
+        """Check scoped claims, narrative figures and model-typed charts/tables."""
+        missing: list[str] = []
+        ref_ids = getattr(block, "evidence_refs", [])
+        claims: list[EvidenceClaim] = getattr(block, "evidence_claims", [])
+        if ref_ids:
+            missing.extend(
+                f"Unknown evidence reference: {ref_id}"
+                for ref_id in ref_ids
+                if ref_id not in self.evidence.reference_facts
+            )
+        statements = [
+            statement
+            for text_field in ("markdown", "headline", "evidence", "title", "caption", "y_label")
+            if isinstance((statement := getattr(block, text_field, None)), str)
+        ]
+        if claims:
+            missing.extend(self._check_claims(statements, claims))
+        else:
+            # Block-wide refs are ambiguous when prose combines statistics
+            # from different observation contexts. Require passage-level refs
+            # rather than letting an arbitrary matching value justify them.
+            figures = [figure for statement in statements for figure in extract_figures(statement)]
+            observed = [
+                figure
+                for figure in figures
+                if any(
+                    self.evidence.traces_with_refs(figure, [ref_id])
+                    for ref_id in self.evidence.reference_facts
+                )
+            ]
+            contexts = {
+                (fact.indicator_key, fact.place_id, fact.period)
+                for fact in self.evidence.reference_facts.values()
+                if any(
+                    self.evidence.traces_with_refs(figure, [fact.ref_id or ""])
+                    for figure in observed
+                )
+            }
+            if len(observed) > 1 and len(contexts) > 1:
+                missing.append("Multiple observations require evidence_claims with exact passages")
+            for statement in statements:
+                for figure in extract_figures(statement):
+                    if ref_ids:
+                        if not self.evidence.traces_with_refs(figure, ref_ids):
+                            missing.append(f"{figure.text} (not supported by cited observations)")
+                        continue
+                    # Legacy uncited calculation results remain valid. Ambiguous
+                    # raw observations need an explicit reference.
+                    matches = {
+                        (fact.indicator_key, fact.place_id, fact.period)
+                        for fact in self.evidence.reference_facts.values()
+                        if self.evidence.traces_with_refs(figure, [fact.ref_id or ""])
+                    }
+                    if len(matches) > 1:
+                        missing.append(
+                            f"{figure.text} (ambiguous observation; cite evidence_claims)"
+                        )
+                    elif not self.evidence.traces(figure):
+                        missing.append(figure.text)
+        if block.type == "sub-area-table":
+            for entry in block.sub_areas:
+                if entry.value is not None and not self.evidence.supports_in_context(
+                    entry.value,
+                    indicator_key=block.indicator_key,
+                    place_id=entry.place_id,
+                    period=block.period,
+                    decimals=max(0, shown_decimals(entry.value)),
+                ):
+                    missing.append(f"{entry.value:g} ({block.type}: {entry.place_id})")
+            if block.parent_value is not None and not self.evidence.supports_in_context(
+                block.parent_value,
+                indicator_key=block.indicator_key,
+                place_id=block.parent_place_id,
+                period=block.period,
+                decimals=max(0, shown_decimals(block.parent_value)),
+            ):
+                missing.append(f"{block.parent_value:g} ({block.type}: parent)")
+        else:
+            for value in _typed_values(block):
+                if not self.evidence.supports(
+                    value, is_percent=True, decimals=max(0, shown_decimals(value))
+                ):
+                    missing.append(f"{value:g} ({block.type})")
+        return list(dict.fromkeys(missing))
+
+    def _untraced(self, parsed: ComposeAnswerArgs) -> list[str]:
+        return list(
+            dict.fromkeys(
+                figure for block in parsed.blocks for figure in self.untraced_block(block)
+            )
+        )
 
     @property
     def _handlers(self) -> dict[str, Any]:
@@ -294,6 +543,10 @@ class ToolDispatcher:
             "get_peer_distribution": self._handle_get_peer_distribution,
             "get_sub_areas": self._handle_get_sub_areas,
             "get_observations": self._handle_get_observations,
+            "aggregate_sub_areas": self._handle_aggregate_sub_areas,
+            "calculate_share": self._handle_calculate_share,
+            "calculate_difference": self._handle_calculate_difference,
+            "calculate_weighted_average": self._handle_calculate_weighted_average,
         }
 
     # --- Non-terminal handlers -------------------------------------------
@@ -373,7 +626,70 @@ class ToolDispatcher:
         result = await get_observations(model, self._state.engine)
         return result.model_dump(mode="json")
 
+    async def _handle_aggregate_sub_areas(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = AggregateSubAreasInput.model_validate(args)
+        result = await aggregate_sub_areas(model, self._state.orchestrator, self._state.engine)
+        return result.model_dump(mode="json")
+
+    # Calculations run against this conversation's evidence, so they live
+    # here rather than in the stateless HTTP/MCP tool layer.
+
+    async def _handle_calculate_share(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = CalculateShareInput.model_validate(args)
+        result = calculate_share(
+            numerator=model.numerator,
+            denominator=model.denominator,
+            label=model.label,
+            evidence=self.evidence,
+        )
+        return result.model_dump(mode="json")
+
+    async def _handle_calculate_difference(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = CalculateDifferenceInput.model_validate(args)
+        result = calculate_difference(
+            value=model.value, baseline=model.baseline, label=model.label, evidence=self.evidence
+        )
+        return result.model_dump(mode="json")
+
+    async def _handle_calculate_weighted_average(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = CalculateWeightedAverageInput.model_validate(args)
+        result = calculate_weighted_average(
+            values=model.values,
+            weights=model.weights,
+            weight_label=model.weight_label,
+            label=model.label,
+            evidence=self.evidence,
+        )
+        return result.model_dump(mode="json")
+
     @property
-    def sources(self) -> list[Any]:
-        """Accumulated SourceRefs from tool calls. Read-only view."""
-        return list(self._sources)
+    def sources(self) -> list[SourceRef]:
+        """Sources behind this run's tool results, in first-seen order."""
+        return list(self._sources.values())
+
+
+def _iter_source_dicts(node: Any) -> Iterator[dict[str, Any]]:
+    """Every dict under a "source" or "sources" key, at any depth."""
+    if isinstance(node, dict):
+        for key, child in node.items():
+            if key == "source" and isinstance(child, dict):
+                yield child
+            elif key == "sources" and isinstance(child, list):
+                yield from (c for c in child if isinstance(c, dict))
+            else:
+                yield from _iter_source_dicts(child)
+    elif isinstance(node, list):
+        for child in node:
+            yield from _iter_source_dicts(child)
+
+
+def _typed_values(block: Any) -> list[float]:
+    """Numbers the model typed into a block (not ones the UI will fetch)."""
+    if block.type == "bar-chart":
+        return [b.value for b in block.bars]
+    if block.type == "composition-chart":
+        return [s.value for s in block.segments]
+    if block.type == "sub-area-table":
+        values = [e.value for e in block.sub_areas if e.value is not None]
+        return values + ([block.parent_value] if block.parent_value is not None else [])
+    return []

@@ -112,6 +112,76 @@ async def test_sub_areas_with_null_period_does_not_raise() -> None:
     assert len(out.sub_areas) == 3
     assert {round(s.value or 0) for s in out.sub_areas} == {10, 20, 30}
 
+    # Provenance travels with the neighbourhood values themselves: the
+    # 9 November 2026 review found this tool returned an empty source list,
+    # so neighbourhood answers could only cite a separate lookup.
+    assert [s.source_id for s in out.sources] == ["ons.mid_year_estimates"]
+    assert out.sources[0].retrieved_at == now
+    assert any("Mid-year estimates are revised" in c for c in out.caveats)
+    # Coverage is stated, so a ranked list is never mistaken for the whole place.
+    assert out.total_sub_areas == 3
+    assert out.sub_areas_with_values == 3
+    assert out.truncated is False
+
+
+@pytest.mark.integration
+async def test_sub_areas_reports_truncation_and_missing_values() -> None:
+    engine = get_engine()
+    parent = "ltla24:SUBTEST2"
+    now = datetime.now(tz=UTC)
+    async with engine.begin() as conn:
+        await conn.execute(text("DELETE FROM data.trend_point"))
+        await conn.execute(text("DELETE FROM data.indicator_value"))
+        await conn.execute(text("DELETE FROM geography.postcode"))
+        await conn.execute(text("DELETE FROM geography.place_hierarchy"))
+        await conn.execute(text("DELETE FROM geography.place"))
+        await conn.execute(
+            text(
+                "INSERT INTO geography.place (id, type, code, name) "
+                "VALUES (:id, 'ltla24', 'E09999998', 'Subtest LTLA 2')"
+            ),
+            {"id": parent},
+        )
+        for i in range(4):
+            cid = f"lsoa21:TRUNC0{i}"
+            await conn.execute(
+                text(
+                    "INSERT INTO geography.place (id, type, code, name) "
+                    "VALUES (:id, 'lsoa21', :code, :name)"
+                ),
+                {"id": cid, "code": cid.split(":")[1], "name": f"Neigh {i}"},
+            )
+            await conn.execute(
+                text("INSERT INTO geography.place_hierarchy (parent_id, child_id) VALUES (:p, :c)"),
+                {"p": parent, "c": cid},
+            )
+            if i < 3:  # the fourth neighbourhood has no value
+                await conn.execute(
+                    text(
+                        "INSERT INTO data.indicator_value "
+                        "(place_id, indicator_key, period, value, source_id, retrieved_at, "
+                        "caveats) VALUES (:pid, 'population.total', '2024', :v, "
+                        "'ons.mid_year_estimates', :ret, '[]'::jsonb)"
+                    ),
+                    {"pid": cid, "v": 100.0 + i, "ret": now},
+                )
+
+    orchestrator = MagicMock()
+    orchestrator._fetch_one = AsyncMock(return_value=None)
+
+    out = await get_sub_areas(
+        GetSubAreasInput(place_id=parent, indicator_key="population.total", limit=2),
+        orchestrator,
+        engine,
+    )
+
+    assert len(out.sub_areas) == 2
+    assert out.total_sub_areas == 4
+    assert out.sub_areas_with_values == 3
+    assert out.truncated is True
+    assert any("2 of 3" in c for c in out.caveats)
+    assert any("1 of 4" in c and "no value" in c for c in out.caveats)
+
 
 def test_worst_first_sort_respects_indicator_direction() -> None:
     assert resolve_sub_area_sort("worst_first", "better") == "value_asc"

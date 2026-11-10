@@ -218,25 +218,20 @@ indicators:
     caveats:
       - "Mid-year estimates are revised after each Census. Older years may be rebased."
     related_keys:
-      - "population.density"
       - "population.age_structure.under_18"
       - "population.age_structure.over_65"
 
-  - key: population.density
-    label: "Population density"
-    description: "Resident population per square kilometre."
-    unit: "people per km²"
-    higher_is: null
-    source_id: "ons.mid_year_estimates"
-    available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
-    refresh_cadence: "annual"
-    related_keys:
-      - "population.total"
+  # population.density was withdrawn on 9 November 2026 (migration 0017):
+  # every stored value equalled population.total because no area data is
+  # loaded. Reinstate it only with ONS Standard Area Measurements as the
+  # denominator and `must_differ_from: ["population.total"]` in its contract.
 
   - key: population.age_structure.under_18
-    label: "Population aged under 18"
-    description: "Number of residents aged 0–17."
+    label: "Population aged 0 to 15"
+    description: "Number of residents aged 0–15. The key says under_18 for compatibility; the Nomis age band loaded is 0–15."
     unit: "people"
+    caveats:
+      - "Counts residents aged 0–15, not 0–17. This is a count, not a share: divide by population.total with calculate_share before describing it as a proportion."
     higher_is: null
     source_id: "ons.mid_year_estimates"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
@@ -246,6 +241,8 @@ indicators:
     label: "Population aged 65 and over"
     description: "Number of residents aged 65+."
     unit: "people"
+    caveats:
+      - "This is a count, not a share: divide by population.total with calculate_share before describing it as a proportion."
     higher_is: null
     source_id: "ons.mid_year_estimates"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
@@ -264,6 +261,11 @@ indicators:
     label: "Lone parent households as a share of households with dependent children"
     description: "Proportion of households with dependent children that are headed by a lone parent."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Lone parent households"
+      denominator: "Households with dependent children"
+      universe: "Households, Census 2021"
     higher_is: null
     source_id: "ons.census2021"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
@@ -306,6 +308,11 @@ indicators:
     label: "IMD 2025 Income Deprivation domain score"
     description: "Proportion of the population experiencing deprivation related to low income."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "People experiencing income deprivation"
+      denominator: "Resident population"
+      universe: "Residents of England, IoD 2025"
     higher_is: "worse"
     source_id: "mhclg.imd2025"
     available_at: ["lsoa21", "ltla24"]
@@ -317,6 +324,11 @@ indicators:
     label: "IMD 2025 Employment Deprivation domain score"
     description: "Proportion of the working-age population involuntarily excluded from the labour market."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Working-age people involuntarily excluded from the labour market"
+      denominator: "Working-age population"
+      universe: "Working-age residents of England, IoD 2025"
     higher_is: "worse"
     source_id: "mhclg.imd2025"
     available_at: ["lsoa21", "ltla24"]
@@ -350,6 +362,11 @@ indicators:
     label: "Income Deprivation Affecting Children Index (IDACI) 2025"
     description: "Proportion of children aged 0–15 living in income-deprived families."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Children aged 0–15 living in income-deprived families"
+      denominator: "Children aged 0–15"
+      universe: "Children aged 0–15 in England, IoD 2025"
     higher_is: "worse"
     source_id: "mhclg.imd2025"
     available_at: ["lsoa21", "ltla24"]
@@ -361,6 +378,11 @@ indicators:
     label: "Income Deprivation Affecting Older People Index (IDAOPI) 2025"
     description: "Proportion of those aged 60+ living in income-deprived households."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "People aged 60+ living in income-deprived households"
+      denominator: "People aged 60+"
+      universe: "People aged 60+ in England, IoD 2025"
     higher_is: "worse"
     source_id: "mhclg.imd2025"
     available_at: ["lsoa21", "ltla24"]
@@ -376,6 +398,11 @@ indicators:
     label: "Employment rate (16–64)"
     description: "Proportion of the working-age population in employment."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "People aged 16–64 in employment"
+      denominator: "Population aged 16–64"
+      universe: "Residents aged 16–64, Annual Population Survey"
     higher_is: "better"
     source_id: "ons.aps"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -387,6 +414,11 @@ indicators:
     label: "Unemployment rate (16+)"
     description: "ILO-defined unemployment as a proportion of the economically active."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Unemployed people aged 16–64 (ILO definition)"
+      denominator: "Economically active people aged 16–64"
+      universe: "Economically active residents aged 16–64, Annual Population Survey"
     higher_is: "worse"
     source_id: "ons.aps"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -426,6 +458,11 @@ indicators:
     label: "Active companies per 1,000 residents"
     description: "Active companies per 1,000 resident population (registered-office basis)."
     unit: "per 1,000 population"
+    contract:
+      kind: "rate"
+      numerator: "Active companies with a registered office in the area"
+      denominator: "Resident population (thousands)"
+      universe: "Companies on the live register"
     higher_is: null
     source_id: "companies_house"
     available_at: ["ltla24", "utla24"]
@@ -488,6 +525,11 @@ indicators:
     label: "Adults with limiting long-term illness or disability"
     description: "Proportion of adults reporting a long-term illness or disability that limits day-to-day activities."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "People reporting a long-term illness or disability that limits day-to-day activities"
+      denominator: "Usual residents covered by the Census disability question"
+      universe: "Usual residents, Census 2021"
     higher_is: "worse"
     source_id: "ons.census2021"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
@@ -497,6 +539,11 @@ indicators:
     label: "Under-75 mortality from causes considered preventable"
     description: "Age-standardised rate of under-75 mortality from causes considered preventable, per 100,000."
     unit: "per 100,000"
+    contract:
+      kind: "rate"
+      numerator: "Deaths under 75 from causes considered preventable (age-standardised)"
+      denominator: "Population aged under 75 (per 100,000)"
+      universe: "Residents aged under 75"
     higher_is: "worse"
     source_id: "ohid.fingertips"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -506,6 +553,11 @@ indicators:
     label: "Smoking prevalence in adults (18+)"
     description: "Proportion of adults aged 18+ who report current smoking (APS-derived)."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Adults aged 18+ who report current smoking"
+      denominator: "Adults aged 18+"
+      universe: "Adults aged 18+, Annual Population Survey"
     higher_is: "worse"
     source_id: "ohid.fingertips"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -519,6 +571,11 @@ indicators:
     label: "Pupils eligible for free school meals"
     description: "Proportion of state-funded school pupils eligible for free school meals."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "State-funded school pupils eligible for free school meals"
+      denominator: "State-funded school pupils"
+      universe: "Pupils in state-funded schools"
     higher_is: "worse"
     source_id: "dfe.explore"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -537,6 +594,11 @@ indicators:
     label: "Persistent absence rate"
     description: "Proportion of state-funded school pupils missing 10% or more of possible sessions."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "State-funded school pupils missing 10% or more of possible sessions"
+      denominator: "State-funded school pupil enrolments"
+      universe: "Pupils in state-funded schools"
     higher_is: "worse"
     source_id: "dfe.explore"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -546,6 +608,11 @@ indicators:
     label: "Adults with no formal qualifications"
     description: "Proportion of adults aged 16+ reporting no formal qualifications (Census 2021)."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Adults aged 16+ reporting no formal qualifications"
+      denominator: "Usual residents aged 16+"
+      universe: "Usual residents aged 16+, Census 2021"
     higher_is: "worse"
     source_id: "ons.census2021"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
@@ -559,6 +626,14 @@ indicators:
     label: "Housing affordability ratio (workplace-based)"
     description: "Ratio of median house price to median gross workplace-based annual earnings."
     unit: "ratio"
+    contract:
+      kind: "ratio"
+      numerator: "Median house price"
+      denominator: "Median gross annual workplace-based earnings"
+      universe: "Local authorities in England and Wales"
+      # The 9 November evaluation saw 255,734 served as this ratio: a house
+      # price, not a ratio. No local authority has exceeded 50.
+      maximum: 60
     higher_is: "worse"
     source_id: "ons.aps"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -570,6 +645,11 @@ indicators:
     label: "Statutory homelessness — owed a duty"
     description: "Households assessed as owed a homelessness prevention or relief duty, per 1,000 households."
     unit: "per 1,000 households"
+    contract:
+      kind: "rate"
+      numerator: "Households owed a homelessness prevention or relief duty"
+      denominator: "Households (thousands)"
+      universe: "Households in the local authority"
     higher_is: "worse"
     source_id: "mhclg.live_tables"
     available_at: ["ltla24", "region", "country"]
@@ -579,6 +659,11 @@ indicators:
     label: "Households in temporary accommodation"
     description: "Households in temporary accommodation at end of period, per 1,000 households."
     unit: "per 1,000 households"
+    contract:
+      kind: "rate"
+      numerator: "Households in temporary accommodation at end of period"
+      denominator: "Households (thousands)"
+      universe: "Households in the local authority"
     higher_is: "worse"
     source_id: "mhclg.live_tables"
     available_at: ["ltla24", "region", "country"]
@@ -588,6 +673,11 @@ indicators:
     label: "Social rented households as a share of all households"
     description: "Proportion of households in social rented accommodation."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Households in social rented accommodation"
+      denominator: "All households"
+      universe: "Households, Census 2021"
     higher_is: null
     source_id: "ons.census2021"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
@@ -597,6 +687,11 @@ indicators:
     label: "Overcrowded households (occupancy rating -1 or worse)"
     description: "Proportion of households whose occupancy rating indicates overcrowding (Census 2021 definition)."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Households with an occupancy rating of -1 or lower"
+      denominator: "All households"
+      universe: "Households, Census 2021"
     higher_is: "worse"
     source_id: "ons.census2021"
     available_at: ["lsoa21", "msoa21", "ward24", "ltla24", "utla24", "region", "country"]
@@ -610,6 +705,11 @@ indicators:
     label: "All recorded crime rate"
     description: "Recorded crime offences per 1,000 population in the rolling 12 months."
     unit: "per 1,000 population"
+    contract:
+      kind: "rate"
+      numerator: "Recorded crime offences in the rolling 12 months"
+      denominator: "Resident population (thousands)"
+      universe: "Offences recorded by police forces"
     higher_is: "worse"
     source_id: "police_uk"
     available_at: ["ltla24", "utla24", "region"]
@@ -621,6 +721,11 @@ indicators:
     label: "Violence and sexual offences rate"
     description: "Violence and sexual offences per 1,000 population in the rolling 12 months."
     unit: "per 1,000 population"
+    contract:
+      kind: "rate"
+      numerator: "Violence and sexual offences in the rolling 12 months"
+      denominator: "Resident population (thousands)"
+      universe: "Offences recorded by police forces"
     higher_is: "worse"
     source_id: "police_uk"
     available_at: ["ltla24", "utla24", "region"]
@@ -630,6 +735,11 @@ indicators:
     label: "Anti-social behaviour incident rate"
     description: "ASB incidents recorded per 1,000 population in the rolling 12 months."
     unit: "per 1,000 population"
+    contract:
+      kind: "rate"
+      numerator: "Anti-social behaviour incidents in the rolling 12 months"
+      denominator: "Resident population (thousands)"
+      universe: "Incidents recorded by police forces"
     higher_is: "worse"
     source_id: "police_uk"
     available_at: ["ltla24", "utla24", "region"]
@@ -667,6 +777,11 @@ indicators:
     label: "Active charities per 10,000 residents"
     description: "Active registered charities per 10,000 residents."
     unit: "per 10,000 population"
+    contract:
+      kind: "rate"
+      numerator: "Active registered charities with a primary postcode in the area"
+      denominator: "Resident population (ten thousands)"
+      universe: "Charities on the register for England and Wales"
     higher_is: null
     source_id: "charity_commission"
     available_at: ["ltla24", "utla24", "region", "country"]
@@ -760,6 +875,11 @@ indicators:
     label: "Green/open space per person"
     description: "Publicly accessible green and open space area per resident (unbuffered), from Friends of the Earth's consolidated green-space dataset."
     unit: "m² per person"
+    contract:
+      kind: "per_person"
+      numerator: "Publicly accessible green and open space area (m²)"
+      denominator: "Resident population"
+      universe: "Friends of the Earth green-space dataset"
     higher_is: "better"
     source_id: "foe.green_space"
     available_at: ["lsoa21", "ltla24", "utla24"]
@@ -771,6 +891,11 @@ indicators:
     label: "Population with green space access"
     description: "Percentage of the populated area within reach of publicly accessible green or open space."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Populated area within reach of publicly accessible green or open space"
+      denominator: "Populated area"
+      universe: "Friends of the Earth green-space dataset"
     higher_is: "better"
     source_id: "foe.green_space"
     available_at: ["lsoa21", "ltla24", "utla24"]
@@ -782,6 +907,11 @@ indicators:
     label: "Private garden space per person"
     description: "Private garden area per resident."
     unit: "m² per person"
+    contract:
+      kind: "per_person"
+      numerator: "Private garden area (m²)"
+      denominator: "Resident population"
+      universe: "Friends of the Earth green-space dataset"
     higher_is: "better"
     source_id: "foe.green_space"
     available_at: ["ltla24", "utla24"]
@@ -897,6 +1027,11 @@ indicators:
     label: "Adults who are active (150+ minutes/week)"
     description: "Proportion of adults aged 16+ who are active — doing at least 150 minutes of moderate intensity physical activity per week."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Adults aged 16+ doing at least 150 minutes of moderate activity a week"
+      denominator: "Adults aged 16+"
+      universe: "Adults aged 16+ in England, Active Lives Survey"
     higher_is: "better"
     source_id: "sport_england"
     available_at: ["ltla24"]
@@ -910,6 +1045,11 @@ indicators:
     label: "Adults who are fairly active (30–149 minutes/week)"
     description: "Proportion of adults aged 16+ who are fairly active — doing 30–149 minutes of moderate intensity physical activity per week."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Adults aged 16+ doing 30–149 minutes of moderate activity a week"
+      denominator: "Adults aged 16+"
+      universe: "Adults aged 16+ in England, Active Lives Survey"
     higher_is: "neutral"
     source_id: "sport_england"
     available_at: ["ltla24"]
@@ -922,6 +1062,11 @@ indicators:
     label: "Adults who are inactive (<30 minutes/week)"
     description: "Proportion of adults aged 16+ who are inactive — doing less than 30 minutes of moderate intensity physical activity per week."
     unit: "proportion"
+    contract:
+      kind: "proportion"
+      numerator: "Adults aged 16+ doing less than 30 minutes of moderate activity a week"
+      denominator: "Adults aged 16+"
+      universe: "Adults aged 16+ in England, Active Lives Survey"
     higher_is: "worse"
     source_id: "sport_england"
     available_at: ["ltla24"]

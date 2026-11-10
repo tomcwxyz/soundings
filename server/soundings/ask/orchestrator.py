@@ -25,6 +25,7 @@ from typing import Any
 from anthropic import Anthropic
 from anthropic.types import ThinkingConfigAdaptiveParam
 
+from soundings.ask.blocks import TextBlock
 from soundings.ask.dispatcher import ToolDispatcher
 from soundings.ask.grants_guidance import GRANTS_GUIDANCE
 from soundings.ask.prompts import SystemPromptBuilder
@@ -132,6 +133,7 @@ class AskOrchestrator:
 
         # Start from prior messages (follow-up) or a fresh user turn.
         if prior_messages:
+            self._dispatcher.restore_prior_results(prior_messages)
             messages: list[dict[str, Any]] = list(prior_messages)
             messages.append({"role": "user", "content": query})
         else:
@@ -209,6 +211,7 @@ class AskOrchestrator:
                 "cache_control": {"type": "ephemeral"},
             }
         ]
+        grounding_revised = False
         for _iteration in range(self._max_iterations):
             # The Anthropic client is synchronous; calling it directly would
             # block the event loop for the whole request, stalling the SSE
@@ -309,17 +312,32 @@ class AskOrchestrator:
             messages.append({"role": "assistant", "content": assistant_content})
 
             if not tool_use_blocks:
-                # No tool calls — Claude is done talking without compose_answer.
-                # Emit any text as a block, then close.
-                for content_block in response.content:
-                    if content_block.type == "text" and content_block.text.strip():
-                        await _emit(
-                            callback,
-                            {
-                                "type": "block",
-                                "block": {"type": "text", "markdown": content_block.text},
-                            },
-                        )
+                # Some model responses skip compose_answer. They still pass
+                # through the same sanitisation and grounding check.
+                raw = "\n\n".join(
+                    b.text for b in response.content if b.type == "text" and b.text.strip()
+                )
+                if raw:
+                    finalised = await self._dispatcher.finalise_answer(
+                        {"blocks": [{"type": "text", "markdown": raw}]}
+                    )
+                    safe_block = finalised.answer.blocks[0]
+                    if not isinstance(safe_block, TextBlock):
+                        raise ValueError("Fallback answer is not a text block")
+                    safe_text = (
+                        "I couldn't verify the figures needed for this answer, "
+                        "so I have not published them. Please try a narrower question."
+                        if finalised.untraced
+                        else safe_block.markdown
+                    )
+                    await _emit(
+                        callback,
+                        {"type": "block", "block": {"type": "text", "markdown": safe_text}},
+                    )
+                    await _emit(
+                        callback,
+                        {"type": "grounding", "untraced": finalised.untraced, "revised": False},
+                    )
                 await _emit(
                     callback,
                     {
@@ -337,9 +355,39 @@ class AskOrchestrator:
                 tool_input = tb["input"]
 
                 if self._dispatcher.is_terminal_tool(name):
-                    # compose_answer — parse blocks and emit
-                    parsed = self._dispatcher._parse_compose_answer(tool_input)
-                    for block in parsed.blocks:
+                    finalised = await self._dispatcher.finalise_answer(tool_input)
+                    if finalised.untraced and not grounding_revised:
+                        # One chance to fix figures no tool returned before
+                        # anything reaches the reader.
+                        grounding_revised = True
+                        logger.info("ask_grounding_revision untraced=%d", len(finalised.untraced))
+                        tool_results.append(
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": tb["id"],
+                                "is_error": True,
+                                "content": _revision_request(finalised.untraced),
+                            }
+                        )
+                        continue
+
+                    blocks = list(finalised.answer.blocks)
+                    if finalised.untraced:
+                        # Never publish an unsupported claim merely because
+                        # the model's one correction attempt failed.
+                        blocks = [
+                            block for block in blocks if not self._dispatcher.untraced_block(block)
+                        ]
+                        blocks.append(
+                            TextBlock(
+                                type="text",
+                                markdown=(
+                                    "Some claims were omitted because their figures "
+                                    "could not be verified against the available data."
+                                ),
+                            )
+                        )
+                    for block in blocks:
                         await _emit(
                             callback,
                             {
@@ -351,9 +399,6 @@ class AskOrchestrator:
                     # Append a synthetic tool_result for compose_answer (and
                     # any earlier non-terminal tools in this iteration) so the
                     # message history is valid for follow-up questions.
-                    # Without this, messages ends with an assistant tool_use
-                    # block but no matching tool_result — the API rejects the
-                    # next call when the history is replayed.
                     tool_results.append(
                         {
                             "type": "tool_result",
@@ -365,6 +410,14 @@ class AskOrchestrator:
 
                     sources = [s.model_dump(mode="json") for s in self._dispatcher.sources]
                     await _emit(callback, {"type": "sources", "sources": sources})
+                    await _emit(
+                        callback,
+                        {
+                            "type": "grounding",
+                            "untraced": finalised.untraced,
+                            "revised": grounding_revised,
+                        },
+                    )
                     await _emit(callback, {"type": "done"})
                     return
 
@@ -420,6 +473,21 @@ class AskOrchestrator:
                 "message": f"Exceeded max iterations ({self._max_iterations})",
             },
         )
+
+
+def _revision_request(untraced: list[str]) -> str:
+    return (
+        "GROUNDING_CHECK_FAILED: these figures in your answer do not match any value "
+        "returned by a tool in this conversation: "
+        + ", ".join(untraced)
+        + ". Every number you state must come from a tool result. If the number "
+        "exists for multiple places or indicators, supply the correct observation "
+        "ID in evidence_refs on your text block. If it is a share, "
+        "an average across places, a difference or a ranking, compute it with "
+        "calculate_share, calculate_weighted_average or calculate_difference and "
+        "quote the result; otherwise remove the figure or describe it without a "
+        "number. Then call compose_answer again."
+    )
 
 
 async def _emit(callback: SSECallback, event: dict[str, Any]) -> None:

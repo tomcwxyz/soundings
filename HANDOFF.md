@@ -1,3 +1,44 @@
+# Latest handoff — 10 November 2026
+
+Branch `feat/trustworthy-answers` (4 commits on `7e3d81f`) implements moves 1-3
+from the 9 November baseline: measure contracts, provenance on every answer and
+deterministic calculation. 947 non-live tests pass; lint, format and strict mypy
+are clean. Not yet run against a live model.
+
+What changed, in the order to review it:
+
+1. **Measure contracts** (`soundings/catalogue/contracts.py`). Every indicator
+   has a kind and valid range from its unit; shares and rates name numerator,
+   denominator and universe in `indicators.yaml` (a test enforces this).
+   Out-of-range values are withheld wherever a number is served, with a
+   `VALUE_WITHHELD_FAILED_MEASURE_CONTRACT` caveat. Tracked imports are audited
+   afterwards and recorded as failed if they left bad values behind.
+2. **Series fixes**: APS cache key (employment/unemployment collision), DfE
+   percentages scaled to proportions, `population.density` withdrawn
+   (migration 0017), under-18 relabelled 0-15, affordability capped at 60.
+3. **Provenance**: the dispatcher now actually collects sources (it never
+   did) and every number tools return. `compose_answer` goes through
+   `finalise_answer`, which sanitises (it was being skipped) and checks every
+   figure against that evidence. One revision round; anything still untraced
+   is shown with a warning. New `grounding` SSE event.
+4. **Calculation**: `calculate_share`, `calculate_difference`,
+   `calculate_weighted_average` (Ask-only, operands must come from tools) and
+   `aggregate_sub_areas` (also on MCP). Comparisons carry `peer_universe`.
+   Q45-Q48 added to the question set.
+
+Before merging: run `make migrate` (0017), re-import APS and DfE (their caches
+were keyed wrongly; old entries expire on TTL but a refresh is cleaner), then
+rerun the paid evaluation and compare grounding and synthesis with
+`evaluation/results/2026-11-09/`. Watch for the grounding check being too
+strict: if revisions fire on figures that are genuinely from tools, widen
+`grounding.extract_figures` rather than loosening the tolerance.
+
+Still open from the first review and not touched here: the minimal-consent
+`query` leak in capture, the contribute routes (stub email sender, default
+cookie secret) and unsanitised Ask HTML in the UI.
+
+---
+
 # Latest handoff — 9 November 2026
 
 Freshness/runtime fixes are deployed locally on

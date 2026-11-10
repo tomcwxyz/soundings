@@ -1,0 +1,454 @@
+"""Every Ask answer carries the sources its numbers came from.
+
+The 9 November 2026 baseline found every final answer shipped an empty
+source list: the dispatcher declared ``_sources`` but nothing ever added to
+it. It also found figures in answers that no tool had returned. These tests
+drive the real dispatcher and loop with a fake model.
+"""
+
+import json
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from soundings.ask.dispatcher import ToolDispatcher
+from soundings.ask.orchestrator import AskOrchestrator
+from soundings.ask.prompts import SystemPromptBuilder
+from soundings.contracts.indicator_value import IndicatorValue
+from soundings.contracts.source_ref import SourceRef
+from soundings.tools.get_indicators import GetIndicatorsOutput
+
+NOW = datetime(2026, 11, 10, 6, 0, tzinfo=UTC)
+
+
+def _source(source_id: str, retrieved_at: datetime = NOW) -> SourceRef:
+    return SourceRef(
+        source_id=source_id,
+        source_label=source_id,
+        publisher="DfE",
+        retrieved_at=retrieved_at,
+        cache_status="cached",
+        licence="OGL-UK-3.0",
+    )
+
+
+def _indicators_result(value: float, source: SourceRef) -> GetIndicatorsOutput:
+    return GetIndicatorsOutput(
+        results=[
+            IndicatorValue(
+                place_id="ltla24:E08000032",
+                indicator="education.fsm_eligibility_share",
+                value=value,
+                unit="proportion",
+                period="2024/2025",
+                source=source,
+                confidence="official",
+            )
+        ],
+        sources=[source],
+        caveats=[],
+        partial=False,
+    )
+
+
+def _state() -> Any:
+    engine = MagicMock()
+    return SimpleNamespace(geography_service=MagicMock(), orchestrator=MagicMock(), engine=engine)
+
+
+async def test_dispatch_collects_sources_from_tool_results() -> None:
+    dispatcher = ToolDispatcher(_state())
+    older = NOW - timedelta(days=3)
+    results = [
+        _indicators_result(0.324, _source("dfe.explore", NOW)),
+        _indicators_result(0.247, _source("dfe.explore", older)),
+    ]
+    with patch("soundings.ask.dispatcher.get_indicators", AsyncMock(side_effect=results)):
+        await dispatcher.dispatch(
+            "get_indicators", {"place_id": "ltla24:E08000032", "indicators": ["x"]}
+        )
+        await dispatcher.dispatch(
+            "get_indicators", {"place_id": "ltla24:E92000001", "indicators": ["x"]}
+        )
+
+    # One entry per source, dated by the stalest retrieval used.
+    assert [(s.source_id, s.retrieved_at) for s in dispatcher.sources] == [("dfe.explore", older)]
+
+
+async def test_dispatch_records_tool_numbers_as_evidence() -> None:
+    dispatcher = ToolDispatcher(_state())
+    result = _indicators_result(0.324, _source("dfe.explore"))
+    with patch("soundings.ask.dispatcher.get_indicators", AsyncMock(return_value=result)):
+        await dispatcher.dispatch(
+            "get_indicators", {"place_id": "ltla24:E08000032", "indicators": ["x"]}
+        )
+
+    assert dispatcher.evidence.supports(32.4, is_percent=True, decimals=1)
+
+
+# --- the loop ---------------------------------------------------------------
+
+
+class _Tool:
+    def __init__(self, block_id: str, name: str, input_dict: dict[str, Any]) -> None:
+        self.type, self.id, self.name, self.input = "tool_use", block_id, name, input_dict
+
+
+class _Response:
+    def __init__(self, content: list[Any]) -> None:
+        self.content, self.stop_reason = content, "tool_use"
+
+
+class _Client:
+    def __init__(self, responses: list[Any]) -> None:
+        self.calls: list[dict[str, Any]] = []
+        queue = list(responses)
+
+        def create(**kwargs: Any) -> Any:
+            self.calls.append(kwargs)
+            return queue.pop(0)
+
+        self.messages = SimpleNamespace(create=create)
+
+
+def _compose(markdown: str, block_id: str) -> _Response:
+    return _Response(
+        [_Tool(block_id, "compose_answer", {"blocks": [{"type": "text", "markdown": markdown}]})]
+    )
+
+
+async def _run(responses: list[Any]) -> tuple[list[dict[str, Any]], _Client]:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value={"education.fsm_eligibility_share"})  # type: ignore[method-assign]
+    client = _Client(responses)
+    events: list[dict[str, Any]] = []
+    result = _indicators_result(0.324, _source("dfe.explore"))
+    with (
+        patch("soundings.ask.orchestrator.get_anthropic_client", return_value=client),
+        patch("soundings.ask.dispatcher.get_indicators", AsyncMock(return_value=result)),
+    ):
+        orch = AskOrchestrator(
+            dispatcher=dispatcher,
+            prompt_builder=SystemPromptBuilder(),
+            api_key="k",
+            model="m",
+        )
+        await orch.run("How high is FSM eligibility in Bradford?", events.append)
+    return events, client
+
+
+GET = _Response(
+    [_Tool("t1", "get_indicators", {"place_id": "ltla24:E08000032", "indicators": ["x"]})]
+)
+
+
+async def test_answer_emits_the_sources_its_tools_used() -> None:
+    events, _ = await _run([GET, _compose("Bradford's FSM eligibility is 32.4%.", "t2")])
+
+    (sources,) = [e for e in events if e["type"] == "sources"]
+    assert [s["source_id"] for s in sources["sources"]] == ["dfe.explore"]
+    (grounding,) = [e for e in events if e["type"] == "grounding"]
+    assert grounding["untraced"] == []
+
+
+async def test_untraced_figures_get_one_revision_before_streaming() -> None:
+    events, client = await _run(
+        [
+            GET,
+            _compose("Bradford is 32.4% against a regional 29.1%.", "t2"),
+            _compose("Bradford's FSM eligibility is 32.4%.", "t3"),
+        ]
+    )
+
+    # Nothing from the first draft reached the reader.
+    texts = [e["block"]["markdown"] for e in events if e["type"] == "block"]
+    assert texts == ["Bradford's FSM eligibility is 32.4%."]
+    # The model was told exactly which figure failed and how to fix it.
+    (feedback,) = [
+        part
+        for message in client.calls[2]["messages"]
+        if message["role"] == "user" and isinstance(message["content"], list)
+        for part in message["content"]
+        if part.get("is_error")
+    ]
+    assert "29.1%" in feedback["content"]
+    assert "calculate_" in feedback["content"]
+
+
+async def test_still_untraced_after_revision_is_omitted() -> None:
+    events, _ = await _run(
+        [
+            GET,
+            _compose("Regional average 29.1%.", "t2"),
+            _compose("Regional average still 29.1%.", "t3"),
+        ]
+    )
+
+    texts = [e["block"]["markdown"] for e in events if e["type"] == "block"]
+    assert len(texts) == 1
+    assert "Regional average" not in texts[0]
+    assert "omitted" in texts[0]
+    (grounding,) = [e for e in events if e["type"] == "grounding"]
+    assert grounding["untraced"] == ["29.1%"]
+    assert grounding["revised"] is True
+
+
+async def test_fallback_without_compose_answer_cannot_publish_invented_number() -> None:
+    class _Text:
+        type = "text"
+        text = "The regional average is 29.1%."
+
+    events, _ = await _run([GET, _Response([_Text()])])
+    shown = [e["block"]["markdown"] for e in events if e["type"] == "block"]
+    assert shown and all("29.1%" not in text for text in shown)
+    assert any(e["type"] == "grounding" and e["untraced"] == ["29.1%"] for e in events)
+
+
+async def test_unverified_figures_in_callout_evidence_are_removed() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    finalised = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "insight-callout",
+                    "severity": "notable",
+                    "headline": "Regional rate 29.1%",
+                    "evidence": "29.1% average",
+                }
+            ]
+        }
+    )
+    assert finalised.untraced == ["29.1%"]
+
+
+def test_follow_up_rehydrates_only_prior_tool_results() -> None:
+    dispatcher = ToolDispatcher(_state())
+    source = _source("dfe.explore")
+    data = _indicators_result(0.324, source).model_dump(mode="json")
+    history = [
+        {"role": "assistant", "content": [{"type": "text", "text": "99.9%"}]},
+        {
+            "role": "user",
+            "content": [
+                {"type": "tool_result", "tool_use_id": "t1", "content": json.dumps(data)},
+            ],
+        },
+        {"role": "user", "content": "What about this place next year?"},
+    ]
+    dispatcher.restore_prior_results(history)
+    assert dispatcher.evidence.supports(32.4, is_percent=True, decimals=1)
+    assert [s.source_id for s in dispatcher.sources] == ["dfe.explore"]
+    assert dispatcher.evidence.reference_metadata()[0]["place_id"] == "ltla24:E08000032"
+    assert not dispatcher.evidence.supports(99.9, is_percent=True, decimals=1)
+
+
+async def test_numeric_prose_requires_explicit_ref_when_observation_is_ambiguous() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    dispatcher._record(
+        {
+            "results": [
+                {
+                    "place_id": "ltla24:BRADFORD",
+                    "indicator": "education.fsm_eligibility_share",
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+                {
+                    "place_id": "ltla24:LEEDS",
+                    "indicator": "education.fsm_eligibility_share",
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+            ]
+        }
+    )
+    uncited = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": "Bradford is at 32.4%."}]}
+    )
+    assert any("ambiguous" in issue for issue in uncited.untraced)
+
+    cited = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": "Bradford is at 32.4%.",
+                    "evidence_refs": ["obs:1"],
+                }
+            ]
+        }
+    )
+    assert cited.untraced == []
+    wrong = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": "Bradford is at 37.8%.",
+                    "evidence_refs": ["obs:1"],
+                }
+            ]
+        }
+    )
+    assert any("cited" in issue for issue in wrong.untraced)
+
+
+async def test_atomic_claims_bind_matching_values_to_the_right_place_and_period() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    indicator = "education.fsm_eligibility_share"
+    dispatcher._record(
+        {
+            "results": [
+                {
+                    "place_id": "ltla24:BRADFORD",
+                    "indicator": indicator,
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+                {
+                    "place_id": "ltla24:LEEDS",
+                    "indicator": indicator,
+                    "period": "2024/25",
+                    "value": 0.324,
+                },
+            ]
+        }
+    )
+    passage = "Bradford: 32.4%. Leeds: 32.4%."
+    first = {
+        "quote": "Bradford: 32.4%",
+        "ref_id": "obs:1",
+        "indicator_key": indicator,
+        "place_id": "ltla24:BRADFORD",
+        "period": "2024/25",
+    }
+    second = {
+        "quote": "Leeds: 32.4%",
+        "ref_id": "obs:2",
+        "indicator_key": indicator,
+        "place_id": "ltla24:LEEDS",
+        "period": "2024/25",
+    }
+
+    accepted = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": passage, "evidence_claims": [first, second]}]}
+    )
+    assert accepted.untraced == []
+
+    # Two identical percentages cannot be justified by block-wide refs.
+    broad = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": passage, "evidence_refs": ["obs:1", "obs:2"]}]}
+    )
+    assert any("evidence_claims" in issue for issue in broad.untraced)
+
+    # A claim for Bradford cannot borrow Leeds's observation even when
+    # the percentage is numerically identical.
+    swapped = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": passage,
+                    "evidence_claims": [
+                        {**first, "ref_id": "obs:2"},
+                        second,
+                    ],
+                }
+            ]
+        }
+    )
+    assert any("context mismatch" in issue for issue in swapped.untraced)
+
+    # A citation for one occurrence cannot automatically cover another.
+    incomplete = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": passage, "evidence_claims": [first]}]}
+    )
+    assert any("no evidence claim covers" in issue for issue in incomplete.untraced)
+
+    stale = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": passage,
+                    "evidence_claims": [
+                        {**first, "period": "2023/24"},
+                        second,
+                    ],
+                }
+            ]
+        }
+    )
+    assert any("context mismatch" in issue for issue in stale.untraced)
+
+    invented_quote = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "text",
+                    "markdown": passage,
+                    "evidence_claims": [
+                        {**first, "quote": "Bradford: 70%"},
+                        second,
+                    ],
+                }
+            ]
+        }
+    )
+    assert any("quote is absent" in issue for issue in invented_quote.untraced)
+
+
+async def test_dispatch_gives_the_model_ref_ids_without_modifying_public_tools() -> None:
+    dispatcher = ToolDispatcher(_state())
+    data = _indicators_result(0.324, _source("dfe.explore"))
+    with patch("soundings.ask.dispatcher.get_indicators", AsyncMock(return_value=data)):
+        returned = await dispatcher.dispatch(
+            "get_indicators", {"place_id": "ltla24:E08000032", "indicators": ["x"]}
+        )
+    (reference,) = returned["_evidence_facts"]
+    assert reference["ref_id"] == "obs:1"
+    assert reference["indicator_key"] == "education.fsm_eligibility_share"
+    assert reference["place_id"] == "ltla24:E08000032"
+    assert reference["period"] == "2024/2025"
+    assert reference["source_id"] == "dfe.explore"
+
+
+async def test_sub_area_table_does_not_accept_another_places_number() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value={"population.total"})  # type: ignore[method-assign]
+    dispatcher._record(
+        {
+            "indicator_key": "population.total",
+            "period": "2024",
+            "sub_areas": [{"place_id": "lsoa21:A", "value": 323.0}],
+        }
+    )
+    answer = await dispatcher.finalise_answer(
+        {
+            "blocks": [
+                {
+                    "type": "sub-area-table",
+                    "indicator_key": "population.total",
+                    "parent_place_id": "ltla24:X",
+                    "period": "2024",
+                    "sub_areas": [{"place_id": "lsoa21:B", "name": "B", "value": 323.0}],
+                }
+            ]
+        }
+    )
+    assert any("lsoa21:B" in figure for figure in answer.untraced)
+
+
+async def test_raw_html_is_escaped_from_text_answers() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    finalised = await dispatcher.finalise_answer(
+        {"blocks": [{"type": "text", "markdown": "<script>alert(1)</script> **Bold**"}]}
+    )
+    assert "<script>" not in finalised.answer.blocks[0].markdown
+    assert "&lt;script&gt;" in finalised.answer.blocks[0].markdown
+    assert "**Bold**" in finalised.answer.blocks[0].markdown

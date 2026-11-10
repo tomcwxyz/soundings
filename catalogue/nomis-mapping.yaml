@@ -31,19 +31,8 @@ mappings:
       gender: "0"                 # Total (both sexes)
     period: latest
 
-  - indicator_key: population.density
-    source_id: ons.mid_year_estimates
-    dataset_id: NM_2002_1
-    measures: "20100"
-    geography_type_codes:
-      ltla24: TYPE424
-      utla24: TYPE423
-      region: TYPE480
-      country: TYPE499
-    extra_params:
-      c_age: "0"
-      gender: "0"
-    period: latest
+  # population.density is withdrawn: it reused the population.total query
+  # (measures 20100, no area denominator), so density equalled population.
 
   - indicator_key: population.age_structure.under_18
     source_id: ons.mid_year_estimates

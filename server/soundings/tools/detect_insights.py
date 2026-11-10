@@ -24,6 +24,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from soundings.catalogue.contracts import get_contract_registry
+from soundings.orchestration.measure_guard import value_bounds
+
 Severity = Literal["extreme", "notable"]
 SignalKind = Literal["extreme_percentile", "peer_divergence", "trend_reversal"]
 
@@ -109,6 +112,9 @@ async def _detect_percentile_and_divergence(
     Returns 0–2 signals (one percentile if in tail, one divergence if
     beyond one stddev of the same-type-peer median).
     """
+    lo, hi = value_bounds(get_contract_registry(), indicator_key)
+    # Values outside the indicator's measure contract are not a place's
+    # value and not a peer's: a "proportion" of 75 is a storage error.
     sql = text(
         """
         WITH place_type AS (
@@ -122,6 +128,8 @@ async def _detect_percentile_and_divergence(
             WHERE iv.place_id = :place_id
               AND iv.indicator_key = :key
               AND iv.value IS NOT NULL
+              AND (CAST(:lo AS float8) IS NULL OR iv.value >= CAST(:lo AS float8))
+              AND (CAST(:hi AS float8) IS NULL OR iv.value <= CAST(:hi AS float8))
             ORDER BY iv.retrieved_at DESC
             LIMIT 1
         ),
@@ -131,6 +139,8 @@ async def _detect_percentile_and_divergence(
             JOIN geography.place p ON p.id = iv.place_id
             WHERE iv.indicator_key = :key
               AND iv.value IS NOT NULL
+              AND (CAST(:lo AS float8) IS NULL OR iv.value >= CAST(:lo AS float8))
+              AND (CAST(:hi AS float8) IS NULL OR iv.value <= CAST(:hi AS float8))
               AND p.type = (SELECT type FROM place_type)
         ),
         stats AS (
@@ -164,7 +174,7 @@ async def _detect_percentile_and_divergence(
         rows = (
             await conn.execute(
                 sql,
-                {"place_id": place_id, "key": indicator_key},
+                {"place_id": place_id, "key": indicator_key, "lo": lo, "hi": hi},
             )
         ).all()
 
