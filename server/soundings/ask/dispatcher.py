@@ -468,7 +468,10 @@ class ToolDispatcher:
             contexts = {
                 (fact.indicator_key, fact.place_id, fact.period)
                 for fact in self.evidence.reference_facts.values()
-                if any(self.evidence.traces_with_refs(figure, [fact.ref_id or ""]) for figure in observed)
+                if any(
+                    self.evidence.traces_with_refs(figure, [fact.ref_id or ""])
+                    for figure in observed
+                )
             }
             if len(observed) > 1 and len(contexts) > 1:
                 missing.append(
