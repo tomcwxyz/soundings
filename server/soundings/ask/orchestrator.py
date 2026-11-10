@@ -133,6 +133,7 @@ class AskOrchestrator:
 
         # Start from prior messages (follow-up) or a fresh user turn.
         if prior_messages:
+            self._dispatcher.restore_prior_results(prior_messages)
             messages: list[dict[str, Any]] = list(prior_messages)
             messages.append({"role": "user", "content": query})
         else:
