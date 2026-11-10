@@ -31,11 +31,27 @@ _VISUAL_TYPES = frozenset(
 )
 
 
+class EvidenceClaim(BaseModel):
+    """One exact passage supported by one observation, with explicit context.
+
+    Unlike block-level evidence_refs, these prevent one reference from being
+    reused to justify a different place's identical numerical value.
+    """
+
+    quote: str = Field(min_length=1, max_length=600)
+    ref_id: str = Field(min_length=1, max_length=80)
+    indicator_key: str = Field(min_length=1)
+    place_id: str = Field(min_length=1)
+    period: str | None = None
+
+
 class TextBlock(BaseModel):
     type: Literal["text"]
     markdown: str
-    # IDs attached to individual source observations in Ask tool responses.
+    # Legacy block-wide citations remain accepted for simpler responses.
     evidence_refs: list[str] = Field(default_factory=list, max_length=80)
+    # Preferred for comparisons and multi-figure passages.
+    evidence_claims: list[EvidenceClaim] = Field(default_factory=list, max_length=80)
 
 
 class IndicatorCardBlock(BaseModel):
@@ -69,6 +85,7 @@ class InsightCalloutBlock(BaseModel):
     type: Literal["insight-callout"]
     severity: Severity
     evidence_refs: list[str] = Field(default_factory=list, max_length=80)
+    evidence_claims: list[EvidenceClaim] = Field(default_factory=list, max_length=80)
     headline: str
     indicator_key: str | None = None
     place_id: str | None = None
