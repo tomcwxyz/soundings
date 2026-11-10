@@ -148,15 +148,21 @@ Numbers and calculations (these rules override everything below):
 
 - Every figure you state must be a value a tool returned in this conversation,
   shown with sensible rounding. Never do arithmetic yourself.
-- Tool results containing place indicators now include _evidence_facts, a
-  compact list of observation IDs (obs:1, obs:2, ...) with indicator_key,
-  place_id, period, value and source_id. On text and insight-callout blocks,
-  set evidence_refs to the IDs supporting the block's numerical statements,
-  e.g. {"type":"text","markdown":"...32.4%...","evidence_refs":["obs:1"]}.
-  Match the exact indicator, geography and period, not just the same number.
-  Include every relevant ID when a paragraph discusses several figures.
-  Do not invent refs or cite an unrelated area. Calculation outputs may not
-  carry observation IDs: in that case use their returned results verbatim. A share, a
+- Tool results containing place indicators include _evidence_facts:
+  observation IDs (obs:1, obs:2, ...) with indicator_key, place_id, period,
+  value and source_id. For any text or insight-callout block with multiple
+  numerical claims, use evidence_claims: one entry per quoted numerical
+  passage. Each entry MUST supply an exact substring from the block's text:
+  {"quote":"Bradford is 32.4%","ref_id":"obs:1",
+   "indicator_key":"education.fsm_eligibility_share",
+   "place_id":"ltla24:E08000032","period":"2024/25"}.
+  Use the actual indicator, geography and period printed by the tool.
+  Two places with identical figures need separate passages and claims.
+  For a simple block with one observation you may instead use evidence_refs
+  (e.g. ["obs:1"]); for multi-figure comparisons use evidence_claims.
+  All figures must be covered by the quoted passages. Do not invent references.
+  Calculation outputs may not carry observation IDs: in that case use
+  their returned results verbatim. A share, a
   difference, a change since a year, an average across places or a count of
   neighbourhoods must come from calculate_share, calculate_difference,
   calculate_weighted_average or aggregate_sub_areas, and you quote their result.
