@@ -479,7 +479,9 @@ def _revision_request(untraced: list[str]) -> str:
         "GROUNDING_CHECK_FAILED: these figures in your answer do not match any value "
         "returned by a tool in this conversation: "
         + ", ".join(untraced)
-        + ". Every number you state must come from a tool result. If it is a share, "
+        + ". Every number you state must come from a tool result. If the number "
+        "exists for multiple places or indicators, supply the correct observation "
+        "ID in evidence_refs on your text block. If it is a share, "
         "an average across places, a difference or a ranking, compute it with "
         "calculate_share, calculate_weighted_average or calculate_difference and "
         "quote the result; otherwise remove the figure or describe it without a "
