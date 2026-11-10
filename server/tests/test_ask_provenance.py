@@ -175,7 +175,7 @@ async def test_untraced_figures_get_one_revision_before_streaming() -> None:
     assert "calculate_" in feedback["content"]
 
 
-async def test_still_untraced_after_revision_is_shown_with_a_warning() -> None:
+async def test_still_untraced_after_revision_is_omitted() -> None:
     events, _ = await _run(
         [
             GET,
@@ -185,8 +185,43 @@ async def test_still_untraced_after_revision_is_shown_with_a_warning() -> None:
     )
 
     texts = [e["block"]["markdown"] for e in events if e["type"] == "block"]
-    assert texts[0] == "Regional average still 29.1%."
-    assert "29.1%" in texts[-1] and "could not be matched" in texts[-1]
+    assert len(texts) == 1
+    assert "Regional average" not in texts[0]
+    assert "omitted" in texts[0]
     (grounding,) = [e for e in events if e["type"] == "grounding"]
     assert grounding["untraced"] == ["29.1%"]
     assert grounding["revised"] is True
+
+
+async def test_fallback_without_compose_answer_cannot_publish_invented_number() -> None:
+    class _Text:
+        type = "text"
+        text = "The regional average is 29.1%."
+
+    events, _ = await _run([GET, _Response([_Text()])])
+    shown = [e["block"]["markdown"] for e in events if e["type"] == "block"]
+    assert shown and all("29.1%" not in text for text in shown)
+    assert any(e["type"] == "grounding" and e["untraced"] == ["29.1%"] for e in events)
+
+
+async def test_unverified_figures_in_callout_evidence_are_removed() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    finalised = await dispatcher.finalise_answer({
+        "blocks": [{
+            "type": "insight-callout", "severity": "notable",
+            "headline": "Regional rate 29.1%", "evidence": "29.1% average",
+        }]
+    })
+    assert finalised.untraced == ["29.1%"]
+
+
+async def test_raw_html_is_escaped_from_text_answers() -> None:
+    dispatcher = ToolDispatcher(_state())
+    dispatcher._known_keys = AsyncMock(return_value=set())  # type: ignore[method-assign]
+    finalised = await dispatcher.finalise_answer({
+        "blocks": [{"type": "text", "markdown": "<script>alert(1)</script> **Bold**"}]
+    })
+    assert "<script>" not in finalised.answer.blocks[0].markdown
+    assert "&lt;script&gt;" in finalised.answer.blocks[0].markdown
+    assert "**Bold**" in finalised.answer.blocks[0].markdown
