@@ -148,3 +148,16 @@ class EvidenceSet:
 
     def untraced(self, markdown: str) -> list[Figure]:
         return [f for f in extract_figures(markdown) if not self.traces(f)]
+
+
+def shown_decimals(value: float) -> int:
+    """The precision a bare float carries: 0.324 -> 3, 546000.0 -> -3."""
+    text_value = repr(float(value))
+    if "e" in text_value:
+        return 6
+    whole, _, frac = text_value.partition(".")
+    frac = frac.rstrip("0")
+    if frac:
+        return len(frac)
+    digits = whole.lstrip("-")
+    return -(len(digits) - len(digits.rstrip("0"))) if digits.strip("0") else 0

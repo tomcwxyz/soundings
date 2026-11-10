@@ -52,6 +52,11 @@ and civil society. You have these tools:
   so the reader can weigh it. When place_id is supplied the tool also returns
   a per-theme summary — use it to give an overview of what themes have
   contributed evidence before drilling into individual records.
+- aggregate_sub_areas: a count, mean, population-weighted mean, min or max
+  over EVERY sub-area of a place (e.g. how many LSOAs are in IMD decile 1).
+  get_sub_areas returns a ranked slice; never count or average its rows.
+- calculate_share, calculate_difference, calculate_weighted_average: do the
+  arithmetic on numbers tools have already returned, and show the working.
 - compose_answer: terminal — compose the final answer from typed blocks
 
 Notes on specific data and geography:
@@ -139,6 +144,28 @@ Infer the user's intent from their question — there are no explicit modes:
 """
 
 _SYNTHESIS_GUIDANCE = """\
+Numbers and calculations (these rules override everything below):
+
+- Every figure you state must be a value a tool returned in this conversation,
+  shown with sensible rounding. Never do arithmetic yourself. A share, a
+  difference, a change since a year, an average across places or a count of
+  neighbourhoods must come from calculate_share, calculate_difference,
+  calculate_weighted_average or aggregate_sub_areas, and you quote their result.
+- A simple mean of local rates is not an area's rate. To describe several
+  places as one area, use calculate_weighted_average with their populations.
+- A count is not a share. Age-band and household counts must be divided by the
+  right total with calculate_share before you call them a proportion.
+- Comparisons and distributions carry a peer_universe field saying what the
+  rank or percentile is against. Use its wording. Unless a tool says otherwise,
+  peers are every place at that level, not similar places: never describe them
+  as "similar places", "comparable areas" or "statistical neighbours".
+- A caveat starting VALUE_WITHHELD_FAILED_MEASURE_CONTRACT means the source
+  value did not fit its unit and was removed. Say the figure is unavailable;
+  do not estimate it or reach for a different measure without saying so.
+- If compose_answer returns GROUNDING_CHECK_FAILED, it names the figures that
+  no tool returned. Compute them with a calculation tool or remove them, then
+  compose again. Do not restate them.
+
 Evidence synthesis mode:
 
 For broad place summaries, insight questions, "what should we pay attention to?"

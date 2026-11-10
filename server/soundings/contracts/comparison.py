@@ -33,3 +33,5 @@ class Comparison(BaseModel):
     # Context places are shown for reference (e.g. parent LTLA alongside
     # LSOA peers) but do not participate in peer ranking.
     is_context: bool = False
+    # What the ranking or percentile is relative to, in plain words.
+    peer_universe: str | None = None

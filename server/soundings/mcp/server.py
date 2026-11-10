@@ -15,6 +15,11 @@ from sqlalchemy import text
 from soundings.ask.dispatcher import ToolDispatcher
 from soundings.contracts.observation import GetObservationsInput
 from soundings.core.config import get_settings
+from soundings.tools.aggregate_sub_areas import (
+    AggregateSubAreasInput,
+    Statistic,
+    aggregate_sub_areas,
+)
 from soundings.tools.compare_places import ComparePlacesInput, compare_places
 from soundings.tools.detect_insights import DetectInsightsInput, detect_insights
 from soundings.tools.find_organisations_in_place import (
@@ -325,6 +330,31 @@ def build_mcp_server(state: Any | None = None) -> FastMCP:
                 period=period,
                 limit=limit,
                 sort_by=sort_by,
+            ),
+            state.orchestrator,
+            state.engine,
+        )
+        return result.model_dump(mode="json")
+
+    @mcp.tool(name="aggregate_sub_areas", description=_TOOL_DESCRIPTIONS["aggregate_sub_areas"])
+    async def _aggregate_sub_areas(
+        place_id: str,
+        indicator_key: str,
+        statistic: Statistic,
+        threshold: float | None = None,
+        child_type: str = "auto",
+        period: str | None = None,
+    ) -> dict[str, Any]:
+        if state is None:
+            raise RuntimeError("MCP aggregate_sub_areas invoked without app state")
+        result = await aggregate_sub_areas(
+            AggregateSubAreasInput(
+                place_id=place_id,
+                indicator_key=indicator_key,
+                statistic=statistic,
+                threshold=threshold,
+                child_type=child_type,
+                period=period,
             ),
             state.orchestrator,
             state.engine,

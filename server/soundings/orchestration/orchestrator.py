@@ -42,6 +42,7 @@ from soundings.orchestration.measure_guard import (
     guard_values,
     withheld_caveat,
 )
+from soundings.orchestration.peer_universe import describe_peer_universe
 from soundings.orchestration.registry import AdapterRegistry
 
 DEFAULT_TIMEOUT = 10.0
@@ -438,6 +439,7 @@ class IndicatorOrchestrator:
             period=period_used,
             values=comparison_values,
             source=source_ref,
+            peer_universe=describe_peer_universe(peer_type, n_with_values),
             caveats=ind_caveats,
         )
         return comparison, ind_caveats

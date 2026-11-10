@@ -17,9 +17,27 @@ from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 from sqlalchemy import text
 
 from soundings.ask.blocks import AnswerBlock, ComposeAnswerArgs
-from soundings.ask.grounding import EvidenceSet
+from soundings.ask.grounding import EvidenceSet, shown_decimals
 from soundings.contracts.observation import GetObservationsInput
 from soundings.contracts.source_ref import SourceRef
+from soundings.tools.aggregate_sub_areas import (
+    AggregateSubAreasInput,
+    aggregate_sub_areas,
+)
+from soundings.tools.aggregate_sub_areas import (
+    tool_spec as aggregate_sub_areas_spec,
+)
+from soundings.tools.calculate import (
+    CalculateDifferenceInput,
+    CalculateShareInput,
+    CalculateWeightedAverageInput,
+    calculate_difference,
+    calculate_share,
+    calculate_weighted_average,
+)
+from soundings.tools.calculate import (
+    tool_specs as calculation_specs,
+)
 from soundings.tools.compare_places import (
     ComparePlacesInput,
     compare_places,
@@ -153,6 +171,14 @@ COMPOSE_ANSWER_DESCRIPTION = (
 )
 
 
+# Tools that check their operands against this conversation's evidence. MCP
+# calls are stateless, so these exist only inside Ask; an MCP client does its
+# own arithmetic on the values the other tools return.
+ASK_ONLY_TOOLS = frozenset(
+    {"calculate_share", "calculate_difference", "calculate_weighted_average"}
+)
+
+
 class FinalisedAnswer(BaseModel):
     answer: ComposeAnswerArgs
     # Figures in the answer that no tool result supports, as shown.
@@ -198,6 +224,8 @@ class ToolDispatcher:
             get_peer_dist_spec(),
             get_sub_areas_spec(),
             get_observations_spec(),
+            aggregate_sub_areas_spec(),
+            *calculation_specs(),
             {
                 "name": TERMINAL_TOOL,
                 "description": COMPOSE_ANSWER_DESCRIPTION,
@@ -318,7 +346,7 @@ class ToolDispatcher:
             # Values the model typed into a chart must have come from a tool.
             for value in _typed_values(block):
                 if not self.evidence.supports(
-                    value, is_percent=True, decimals=_shown_decimals(value)
+                    value, is_percent=True, decimals=shown_decimals(value)
                 ):
                     missing.append(f"{value:g} ({block.type})")
         return list(dict.fromkeys(missing))
@@ -341,6 +369,10 @@ class ToolDispatcher:
             "get_peer_distribution": self._handle_get_peer_distribution,
             "get_sub_areas": self._handle_get_sub_areas,
             "get_observations": self._handle_get_observations,
+            "aggregate_sub_areas": self._handle_aggregate_sub_areas,
+            "calculate_share": self._handle_calculate_share,
+            "calculate_difference": self._handle_calculate_difference,
+            "calculate_weighted_average": self._handle_calculate_weighted_average,
         }
 
     # --- Non-terminal handlers -------------------------------------------
@@ -420,6 +452,42 @@ class ToolDispatcher:
         result = await get_observations(model, self._state.engine)
         return result.model_dump(mode="json")
 
+    async def _handle_aggregate_sub_areas(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = AggregateSubAreasInput.model_validate(args)
+        result = await aggregate_sub_areas(model, self._state.orchestrator, self._state.engine)
+        return result.model_dump(mode="json")
+
+    # Calculations run against this conversation's evidence, so they live
+    # here rather than in the stateless HTTP/MCP tool layer.
+
+    async def _handle_calculate_share(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = CalculateShareInput.model_validate(args)
+        result = calculate_share(
+            numerator=model.numerator,
+            denominator=model.denominator,
+            label=model.label,
+            evidence=self.evidence,
+        )
+        return result.model_dump(mode="json")
+
+    async def _handle_calculate_difference(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = CalculateDifferenceInput.model_validate(args)
+        result = calculate_difference(
+            value=model.value, baseline=model.baseline, label=model.label, evidence=self.evidence
+        )
+        return result.model_dump(mode="json")
+
+    async def _handle_calculate_weighted_average(self, args: dict[str, Any]) -> dict[str, Any]:
+        model = CalculateWeightedAverageInput.model_validate(args)
+        result = calculate_weighted_average(
+            values=model.values,
+            weights=model.weights,
+            weight_label=model.weight_label,
+            label=model.label,
+            evidence=self.evidence,
+        )
+        return result.model_dump(mode="json")
+
     @property
     def sources(self) -> list[SourceRef]:
         """Sources behind this run's tool results, in first-seen order."""
@@ -451,15 +519,3 @@ def _typed_values(block: Any) -> list[float]:
         values = [e.value for e in block.sub_areas if e.value is not None]
         return values + ([block.parent_value] if block.parent_value is not None else [])
     return []
-
-
-def _shown_decimals(value: float) -> int:
-    text_value = repr(float(value))
-    if "e" in text_value:
-        return 6
-    whole, _, frac = text_value.partition(".")
-    frac = frac.rstrip("0")
-    if frac:
-        return len(frac)
-    digits = whole.lstrip("-")
-    return -(len(digits) - len(digits.rstrip("0"))) if digits.strip("0") else 0

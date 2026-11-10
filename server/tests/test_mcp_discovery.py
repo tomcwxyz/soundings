@@ -2,7 +2,7 @@
 
 import pytest
 
-from soundings.ask.dispatcher import TERMINAL_TOOL, ToolDispatcher
+from soundings.ask.dispatcher import ASK_ONLY_TOOLS, TERMINAL_TOOL, ToolDispatcher
 from soundings.mcp.server import build_mcp_server
 
 
@@ -14,10 +14,13 @@ def test_mcp_has_ask_tool_parity_and_descriptions(monkeypatch: pytest.MonkeyPatc
     ask_specs = {
         str(spec["name"]): str(spec["description"])
         for spec in ToolDispatcher(state=None).tool_specs()
-        if spec.get("name") != TERMINAL_TOOL
+        if spec.get("name") != TERMINAL_TOOL and spec.get("name") not in ASK_ONLY_TOOLS
     }
 
     assert ask_specs.keys() <= tools.keys()
+    assert "aggregate_sub_areas" in tools
+    # Calculations check operands against an Ask conversation's evidence.
+    assert not ASK_ONLY_TOOLS & tools.keys()
     for name, description in ask_specs.items():
         assert description
         assert tools[name].description == description

@@ -174,3 +174,55 @@ async def test_trend_points_that_break_the_contract_are_removed() -> None:
     assert [p.period for p in result.trend.points] == ["2023", "2025"]
     assert any(c.startswith(WITHHELD_CODE) for c in result.caveats)
     assert result.partial is True
+
+
+# --- peer universe labelling and peer distribution -------------------------
+
+
+async def _seed_rate_values() -> IndicatorOrchestrator:
+    orchestrator = await _seed()
+    async with get_engine().begin() as conn:
+        for pid, value in ((PLACE, 66.5), (OTHER, 0.041)):
+            await conn.execute(
+                text(
+                    "INSERT INTO data.indicator_value "
+                    "(place_id, indicator_key, period, value, source_id, retrieved_at, caveats) "
+                    "VALUES (:pid, :k, '2025', :v, :sid, now(), '[]'::jsonb)"
+                ),
+                {"pid": pid, "k": RATE, "v": value, "sid": SOURCE},
+            )
+    return orchestrator
+
+
+async def test_comparison_names_its_peer_universe() -> None:
+    """The baseline saw "all 318 authorities" described as "similar places"."""
+    orchestrator = await _seed_rate_values()
+
+    result = await orchestrator.compare_places(
+        place_ids=[OTHER], indicators=[RATE], basis="percentile"
+    )
+
+    universe = result.comparisons[0].peer_universe
+    assert universe is not None
+    assert "All 1 local authority districts" in universe
+    assert "not a group of similar places" in universe
+
+
+async def test_peer_distribution_is_guarded_sourced_and_labelled() -> None:
+    from soundings.tools.get_peer_distribution import (
+        GetPeerDistributionInput,
+        get_peer_distribution,
+    )
+
+    orchestrator = await _seed_rate_values()
+
+    out = await get_peer_distribution(
+        GetPeerDistributionInput(indicator_key=RATE, place_id=PLACE), orchestrator
+    )
+
+    assert out.focal_value is None  # 66.5 is not a proportion
+    assert out.peer_values == [pytest.approx(0.041)]
+    assert out.peer_count == 1
+    assert [s.source_id for s in out.sources] == [SOURCE]
+    assert any(c.startswith(WITHHELD_CODE) for c in out.caveats)
+    assert out.peer_universe is not None and "not a group of similar places" in out.peer_universe
