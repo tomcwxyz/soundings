@@ -1,6 +1,6 @@
       import { streamAsk } from "../lib/answer_stream";
       import { rememberQuestion } from "../lib/ask_history";
-      import { marked } from "marked";
+      import { renderSafeMarkdown } from "../lib/safe_markdown";
       import type { ComparePlacesResponse } from "../lib/types";
 
       // Non-null assertion: the runtime `if (surface)` guard below still
@@ -71,7 +71,7 @@
           // ordered/unordered lists, bold/italic/code. `gfm` is on by default.
           // `breaks` keeps single newlines as <br>, matching how the model
           // tends to write. marked.parse is synchronous with no async tokens.
-          return marked.parse(text, { async: false, gfm: true, breaks: true }) as string;
+          return renderSafeMarkdown(text);
         }
 
         // --- Block renderers -------------------------------------------------
