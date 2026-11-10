@@ -11,6 +11,8 @@ They run inside the Ask dispatcher, which holds the conversation's evidence.
 
 from __future__ import annotations
 
+from math import isfinite
+
 from pydantic import BaseModel, Field
 
 from soundings.ask.grounding import EvidenceSet, shown_decimals
@@ -56,8 +58,12 @@ def calculate_share(
     *, numerator: float, denominator: float, evidence: EvidenceSet, label: str | None = None
 ) -> CalculateShareOutput:
     _require_traced(evidence, numerator=numerator, denominator=denominator)
-    if denominator == 0:
-        raise ValueError("Cannot take a share of zero: the denominator is zero.")
+    if not all(isfinite(v) for v in (numerator, denominator)):
+        raise ValueError("Share operands must be finite numbers.")
+    if denominator <= 0:
+        raise ValueError("Cannot take a share: denominator must be positive and non-zero.")
+    if numerator < 0 or numerator > denominator:
+        raise ValueError("A share requires a numerator between zero and the denominator.")
     proportion = numerator / denominator
     return CalculateShareOutput(
         proportion=proportion,
@@ -91,6 +97,8 @@ def calculate_difference(
     *, value: float, baseline: float, evidence: EvidenceSet, label: str | None = None
 ) -> CalculateDifferenceOutput:
     _require_traced(evidence, value=value, baseline=baseline)
+    if not all(isfinite(v) for v in (value, baseline)):
+        raise ValueError("Difference operands must be finite numbers.")
     difference = value - baseline
     both_proportions = 0 <= value <= 1 and 0 <= baseline <= 1
     points = difference * 100 if both_proportions else None
@@ -146,8 +154,12 @@ def calculate_weighted_average(
         **{f"values[{i}]": v for i, v in enumerate(values)},
         **{f"weights[{i}]": w for i, w in enumerate(weights)},
     )
+    if any(not isfinite(v) for v in [*values, *weights]):
+        raise ValueError("Weighted-average operands must be finite numbers.")
+    if any(w < 0 for w in weights):
+        raise ValueError("Weights must be non-negative.")
     total_weight = sum(weights)
-    if total_weight == 0:
+    if total_weight <= 0:
         raise ValueError("Cannot weight by zero: the weights sum to zero.")
     weighted = sum(v * w for v, w in zip(values, weights, strict=True)) / total_weight
     simple = sum(values) / len(values)
