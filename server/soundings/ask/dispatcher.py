@@ -9,6 +9,7 @@ function against the shared state, and returns ``model_dump(mode="json")``.
 not execute it — the orchestrator owns that step.
 """
 
+import json
 import logging
 from collections.abc import Iterator
 from typing import Any
@@ -336,6 +337,26 @@ class ToolDispatcher:
             if new_count > 80:
                 result["_evidence_facts_omitted"] = new_count - 80
         return result
+
+    def restore_prior_results(self, messages: list[dict[str, Any]]) -> None:
+        """Restore evidence from persisted tool results for follow-up questions.
+
+        Earlier assistant prose must never become evidence.
+        """
+        for message in messages:
+            if message.get("role") != "user" or not isinstance(message.get("content"), list):
+                continue
+            for block in message["content"]:
+                if not isinstance(block, dict) or block.get("type") != "tool_result":
+                    continue
+                if block.get("is_error") or not isinstance(block.get("content"), str):
+                    continue
+                try:
+                    result = json.loads(block["content"])
+                except (ValueError, TypeError):
+                    continue
+                if isinstance(result, dict) and "error" not in result:
+                    self._record(result)
 
     def _record(self, result: Any) -> None:
         """Collect provenance and evidence from a tool result."""
