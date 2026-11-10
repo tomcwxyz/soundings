@@ -115,11 +115,22 @@ def extract_figures(markdown: str) -> list[Figure]:
     return figures
 
 
+@dataclass(frozen=True)
+class EvidenceFact:
+    """A tool-returned value with its observed measure and geography."""
+
+    value: float
+    indicator_key: str | None = None
+    place_id: str | None = None
+    period: str | None = None
+
+
 @dataclass
 class EvidenceSet:
-    """Every number returned by a tool during one Ask run."""
+    """Every number returned by a tool during one Ask run, including context."""
 
     values: set[float] = field(default_factory=set)
+    facts: list[EvidenceFact] = field(default_factory=list)
     _sorted: list[float] | None = field(default=None, repr=False)
 
     def add_result(self, result: Any) -> None:
@@ -130,18 +141,33 @@ class EvidenceSet:
         self.values.add(float(value))
         self._sorted = None
 
-    def _walk(self, node: Any) -> None:
+    def _walk(
+        self,
+        node: Any,
+        indicator_key: str | None = None,
+        place_id: str | None = None,
+        period: str | None = None,
+    ) -> None:
         if isinstance(node, bool):
             return
         if isinstance(node, (int, float)):
             self.values.add(float(node))
+            self.facts.append(EvidenceFact(float(node), indicator_key, place_id, period))
         elif isinstance(node, dict):
+            candidate_indicator = node.get("indicator_key") or node.get("indicator")
+            candidate_place = node.get("place_id")
+            candidate_period = node.get("period")
+            next_indicator = (
+                candidate_indicator if isinstance(candidate_indicator, str) else indicator_key
+            )
+            next_place = candidate_place if isinstance(candidate_place, str) else place_id
+            next_period = candidate_period if isinstance(candidate_period, str) else period
             for key, child in node.items():
                 if key not in _NON_EVIDENCE_KEYS:
-                    self._walk(child)
+                    self._walk(child, next_indicator, next_place, next_period)
         elif isinstance(node, (list, tuple)):
             for child in node:
-                self._walk(child)
+                self._walk(child, indicator_key, place_id, period)
 
     def _near(self, target: float, tolerance: float) -> bool:
         if self._sorted is None:
@@ -156,6 +182,34 @@ class EvidenceSet:
             return True
         # A percentage may come from a proportion: 32.4% <- 0.324.
         return is_percent and self._near(value / 100.0, tol / 100.0)
+
+    def supports_in_context(
+        self,
+        value: float,
+        *,
+        indicator_key: str,
+        place_id: str,
+        period: str | None = None,
+        is_percent: bool = False,
+        decimals: int = 2,
+    ) -> bool:
+        """Only a matching indicator/place/period can support a typed chart row.
+
+        Narrative remains weaker until each claim carries an explicit fact ID.
+        """
+        tolerance = 0.5 * 10.0 ** (-decimals)
+        for fact in self.facts:
+            if fact.indicator_key != indicator_key or fact.place_id != place_id:
+                continue
+            if period and fact.period != period:
+                continue
+            if abs(fact.value - value) <= tolerance + abs(value) * 1e-9:
+                return True
+            if is_percent and abs(fact.value - value / 100) <= (
+                tolerance / 100 + abs(value) * 1e-11
+            ):
+                return True
+        return False
 
     def traces(self, figure: Figure) -> bool:
         return self.supports(
