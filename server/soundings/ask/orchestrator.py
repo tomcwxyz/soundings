@@ -311,17 +311,29 @@ class AskOrchestrator:
             messages.append({"role": "assistant", "content": assistant_content})
 
             if not tool_use_blocks:
-                # No tool calls — Claude is done talking without compose_answer.
-                # Emit any text as a block, then close.
-                for content_block in response.content:
-                    if content_block.type == "text" and content_block.text.strip():
-                        await _emit(
-                            callback,
-                            {
-                                "type": "block",
-                                "block": {"type": "text", "markdown": content_block.text},
-                            },
-                        )
+                # Some model responses skip compose_answer. They still pass
+                # through the same sanitisation and grounding check.
+                raw = "\n\n".join(
+                    b.text for b in response.content if b.type == "text" and b.text.strip()
+                )
+                if raw:
+                    finalised = await self._dispatcher.finalise_answer(
+                        {"blocks": [{"type": "text", "markdown": raw}]}
+                    )
+                    safe_text = (
+                        "I couldn't verify the figures needed for this answer, "
+                        "so I have not published them. Please try a narrower question."
+                        if finalised.untraced else finalised.answer.blocks[0].markdown
+                    )
+                    await _emit(
+                        callback,
+                        {"type": "block", "block": {"type": "text", "markdown": safe_text}},
+                    )
+                    await _emit(
+                        callback,
+                        {"type": "grounding", "untraced": finalised.untraced,
+                         "revised": False},
+                    )
                 await _emit(
                     callback,
                     {
@@ -357,14 +369,18 @@ class AskOrchestrator:
 
                     blocks = list(finalised.answer.blocks)
                     if finalised.untraced:
+                        # Never publish an unsupported claim merely because
+                        # the model's one correction attempt failed.
+                        blocks = [
+                            block for block in blocks
+                            if not self._dispatcher.untraced_block(block)
+                        ]
                         blocks.append(
                             TextBlock(
                                 type="text",
                                 markdown=(
-                                    "_Some figures above could not be matched to a source "
-                                    "value and may be the model's own calculation: "
-                                    + ", ".join(finalised.untraced)
-                                    + ". Treat them with caution._"
+                                    "Some claims were omitted because their figures "
+                                    "could not be verified against the available data."
                                 ),
                             )
                         )
