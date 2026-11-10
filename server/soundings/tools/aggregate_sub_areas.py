@@ -87,8 +87,29 @@ async def aggregate_sub_areas(
     )
     values = {s.place_id: s.value for s in rows.sub_areas if s.value is not None}
     sources = list(rows.sources)
-    # The slice caveat does not apply: every sub-area was read.
+    # The slice caveat does not apply only when the full set was read.
     caveats = [c for c in rows.caveats if not c.startswith("Showing ")]
+    if rows.truncated or any(c.startswith("MIXED_INDICATOR_PERIODS") for c in caveats):
+        if rows.truncated:
+            caveats.append(
+                "INCOMPLETE_SUB_AREA_SET: Requested aggregate exceeds the "
+                "available sub-area result limit; no aggregate was calculated."
+            )
+        return AggregateSubAreasOutput(
+            parent_place_id=input.place_id,
+            indicator_key=input.indicator_key,
+            child_type=rows.child_type,
+            statistic=input.statistic,
+            threshold=input.threshold,
+            result=None,
+            n_with_values=rows.sub_areas_with_values,
+            total_sub_areas=rows.total_sub_areas,
+            unit=rows.unit,
+            period=rows.period,
+            working="A complete, single-period sub-area set was not available.",
+            sources=sources,
+            caveats=caveats,
+        )
     result: float | None = None
     share: float | None = None
     n = len(values)
@@ -115,10 +136,16 @@ async def aggregate_sub_areas(
             "equally whatever its population."
         )
     elif input.statistic == "population_weighted_mean":
-        populations, retrieved_at = await _populations(engine, list(values))
+        populations, retrieved_at, consistent_periods = await _populations(engine, list(values))
         paired = [(v, populations[pid]) for pid, v in values.items() if populations.get(pid)]
         total = sum(p for _, p in paired)
-        if total and retrieved_at is not None:
+        if not consistent_periods:
+            caveats.append(
+                "MIXED_POPULATION_PERIODS: Population weights use different "
+                "reference periods, so the weighted estimate is withheld."
+            )
+            working = "Population weights did not share a single reference period."
+        elif total and retrieved_at is not None:
             result = sum(v * p for v, p in paired) / total
             n = len(paired)
             working = f"Mean of {n} {rows.child_type} values weighted by population: {result:.4g}."
@@ -161,13 +188,13 @@ async def aggregate_sub_areas(
 
 async def _populations(
     engine: AsyncEngine, place_ids: list[str]
-) -> tuple[dict[str, float], datetime | None]:
-    """Latest population per place, and the oldest retrieval among them."""
+) -> tuple[dict[str, float], datetime | None, bool]:
+    """Latest population per place, oldest retrieval and period consistency."""
     async with engine.connect() as conn:
         found = (
             await conn.execute(
                 text(
-                    "SELECT DISTINCT ON (place_id) place_id, value, retrieved_at "
+                    "SELECT DISTINCT ON (place_id) place_id, value, period, retrieved_at "
                     "FROM data.indicator_value "
                     "WHERE indicator_key = 'population.total' AND place_id = ANY(:ids) "
                     "AND value > 0 ORDER BY place_id, period DESC"
@@ -176,7 +203,8 @@ async def _populations(
             )
         ).all()
     oldest = min((r.retrieved_at for r in found), default=None)
-    return {r.place_id: float(r.value) for r in found}, oldest
+    periods = {r.period for r in found}
+    return {r.place_id: float(r.value) for r in found}, oldest, len(periods) <= 1
 
 
 def tool_spec() -> dict[str, object]:
