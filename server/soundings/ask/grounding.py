@@ -188,8 +188,13 @@ class EvidenceSet:
                     self._reference_keys.add(key)
                     ref_id = f"obs:{len(self.reference_facts) + 1}"
                     self.reference_facts[ref_id] = EvidenceFact(
-                        float(node), indicator_key, place_id, period,
-                        ref_id, unit, source_id,
+                        float(node),
+                        indicator_key,
+                        place_id,
+                        period,
+                        ref_id,
+                        unit,
+                        source_id,
                     )
         elif isinstance(node, dict):
             candidate_indicator = node.get("indicator_key") or node.get("indicator")
@@ -212,13 +217,23 @@ class EvidenceSet:
                     continue
                 if key == "parent_value" and isinstance(node.get("parent_place_id"), str):
                     self._walk(
-                        child, next_indicator, node["parent_place_id"], next_period,
-                        next_unit, next_source, key,
+                        child,
+                        next_indicator,
+                        node["parent_place_id"],
+                        next_period,
+                        next_unit,
+                        next_source,
+                        key,
                     )
                 else:
                     self._walk(
-                        child, next_indicator, next_place, next_period,
-                        next_unit, next_source, key,
+                        child,
+                        next_indicator,
+                        next_place,
+                        next_period,
+                        next_unit,
+                        next_source,
+                        key,
                     )
         elif isinstance(node, (list, tuple)):
             for child in node:
@@ -290,9 +305,7 @@ class EvidenceSet:
             tolerance = figure.tolerance + abs(figure.value) * 1e-9
             if abs(fact.value - figure.value) <= tolerance:
                 return True
-            if figure.is_percent and abs(fact.value - figure.value / 100) <= (
-                tolerance / 100
-            ):
+            if figure.is_percent and abs(fact.value - figure.value / 100) <= (tolerance / 100):
                 return True
         return False
 
