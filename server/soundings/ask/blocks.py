@@ -34,6 +34,8 @@ _VISUAL_TYPES = frozenset(
 class TextBlock(BaseModel):
     type: Literal["text"]
     markdown: str
+    # IDs attached to individual source observations in Ask tool responses.
+    evidence_refs: list[str] = Field(default_factory=list, max_length=80)
 
 
 class IndicatorCardBlock(BaseModel):
@@ -66,6 +68,7 @@ class OrganisationsBlock(BaseModel):
 class InsightCalloutBlock(BaseModel):
     type: Literal["insight-callout"]
     severity: Severity
+    evidence_refs: list[str] = Field(default_factory=list, max_length=80)
     headline: str
     indicator_key: str | None = None
     place_id: str | None = None
