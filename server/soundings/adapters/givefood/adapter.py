@@ -65,6 +65,7 @@ class GiveFoodAdapter(PassthroughAdapter):
     ) -> None:
         super().__init__(engine, ttl=ttl, rate_per_second=1.0, http_client=http_client)
         self._gf = client or GiveFoodClient(http_client=http_client)
+        self._retry_after: datetime | None = None
 
     async def _call_upstream(self, client: httpx.AsyncClient, cache_key: str) -> Any | None:
         del client, cache_key
@@ -94,6 +95,15 @@ class GiveFoodAdapter(PassthroughAdapter):
         if rows is not None and fetched_at is not None and now - fetched_at < self._ttl:
             return rows, fetched_at, False
 
+        if (
+            rows is not None
+            and fetched_at is not None
+            and self._retry_after is not None
+            and now < self._retry_after
+            and timedelta(0) <= now - fetched_at <= _MAX_STALE
+        ):
+            return rows, fetched_at, True
+
         try:
             fresh_rows = await self._gf.fetch_foodbanks()
         except GiveFoodUnavailableError:
@@ -102,15 +112,18 @@ class GiveFoodAdapter(PassthroughAdapter):
                 and fetched_at is not None
                 and timedelta(0) <= now - fetched_at <= _MAX_STALE
             ):
+                self._retry_after = now + timedelta(minutes=15)
                 _log.warning(
-                    "givefood stale snapshot used fetched_at=%s records=%d",
+                    "givefood stale snapshot used fetched_at=%s records=%d next_retry=%s",
                     fetched_at.isoformat(),
                     len(rows),
+                    self._retry_after.isoformat(),
                 )
                 return rows, fetched_at, True
             _log.exception("givefood no usable upstream data or recent snapshot")
             raise
 
+        self._retry_after = None
         if not fresh_rows:
             # Fake clients are subject to the same validity check as live ones.
             raise GiveFoodUnavailableError("Give Food returned an empty location list")
