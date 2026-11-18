@@ -1,5 +1,7 @@
 """Integration tests for GiveFoodAdapter (fake client + real PostGIS test DB)."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy import text
 
@@ -145,3 +147,61 @@ async def test_pre_warm_caches_counts_for_places() -> None:
     iv = await adapter.fetch_indicator(FOOD_BANKS_INDICATOR, "ltla24:FB1", None)
     assert iv is not None and iv.value == 2.0
     assert fake.calls == 0
+
+
+async def test_stale_snapshot_yields_count_with_age_and_warning() -> None:
+    await _seed_place()
+    adapter = GiveFoodAdapter(get_engine(), client=_FailingClient())
+    old = datetime.now(tz=UTC) - timedelta(days=2)
+    await adapter._cache.put(
+        "givefood",
+        "locations:v2",
+        {"rows": _ROWS, "fetched_at": old.isoformat()},
+        ttl=timedelta(days=8),
+    )
+
+    iv = await adapter.fetch_indicator(FOOD_BANKS_INDICATOR, "ltla24:FB1", None)
+    assert iv is not None
+    assert iv.value == 2.0
+    assert iv.source.cache_status == "stale"
+    assert iv.source.retrieved_at == old
+    assert any("last successful" in caveat for caveat in iv.caveats)
+
+    fc = await adapter.amenity_locations(FOOD_BANKS_INDICATOR, "ltla24:FB1")
+    assert fc is not None
+    assert fc["cache_status"] == "stale"
+    assert fc["data_as_of"] == old.isoformat()
+    assert fc["warnings"]
+    assert len(fc["features"]) == 2
+    assert fc["features"][0]["properties"]["data_stale"] is True
+
+
+async def test_too_old_snapshot_does_not_masquerade_as_current() -> None:
+    await _seed_place()
+    adapter = GiveFoodAdapter(get_engine(), client=_FailingClient())
+    old = datetime.now(tz=UTC) - timedelta(days=7, hours=1)
+    await adapter._cache.put(
+        "givefood",
+        "locations:v2",
+        {"rows": _ROWS, "fetched_at": old.isoformat()},
+        ttl=timedelta(days=8),
+    )
+    with pytest.raises(GiveFoodUnavailableError):
+        await adapter.fetch_indicator(FOOD_BANKS_INDICATOR, "ltla24:FB1", None)
+
+
+async def test_expired_refresh_interval_fetches_new_locations() -> None:
+    await _seed_place()
+    fake = _FakeClient(_ROWS)
+    adapter = GiveFoodAdapter(get_engine(), client=fake)
+    old = datetime.now(tz=UTC) - timedelta(days=2)
+    await adapter._cache.put(
+        "givefood",
+        "locations:v2",
+        {"rows": _ROWS[:1], "fetched_at": old.isoformat()},
+        ttl=timedelta(days=8),
+    )
+    iv = await adapter.fetch_indicator(FOOD_BANKS_INDICATOR, "ltla24:FB1", None)
+    assert iv is not None and iv.value == 2.0
+    assert iv.source.cache_status != "stale"
+    assert fake.calls == 1
