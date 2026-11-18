@@ -53,8 +53,6 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://soundings:changeme-locally@localhost:5432/soundings_test
         run: cd server && uv run pytest -m "not live"
-      - name: Temporary Give Food live contract check
-        run: cd server && uv run pytest -m live tests/test_givefood_live.py
 
   ui:
     runs-on: ubuntu-latest
