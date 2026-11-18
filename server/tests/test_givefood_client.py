@@ -134,13 +134,15 @@ async def test_unusable_coordinates_do_not_get_cached_as_zero() -> None:
 
 async def test_legacy_dump_style_rows_still_parse() -> None:
     rows = _parse_locations(
-        [{
-            "organisation_name": "County Durham",
-            "location_name": "Annfield Plain",
-            "lat_lng": "54.8588523,-1.7377999",
-            "postcode": "DH9 7SY",
-            "lsoa": "E01020700",
-        }]
+        [
+            {
+                "organisation_name": "County Durham",
+                "location_name": "Annfield Plain",
+                "lat_lng": "54.8588523,-1.7377999",
+                "postcode": "DH9 7SY",
+                "lsoa": "E01020700",
+            }
+        ]
     )
     assert rows[0]["name"] == "Annfield Plain"
     assert rows[0]["org"] == "County Durham"
