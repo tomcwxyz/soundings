@@ -205,3 +205,29 @@ async def test_expired_refresh_interval_fetches_new_locations() -> None:
     assert iv is not None and iv.value == 2.0
     assert iv.source.cache_status != "stale"
     assert fake.calls == 1
+
+
+async def test_stale_fallback_backs_off_repeated_upstream_requests() -> None:
+    await _seed_place()
+
+    class CountingFailure:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def fetch_foodbanks(self) -> list[dict]:
+            self.calls += 1
+            raise GiveFoodUnavailableError("source down")
+
+    fake = CountingFailure()
+    adapter = GiveFoodAdapter(get_engine(), client=fake)
+    yesterday = datetime.now(tz=UTC) - timedelta(days=2)
+    await adapter._cache.put(
+        "givefood",
+        "locations:v2",
+        {"rows": _ROWS, "fetched_at": yesterday.isoformat()},
+        ttl=timedelta(days=8),
+    )
+    first = await adapter._cached_dump()
+    second = await adapter._cached_dump()
+    assert first[2] is True and second[2] is True
+    assert fake.calls == 1
