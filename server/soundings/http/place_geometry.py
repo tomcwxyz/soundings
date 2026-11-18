@@ -327,6 +327,8 @@ async def get_amenities_geometry(
 
     features: list[dict[str, object]] = []
     errors: list[str] = []
+    warnings: list[str] = []
+    provenance: dict[str, dict[str, object]] = {}
     for key in keys:
         source_id = source_by_key.get(key)
         if source_id is None:
@@ -340,10 +342,21 @@ async def get_amenities_geometry(
             continue
         if fc:
             features.extend(fc.get("features", []))
+            if isinstance(fc.get("warnings"), list):
+                warnings.extend(w for w in fc["warnings"] if isinstance(w, str))
+            if isinstance(fc.get("data_as_of"), str):
+                provenance[key] = {
+                    "data_as_of": fc["data_as_of"],
+                    "cache_status": fc.get("cache_status", "cached"),
+                }
 
     result: dict[str, object] = {"type": "FeatureCollection", "features": features}
     if errors:
         result["errors"] = errors
+    if warnings:
+        result["warnings"] = list(dict.fromkeys(warnings))
+    if provenance:
+        result["sources"] = provenance
     return result
 
 

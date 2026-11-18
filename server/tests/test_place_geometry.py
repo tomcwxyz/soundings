@@ -543,7 +543,7 @@ class _LayerStubAdapter:
         self._source_tag = source_tag
 
     async def amenity_locations(self, indicator_key: str, place_id: str) -> dict:
-        return {
+        payload = {
             "type": "FeatureCollection",
             "features": [
                 {
@@ -557,6 +557,11 @@ class _LayerStubAdapter:
                 }
             ],
         }
+        if self._source_tag == "givefood":
+            payload["data_as_of"] = "2026-11-16T04:00:00+00:00"
+            payload["cache_status"] = "stale"
+            payload["warnings"] = ["Give Food refresh failed; showing earlier locations"]
+        return payload
 
 
 async def test_amenities_geometry_routes_by_indicator_source(
@@ -612,4 +617,9 @@ async def test_amenities_geometry_routes_by_indicator_source(
     assert source_by_layer == {
         "infrastructure.food_banks_count": "givefood",
         "infrastructure.schools_count": "osm_overpass",
+    }
+    assert resp.json()["warnings"] == ["Give Food refresh failed; showing earlier locations"]
+    assert resp.json()["sources"]["infrastructure.food_banks_count"] == {
+        "data_as_of": "2026-11-16T04:00:00+00:00",
+        "cache_status": "stale",
     }

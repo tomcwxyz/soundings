@@ -641,6 +641,37 @@
               );
             };
 
+            // Show the actual data age rather than treating cached points as live.
+            const showAmenityDataNote = (fc: GeoJSON.FeatureCollection) => {
+              const collection = fc as GeoJSON.FeatureCollection & {
+                warnings?: string[];
+                errors?: string[];
+                sources?: Record<string, { data_as_of?: string; cache_status?: string }>;
+              };
+              const messages: string[] = [];
+              const giveFood = collection.sources?.["infrastructure.food_banks_count"];
+              if (giveFood?.data_as_of) {
+                const timestamp = new Date(giveFood.data_as_of);
+                if (!Number.isNaN(timestamp.getTime())) {
+                  messages.push(
+                    "Give Food locations last refreshed " +
+                      timestamp.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) +
+                      ".",
+                  );
+                }
+              }
+              if (Array.isArray(collection.warnings)) messages.push(...collection.warnings);
+              if (Array.isArray(collection.errors) && collection.errors.length > 0) {
+                messages.push("Some location layers could not be loaded.");
+              }
+              if (messages.length) {
+                const note = document.createElement("p");
+                note.className = "map-caption text-muted text-small";
+                note.textContent = messages.join(" ");
+                host.appendChild(note);
+              }
+            };
+
             const fetchAmenityPoints = (): Promise<GeoJSON.FeatureCollection> =>
               getJSON<GeoJSON.FeatureCollection>(
                 `/v1/place/${encodeURIComponent(mapPlaceId)}/amenities/geometry` +
@@ -660,6 +691,7 @@
                 tilesUrl: mapTilesUrl || undefined,
                 points,
               });
+              showAmenityDataNote(points);
             } else if (overlay?.source === "amenities") {
               // 2) amenity points only.
               if (amenityKeys.length === 0) {
@@ -677,6 +709,7 @@
               renderAmenityMap(container, boundary, points, {
                 tilesUrl: mapTilesUrl || undefined,
               });
+              showAmenityDataNote(points);
             } else if (overlay?.source === "organisations") {
               // 5) organisation (charity) points only.
               const [boundary, points] = await Promise.all([

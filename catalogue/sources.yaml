@@ -269,12 +269,12 @@ sources:
     label: Give Food
     publisher: Give Food
     publisher_url: https://www.givefood.org.uk/
-    dataset_url: https://www.givefood.org.uk/api/2/docs/
+    dataset_url: https://www.givefood.org.uk/api/2/locations/
     licence: "Give Food terms - attribution required"
     mode: passthrough
     ttl_hours: 24
-    # Daily warm pass — the dump updates daily; the pre_warmer warms the dump
-    # and per-LTLA counts so user reads stay warm.
+    # Refresh location-level data daily. A bounded stale snapshot provides
+    # continuity if the API and its published GeoJSON mirror are unavailable.
     refresh_cadence: "0 4 * * *"
     rate_limit: { rps: 1 }
 
