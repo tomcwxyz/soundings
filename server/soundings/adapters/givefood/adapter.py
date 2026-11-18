@@ -83,9 +83,11 @@ class GiveFoodAdapter(PassthroughAdapter):
         fetched_at: datetime | None = None
         if isinstance(cached, dict):
             candidate_rows = cached.get("rows")
-            if isinstance(candidate_rows, list) and all(
-                isinstance(row, dict) for row in candidate_rows
-            ) and candidate_rows:
+            if (
+                isinstance(candidate_rows, list)
+                and all(isinstance(row, dict) for row in candidate_rows)
+                and candidate_rows
+            ):
                 rows = candidate_rows
                 fetched_at = _as_utc(cached.get("fetched_at"))
 
@@ -120,15 +122,11 @@ class GiveFoodAdapter(PassthroughAdapter):
         )
         return fresh_rows, now, False
 
-    async def _locations_within(
-        self, place_id: str
-    ) -> tuple[list[dict[str, Any]], datetime, bool]:
+    async def _locations_within(self, place_id: str) -> tuple[list[dict[str, Any]], datetime, bool]:
         """Match distribution sites by coordinates, using LSOA where possible."""
         rows, fetched_at, stale = await self._cached_dump()
         coord_rows = [r for r in rows if r["lat"] is not None and r["lng"] is not None]
-        nocoord_rows = [
-            r for r in rows if (r["lat"] is None or r["lng"] is None) and r.get("lsoa")
-        ]
+        nocoord_rows = [r for r in rows if (r["lat"] is None or r["lng"] is None) and r.get("lsoa")]
         matched: list[dict[str, Any]] = []
 
         if coord_rows:
