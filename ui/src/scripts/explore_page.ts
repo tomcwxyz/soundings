@@ -462,7 +462,9 @@ function init(): void {
         `${apiBase}/v1/place/${encodeURIComponent(drillPlaceId)}/amenities/geometry?indicators=${encodeURIComponent(overlayKeys.join(","))}`,
       );
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      return { points: (await res.json()) as GeoJSON.FeatureCollection };
+      const points = (await res.json()) as GeoJSON.FeatureCollection & { errors?: string[] };
+      const errors = Array.isArray(points.errors) ? points.errors : [];
+      return { points, error: errors.length > 0 ? "some provision layers could not be loaded" : undefined };
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : String(error),
@@ -517,13 +519,27 @@ function init(): void {
     const overlayStatus =
       drillPlaceId && overlayKeys.length > 0
         ? provision.error
-          ? ` · provision layer unavailable (${provision.error})`
+          ? ` · ${pointCount} provision points (${provision.error})`
           : ` · ${pointCount} provision points`
+        : "";
+    const pointsWithSources = provision.points as
+      | (GeoJSON.FeatureCollection & {
+          sources?: Record<string, { data_as_of?: string; cache_status?: string }>;
+          warnings?: string[];
+        })
+      | undefined;
+    const giveFood = pointsWithSources?.sources?.["infrastructure.food_banks_count"];
+    const giveFoodDate = giveFood?.data_as_of ? new Date(giveFood.data_as_of) : null;
+    const ageNote =
+      giveFoodDate && !Number.isNaN(giveFoodDate.getTime())
+        ? ` · Give Food data ${giveFoodDate.toLocaleDateString("en-GB", {
+            day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+          })}${giveFood?.cache_status === "stale" ? " (stale – refresh failed)" : ""}`
         : "";
 
     if (status) {
       status.textContent =
-        `${n} ${choropleth.contextLabel} with data${overlayStatus} · click an area for details`;
+        `${n} ${choropleth.contextLabel} with data${overlayStatus}${ageNote} · click an area for details`;
     }
   }
 
