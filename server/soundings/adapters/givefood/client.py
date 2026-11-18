@@ -81,6 +81,7 @@ def _trim(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def _parse_locations(payload: Any) -> list[dict[str, Any]]:
+    raw_rows: Any
     if isinstance(payload, list):
         raw_rows = payload
     elif isinstance(payload, dict) and payload.get("type") == "FeatureCollection":
