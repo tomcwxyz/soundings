@@ -61,17 +61,9 @@ def _trim(row: dict[str, Any]) -> dict[str, Any]:
     parent = item.get("foodbank")
     parent = parent if isinstance(parent, dict) else {}
     organisation = (
-        item.get("organisation_name")
-        or parent.get("name")
-        or item.get("organisation")
-        or ""
+        item.get("organisation_name") or parent.get("name") or item.get("organisation") or ""
     )
-    name = (
-        item.get("location_name")
-        or item.get("name")
-        or organisation
-        or "Food bank"
-    )
+    name = item.get("location_name") or item.get("name") or organisation or "Food bank"
     lsoa = item.get("lsoa")
     urls = item.get("urls")
     urls = urls if isinstance(urls, dict) else {}
@@ -141,9 +133,7 @@ class GiveFoodClient:
                     )
                     continue
                 if source != "api":
-                    _log.warning(
-                        "givefood using mirror source=%s records=%d", source, len(rows)
-                    )
+                    _log.warning("givefood using mirror source=%s records=%d", source, len(rows))
                 else:
                     _log.info("givefood API locations fetched records=%d", len(rows))
                 return rows
