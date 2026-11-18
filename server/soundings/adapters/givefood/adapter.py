@@ -1,11 +1,8 @@
-"""GiveFoodAdapter — food-bank counts and locations from Give Food.
+"""Give Food distribution-site counts and coordinates by place.
 
-Fetches Give Food's daily food-bank dump once (cached 24h), then matches each
-location to a place by point-in-polygon on its coordinates. The LSOA GSS code
-on each row is a fallback when coordinates are missing.
-
-Food banks are volunteered/maintained data; every returned value carries the
-methodology caveat below.
+A successful location snapshot is retained beyond its normal refresh interval.
+When both upstream sources fail we may serve a bounded, clearly labelled stale
+snapshot rather than pretending that a locality has zero food banks.
 """
 
 from __future__ import annotations
@@ -18,18 +15,41 @@ import httpx
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from soundings.adapters.givefood.client import GiveFoodClient
+from soundings.adapters.givefood.client import GiveFoodClient, GiveFoodUnavailableError
 from soundings.adapters.passthrough_base import PassthroughAdapter
 from soundings.contracts.indicator_value import IndicatorValue
 
 SOURCE_ID = "givefood"
 FOOD_BANKS_INDICATOR = "infrastructure.food_banks_count"
 METHODOLOGY_CAVEAT = (
-    "Food bank locations from Give Food (givefood.org.uk), updated daily. "
-    "Counts distribution locations whose coordinates fall within the place boundary."
+    "Distribution-site locations from Give Food (givefood.org.uk). "
+    "Counts mapped locations within the place boundary; volunteer-maintained "
+    "coverage may be incomplete and is not a measure of capacity."
 )
-
+_SNAPSHOT_KEY = "locations:v2"
+_SNAPSHOT_RETENTION = timedelta(days=8)
+_MAX_STALE = timedelta(days=7)
 _log = logging.getLogger(__name__)
+
+
+def _as_utc(value: Any) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(UTC)
+
+
+def _stale_notice(fetched_at: datetime) -> str:
+    return (
+        "Give Food could not be refreshed. Showing the last successful "
+        f"distribution-site dataset from {fetched_at:%d %B %Y at %H:%M UTC}; "
+        "locations and counts may have changed."
+    )
 
 
 class GiveFoodAdapter(PassthroughAdapter):
@@ -50,24 +70,65 @@ class GiveFoodAdapter(PassthroughAdapter):
         del client, cache_key
         raise NotImplementedError("GiveFoodAdapter routes via fetch_indicator override")
 
-    async def _cached_dump(self) -> list[dict[str, Any]]:
-        cached = await self._cache.get(self.source_id, "foodbanks:all")
-        if isinstance(cached, list):
-            return cached
-        rows = await self._gf.fetch_foodbanks()
-        await self._cache.put(self.source_id, "foodbanks:all", rows, ttl=self._ttl)
-        return rows
+    async def _cached_dump(self) -> tuple[list[dict[str, Any]], datetime, bool]:
+        """Rows, last successful fetch time, and whether refresh failed.
 
-    async def _locations_within(self, place_id: str) -> list[dict[str, Any]]:
-        """Dump rows whose coordinates fall inside the place polygon.
-
-        Coordinate-bearing rows are matched by ST_Within; rows lacking
-        coordinates but carrying an LSOA code fall back to current hierarchy
-        membership.
+        Persist for eight days while attempting to refresh after 24 hours.
+        Only serve a stale snapshot for at most seven days. Never cache failure
+        responses, and never turn a failed fetch into a zero count.
         """
-        rows = await self._cached_dump()
+        now = datetime.now(tz=UTC)
+        cached = await self._cache.get(self.source_id, _SNAPSHOT_KEY)
+        rows: list[dict[str, Any]] | None = None
+        fetched_at: datetime | None = None
+        if isinstance(cached, dict):
+            candidate_rows = cached.get("rows")
+            if isinstance(candidate_rows, list) and all(
+                isinstance(row, dict) for row in candidate_rows
+            ) and candidate_rows:
+                rows = candidate_rows
+                fetched_at = _as_utc(cached.get("fetched_at"))
+
+        if rows is not None and fetched_at is not None and now - fetched_at < self._ttl:
+            return rows, fetched_at, False
+
+        try:
+            fresh_rows = await self._gf.fetch_foodbanks()
+        except GiveFoodUnavailableError:
+            if (
+                rows is not None
+                and fetched_at is not None
+                and timedelta(0) <= now - fetched_at <= _MAX_STALE
+            ):
+                _log.warning(
+                    "givefood stale snapshot used fetched_at=%s records=%d",
+                    fetched_at.isoformat(),
+                    len(rows),
+                )
+                return rows, fetched_at, True
+            _log.exception("givefood no usable upstream data or recent snapshot")
+            raise
+
+        if not fresh_rows:
+            # Fake clients are subject to the same validity check as live ones.
+            raise GiveFoodUnavailableError("Give Food returned an empty location list")
+        await self._cache.put(
+            self.source_id,
+            _SNAPSHOT_KEY,
+            {"rows": fresh_rows, "fetched_at": now.isoformat()},
+            ttl=_SNAPSHOT_RETENTION,
+        )
+        return fresh_rows, now, False
+
+    async def _locations_within(
+        self, place_id: str
+    ) -> tuple[list[dict[str, Any]], datetime, bool]:
+        """Match distribution sites by coordinates, using LSOA where possible."""
+        rows, fetched_at, stale = await self._cached_dump()
         coord_rows = [r for r in rows if r["lat"] is not None and r["lng"] is not None]
-        nocoord_rows = [r for r in rows if (r["lat"] is None or r["lng"] is None) and r.get("lsoa")]
+        nocoord_rows = [
+            r for r in rows if (r["lat"] is None or r["lng"] is None) and r.get("lsoa")
+        ]
         matched: list[dict[str, Any]] = []
 
         if coord_rows:
@@ -112,7 +173,7 @@ class GiveFoodAdapter(PassthroughAdapter):
             within = {r.id for r in res}
             matched.extend(r for r in nocoord_rows if "lsoa21:" + r["lsoa"] in within)
 
-        return matched
+        return matched, fetched_at, stale
 
     async def fetch_indicator(
         self, indicator_key: str, place_id: str, period: str | None
@@ -120,25 +181,36 @@ class GiveFoodAdapter(PassthroughAdapter):
         if indicator_key != FOOD_BANKS_INDICATOR:
             return None
 
-        cache_key = f"count:{place_id}"
+        cache_key = f"count:v2:{place_id}"
         cached = await self._cache.get(self.source_id, cache_key)
-        if isinstance(cached, dict):
-            count = int(cached.get("count", 0))
-            period_used = str(cached.get("period", ""))
+        if isinstance(cached, dict) and _as_utc(cached.get("fetched_at")) is not None:
+            count = int(cached["count"])
+            period_used = str(cached["period"])
+            fetched_at = _as_utc(cached["fetched_at"])
+            assert fetched_at is not None
+            stale = bool(cached.get("stale", False))
         else:
-            within = await self._locations_within(place_id)
+            within, fetched_at, stale = await self._locations_within(place_id)
             count = len(within)
-            period_used = period or datetime.now(tz=UTC).strftime("%Y-%m")
+            period_used = period or fetched_at.strftime("%Y-%m")
             await self._cache.put(
                 self.source_id,
                 cache_key,
-                {"count": count, "period": period_used},
-                ttl=self._ttl,
+                {
+                    "count": count,
+                    "period": period_used,
+                    "fetched_at": fetched_at.isoformat(),
+                    "stale": stale,
+                },
+                ttl=timedelta(hours=1) if stale else self._ttl,
             )
 
         source_ref = await self._build_source_ref(
-            retrieved_at=datetime.now(tz=UTC), cache_status="cached"
+            retrieved_at=fetched_at, cache_status="stale" if stale else "cached"
         )
+        caveats = [METHODOLOGY_CAVEAT]
+        if stale:
+            caveats.append(_stale_notice(fetched_at))
         return IndicatorValue(
             place_id=place_id,
             indicator=indicator_key,
@@ -146,37 +218,54 @@ class GiveFoodAdapter(PassthroughAdapter):
             unit="count",
             period=period_used,
             source=source_ref,
-            caveats=[METHODOLOGY_CAVEAT],
-            confidence="official",
+            caveats=caveats,
+            confidence="experimental",
         )
 
     async def amenity_locations(self, indicator_key: str, place_id: str) -> dict[str, Any] | None:
-        """GeoJSON FeatureCollection of food-bank locations within a place."""
+        """GeoJSON points and their age. Missing coordinates are not invented."""
         if indicator_key != FOOD_BANKS_INDICATOR:
             return None
 
-        cache_key = f"geo:{place_id}"
+        cache_key = f"geo:v2:{place_id}"
         cached = await self._cache.get(self.source_id, cache_key)
         if isinstance(cached, dict):
             return cached
 
-        within = await self._locations_within(place_id)
+        within, fetched_at, stale = await self._locations_within(place_id)
         features = [
             {
                 "type": "Feature",
                 "geometry": {"type": "Point", "coordinates": [r["lng"], r["lat"]]},
-                "properties": {"name": r["name"], "layer": indicator_key},
+                "properties": {
+                    "name": r["name"],
+                    "layer": indicator_key,
+                    "url": r.get("url"),
+                    "data_as_of": fetched_at.isoformat(),
+                    "data_stale": stale,
+                },
             }
             for r in within
             if r["lat"] is not None and r["lng"] is not None
         ]
-        fc = {"type": "FeatureCollection", "features": features}
-        await self._cache.put(self.source_id, cache_key, fc, ttl=self._ttl)
+        fc: dict[str, Any] = {
+            "type": "FeatureCollection",
+            "features": features,
+            "data_as_of": fetched_at.isoformat(),
+            "cache_status": "stale" if stale else "cached",
+        }
+        if stale:
+            fc["warnings"] = [_stale_notice(fetched_at)]
+        await self._cache.put(
+            self.source_id,
+            cache_key,
+            fc,
+            ttl=timedelta(hours=1) if stale else self._ttl,
+        )
         return fc
 
     async def pre_warm_for_places(self, place_ids: list[str]) -> None:
-        """Warm the dump once, then per-place counts. Driven by the pre_warmer
-        daemon on the source's daily cadence so user reads stay warm."""
+        """Warm the location snapshot and then each requested place."""
         await self._cached_dump()
         for place_id in place_ids:
             try:
